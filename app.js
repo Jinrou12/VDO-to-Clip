@@ -1,0 +1,1980 @@
+/**
+ * Khmer Video Clipper Pro - Core Engine (v8.0 SPA Architecture)
+ * Complete 2-Screen Separation: Screen 1 (Trimmer) vs Screen 2 (Studio Editor)
+ */
+
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Engine State ---
+    const state = {
+        videoFile: null,
+        videoObjectURL: null,
+        duration: 0,
+        currentTime: 0,
+        isPlaying: false,
+        
+        // Trimming state (Screen 1)
+        trimIn: 0,
+        trimOut: 0,
+        
+        // Canvas Config & Aspect Ratio (Screen 2)
+        aspectRatio: '9:16',
+        canvasWidth: 1080,
+        canvasHeight: 1920,
+        
+        // Active Khmer Text & Color Settings (per clip editable)
+        colorMode: 'dual', // 'dual', 'single', 'gradient'
+        textColor1: '#FFE600',
+        textColor2: '#FF5722',
+        
+        topText: 'អំពើហិង្សាជាអំពើ',
+        topTextPart1: 'អំពើហិង្សា',
+        topTextPart2: 'ជាអំពើ',
+        topFontSize: 65,
+        topPosY: 160,
+        
+        bottomText: 'អង់អាចក្លាហាន',
+        bottomTextPart1: 'អង់អាច',
+        bottomTextPart2: 'ក្លាហាន',
+        bottomFontSize: 65,
+        bottomPosY: 1750,
+        
+        fontFamily: 'Moul',
+        strokeColor: '#FFFFFF',
+        strokeWidth: 12,
+        shadowBlur: 10,
+        
+        // Background & Scale Config
+        bgMode: 'blur',
+        blurRadius: 25,
+        bgColor: '#111827',
+        videoScale: 100,
+        videoOffsetY: 0,
+        
+        // Multi-Clip Queue
+        clips: [],
+        clipCounter: 1,
+        
+        // Workflow Navigation
+        currentScreen: 0, // 0: uninitialized, 1: Trimmer Screen, 2: Studio Screen
+        activeClipId: null,
+        
+        // Export state
+        isExporting: false,
+        cancelExportRequested: false
+    };
+
+    // --- DOM Elements ---
+    const elements = {
+        // Views
+        screen1View: document.getElementById('screen1View'),
+        screen2View: document.getElementById('screen2View'),
+        dropzoneOverlay: document.getElementById('dropzoneOverlay'),
+        
+        // Navigation Stepper
+        step1TabBtn: document.getElementById('step1TabBtn'),
+        step2TabBtn: document.getElementById('step2TabBtn'),
+        step2Badge: document.getElementById('step2Badge'),
+        goToStep2Btn: document.getElementById('goToStep2Btn'),
+        backToStep1Btn: document.getElementById('backToStep1Btn'),
+        
+        // Video Elements
+        videoUploadInput: document.getElementById('videoUploadInput'),
+        mainVideoPlayer: document.getElementById('mainVideoPlayer'),
+        hiddenVideo: document.getElementById('hiddenVideo'),
+        
+        // Canvas (Screen 2)
+        mainCanvas: document.getElementById('mainCanvas'),
+        ctx: document.getElementById('mainCanvas').getContext('2d'),
+        canvasWrapper: document.getElementById('canvasWrapper'),
+        canvasInlineInput: document.getElementById('canvasInlineInput'),
+        activeClipNameBadge: document.getElementById('activeClipNameBadge'),
+        activeClipTitleInput: document.getElementById('activeClipTitleInput'),
+        studioClipScrubber: document.getElementById('studioClipScrubber'),
+        studioClipTimeDisplay: document.getElementById('studioClipTimeDisplay'),
+        
+        // Sidebars & Lists
+        fileInfoBox: document.getElementById('fileInfoBox'),
+        clipsListScreen1: document.getElementById('clipsListScreen1'),
+        clipsListScreen2: document.getElementById('clipsListScreen2'),
+        clipCountBadge: document.getElementById('clipCount'),
+        
+        // Trimmer Controls (Screen 1)
+        inTimeDisplay: document.getElementById('inTimeDisplay'),
+        outTimeDisplay: document.getElementById('outTimeDisplay'),
+        clipDurationDisplay: document.getElementById('clipDurationDisplay'),
+        setInBtn: document.getElementById('setInBtn'),
+        setOutBtn: document.getElementById('setOutBtn'),
+        addClipBtn: document.getElementById('addClipBtn'),
+        splitTrimBtn: document.getElementById('splitTrimBtn'),
+        timelineTrack: document.getElementById('timelineTrack'),
+        trimSelectionRange: document.getElementById('trimSelectionRange'),
+        playhead: document.getElementById('playhead'),
+        timelineSlider: document.getElementById('timelineSlider'),
+        
+        // Studio Toolbar & Actions (Screen 2)
+        aspectBtns: document.querySelectorAll('.aspect-btn'),
+        exportActiveClipBtn: document.getElementById('exportActiveClipBtn'),
+        exportAllClipsStudioBtn: document.getElementById('exportAllClipsStudioBtn'),
+        
+        // Right Inspector Inputs (Screen 2)
+        colorModeSelect: document.getElementById('colorModeSelect'),
+        textColor1Input: document.getElementById('textColor1Input'),
+        textColor1Val: document.getElementById('textColor1Val'),
+        textColor2Input: document.getElementById('textColor2Input'),
+        textColor2Val: document.getElementById('textColor2Val'),
+        color2Group: document.getElementById('color2Group'),
+        
+        topTextSingleGroup: document.getElementById('topTextSingleGroup'),
+        topTextDualGroup: document.getElementById('topTextDualGroup'),
+        topTextInput: document.getElementById('topTextInput'),
+        topTextPart1Input: document.getElementById('topTextPart1Input'),
+        topTextPart2Input: document.getElementById('topTextPart2Input'),
+        topPart1Label: document.getElementById('topPart1Label'),
+        topPart2Label: document.getElementById('topPart2Label'),
+        topWordChips: document.getElementById('topWordChips'),
+        topFontSizeInput: document.getElementById('topFontSizeInput'),
+        topFontSizeVal: document.getElementById('topFontSizeVal'),
+        topPosYInput: document.getElementById('topPosYInput'),
+        topPosYVal: document.getElementById('topPosYVal'),
+        
+        bottomTextSingleGroup: document.getElementById('bottomTextSingleGroup'),
+        bottomTextDualGroup: document.getElementById('bottomTextDualGroup'),
+        bottomTextInput: document.getElementById('bottomTextInput'),
+        bottomTextPart1Input: document.getElementById('bottomTextPart1Input'),
+        bottomTextPart2Input: document.getElementById('bottomTextPart2Input'),
+        bottomWordChips: document.getElementById('bottomWordChips'),
+        bottomFontSizeInput: document.getElementById('bottomFontSizeInput'),
+        bottomFontSizeVal: document.getElementById('bottomFontSizeVal'),
+        bottomPosYInput: document.getElementById('bottomPosYInput'),
+        bottomPosYVal: document.getElementById('bottomPosYVal'),
+        
+        fontFamilySelect: document.getElementById('fontFamilySelect'),
+        strokeColorInput: document.getElementById('strokeColorInput'),
+        strokeColorVal: document.getElementById('strokeColorVal'),
+        strokeWidthInput: document.getElementById('strokeWidthInput'),
+        strokeWidthVal: document.getElementById('strokeWidthVal'),
+        shadowBlurInput: document.getElementById('shadowBlurInput'),
+        shadowBlurVal: document.getElementById('shadowBlurVal'),
+        
+        bgModeSelect: document.getElementById('bgModeSelect'),
+        blurConfig: document.getElementById('blurConfig'),
+        bgColorConfig: document.getElementById('bgColorConfig'),
+        blurRadiusInput: document.getElementById('blurRadiusInput'),
+        blurRadiusVal: document.getElementById('blurRadiusVal'),
+        bgColorInput: document.getElementById('bgColorInput'),
+        videoScaleInput: document.getElementById('videoScaleInput'),
+        videoScaleVal: document.getElementById('videoScaleVal'),
+        videoOffsetYInput: document.getElementById('videoOffsetYInput'),
+        videoOffsetYVal: document.getElementById('videoOffsetYVal'),
+        
+        // Export Modal
+        exportModal: document.getElementById('exportModal'),
+        exportProgressBar: document.getElementById('exportProgressBar'),
+        exportStatusText: document.getElementById('exportStatusText'),
+        exportPercentText: document.getElementById('exportPercentText'),
+        cancelExportBtn: document.getElementById('cancelExportBtn'),
+
+        // Right Inspector Tabs
+        tabBtns: document.querySelectorAll('.tab-btn'),
+        tabContents: document.querySelectorAll('.tab-content')
+    };
+
+    // --- Helper Functions ---
+    function formatTime(seconds, includeMs = true) {
+        if (isNaN(seconds) || seconds < 0) seconds = 0;
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 100);
+
+        const pad = (num, size = 2) => String(num).padStart(size, '0');
+        if (includeMs) return `${pad(hrs)}:${pad(mins)}:${pad(secs)}.${pad(ms)}`;
+        return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+    }
+
+    // --- Core Initialization ---
+    function init() {
+        bindEvents();
+        updateAspectDimensions();
+        switchScreen(1); // Default to Screen 1 (Select Clips Screen)
+        requestAnimationFrame(renderLoop);
+    }
+
+    // --- Screen View Switcher ---
+    function switchScreen(screenNum) {
+        state.currentScreen = screenNum;
+
+        if (screenNum === 1) {
+            elements.screen1View.classList.remove('hidden');
+            elements.screen2View.classList.add('hidden');
+            elements.step1TabBtn?.classList.add('active');
+            elements.step2TabBtn?.classList.remove('active');
+            
+            // Pause background canvas video when returning to Screen 1
+            elements.hiddenVideo.pause();
+            state.isPlaying = false;
+            updatePlayPauseBtn();
+        } else {
+            elements.screen1View.classList.add('hidden');
+            elements.screen2View.classList.remove('hidden');
+            elements.step1TabBtn?.classList.remove('active');
+            elements.step2TabBtn?.classList.add('active');
+
+            // Pause main video player when entering Studio
+            elements.mainVideoPlayer.pause();
+        }
+    }
+
+    function updatePlayPauseBtn() {
+        const btn = document.getElementById('canvasPlayPauseBtn');
+        if (btn) btn.textContent = state.isPlaying ? '⏸ Pause' : '▶ Play';
+    }
+
+    function bindEvents() {
+        // Video File Upload
+        elements.videoUploadInput.addEventListener('change', handleVideoUpload);
+        
+        // Navigation Stepper Buttons
+        elements.step1TabBtn?.addEventListener('click', () => switchScreen(1));
+        elements.step2TabBtn?.addEventListener('click', () => switchScreen(2));
+        elements.goToStep2Btn?.addEventListener('click', () => switchScreen(2));
+        elements.backToStep1Btn?.addEventListener('click', () => switchScreen(1));
+
+        // Aspect Ratio Selector
+        elements.aspectBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.aspectBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.aspectRatio = btn.dataset.ratio;
+                updateAspectDimensions();
+                syncActiveClipProperty('aspectRatio', state.aspectRatio);
+            });
+        });
+
+        // Inspector Tabs
+        elements.tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.tabBtns.forEach(b => b.classList.remove('active'));
+                elements.tabContents.forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab)?.classList.add('active');
+            });
+        });
+
+        // Main Video Player (Screen 1) Time Update Sync
+        elements.mainVideoPlayer.addEventListener('timeupdate', () => {
+            if (state.currentScreen === 1) {
+                state.currentTime = elements.mainVideoPlayer.currentTime;
+                elements.inTimeDisplay.textContent = formatTime(state.trimIn);
+                elements.outTimeDisplay.textContent = formatTime(state.trimOut);
+                updatePlayheadPosition();
+            }
+        });
+
+        elements.mainVideoPlayer.addEventListener('loadedmetadata', onVideoLoaded);
+
+        // Hidden Video Player (Screen 2 Canvas Source) Time Update Sync
+        elements.hiddenVideo.addEventListener('timeupdate', () => {
+            if (state.currentScreen === 2 && state.isPlaying) {
+                state.currentTime = elements.hiddenVideo.currentTime;
+                // Loop active clip range
+                if (state.currentTime >= state.trimOut) {
+                    elements.hiddenVideo.currentTime = state.trimIn;
+                }
+            }
+        });
+
+        // Scrubber Timeline (Screen 1)
+        elements.timelineSlider.addEventListener('input', (e) => {
+            const time = (parseFloat(e.target.value) / 100) * state.duration;
+            elements.mainVideoPlayer.currentTime = time;
+            state.currentTime = time;
+            updatePlayheadPosition();
+        });
+
+        // Set In / Set Out Trimming
+        elements.setInBtn.addEventListener('click', () => {
+            state.trimIn = elements.mainVideoPlayer.currentTime;
+            if (state.trimOut <= state.trimIn) {
+                state.trimOut = Math.min(state.duration, state.trimIn + 30);
+            }
+            updateTrimUI();
+        });
+
+        elements.setOutBtn.addEventListener('click', () => {
+            if (elements.mainVideoPlayer.currentTime > state.trimIn) {
+                state.trimOut = elements.mainVideoPlayer.currentTime;
+            } else {
+                alert('ចំនុចបញ្ចប់ [Set Out] ត្រូវតែធំជាងចំនុចចាប់ផ្តើម [Set In]!');
+            }
+            updateTrimUI();
+        });
+
+        // Add Clip
+        elements.addClipBtn.addEventListener('click', addClipToList);
+
+        // Canvas Play/Pause Toggle (Screen 2)
+        document.getElementById('canvasPlayPauseBtn')?.addEventListener('click', () => {
+            if (!state.activeClipId) return;
+            if (state.isPlaying) {
+                elements.hiddenVideo.pause();
+                state.isPlaying = false;
+            } else {
+                if (elements.hiddenVideo.currentTime >= state.trimOut) {
+                    elements.hiddenVideo.currentTime = state.trimIn;
+                }
+                elements.hiddenVideo.play().catch(() => {});
+                state.isPlaying = true;
+            }
+            updatePlayPauseBtn();
+        });
+
+        // Studio Clip Scrubber (Screen 2 Timeline Bar)
+        if (elements.studioClipScrubber) {
+            elements.studioClipScrubber.addEventListener('input', (e) => {
+                const clip = state.clips.find(c => c.id === state.activeClipId);
+                if (!clip || clip.duration <= 0) return;
+                const pct = parseFloat(e.target.value) / 100;
+                const targetTime = clip.startTime + (pct * clip.duration);
+                elements.hiddenVideo.currentTime = targetTime;
+
+                const currentPos = Math.max(0, targetTime - clip.startTime);
+                if (elements.studioClipTimeDisplay) {
+                    elements.studioClipTimeDisplay.textContent = `${formatTime(currentPos, false)} / ${formatTime(clip.duration, false)}`;
+                }
+            });
+        }
+
+        // Video loop & Studio Scrubber progress update
+        elements.hiddenVideo.addEventListener('timeupdate', () => {
+            if (state.currentScreen === 2) {
+                const clip = state.clips.find(c => c.id === state.activeClipId);
+                if (clip && clip.duration > 0) {
+                    const currentPos = Math.max(0, Math.min(clip.duration, elements.hiddenVideo.currentTime - clip.startTime));
+                    const pct = (currentPos / clip.duration) * 100;
+
+                    if (elements.studioClipScrubber && document.activeElement !== elements.studioClipScrubber) {
+                        elements.studioClipScrubber.value = pct;
+                    }
+                    if (elements.studioClipTimeDisplay) {
+                        elements.studioClipTimeDisplay.textContent = `${formatTime(currentPos, false)} / ${formatTime(clip.duration, false)}`;
+                    }
+
+                    if (state.isPlaying && elements.hiddenVideo.currentTime >= state.trimOut) {
+                        elements.hiddenVideo.currentTime = state.trimIn;
+                        elements.hiddenVideo.play().catch(() => {});
+                    }
+                }
+            }
+        });
+
+        // Export & Playback Controls Actions
+        elements.exportActiveClipBtn?.addEventListener('click', () => {
+            if (state.activeClipId) exportSingleClip(state.activeClipId);
+        });
+        elements.exportAllClipsStudioBtn?.addEventListener('click', exportAllClips);
+        elements.cancelExportBtn?.addEventListener('click', () => { state.cancelExportRequested = true; });
+
+        document.getElementById('seekBackBtn')?.addEventListener('click', () => seekRelative(-5));
+        document.getElementById('seekForwardBtn')?.addEventListener('click', () => seekRelative(5));
+        document.getElementById('splitClipBtn')?.addEventListener('click', () => splitCurrentClip());
+        elements.splitTrimBtn?.addEventListener('click', () => splitTrimAtCurrentTime());
+
+        // Color Mode & Text Controls Binding
+        elements.colorModeSelect?.addEventListener('change', (e) => {
+            state.colorMode = e.target.value;
+            const isDual = state.colorMode === 'dual';
+            const isSingle = state.colorMode === 'single';
+
+            elements.color2Group?.classList.toggle('hidden', isSingle);
+            elements.topTextSingleGroup?.classList.toggle('hidden', isDual);
+            elements.topTextDualGroup?.classList.toggle('hidden', !isDual);
+            elements.bottomTextSingleGroup?.classList.toggle('hidden', isDual);
+            elements.bottomTextDualGroup?.classList.toggle('hidden', !isDual);
+
+            syncActiveClipProperty('colorMode', state.colorMode);
+        });
+
+        bindInput(elements.textColor1Input, 'textColor1', elements.textColor1Val);
+        bindInput(elements.textColor2Input, 'textColor2', elements.textColor2Val);
+
+        if (elements.activeClipTitleInput) {
+            elements.activeClipTitleInput.addEventListener('input', (e) => {
+                const val = e.target.value;
+                const clip = state.clips.find(c => c.id === state.activeClipId);
+                if (clip) {
+                    clip.name = val || `Clip #${clip.id}`;
+                    if (elements.activeClipNameBadge) {
+                        elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
+                    }
+                    renderClipsList();
+                }
+            });
+        }
+        bindInput(elements.topTextInput, 'topText');
+        bindInput(elements.topTextPart1Input, 'topTextPart1');
+        bindInput(elements.topTextPart2Input, 'topTextPart2');
+        bindInput(elements.topFontSizeInput, 'topFontSize', elements.topFontSizeVal, 'px');
+        bindInput(elements.topPosYInput, 'topPosY', elements.topPosYVal, 'px');
+
+        bindInput(elements.bottomTextInput, 'bottomText');
+        bindInput(elements.bottomTextPart1Input, 'bottomTextPart1');
+        bindInput(elements.bottomTextPart2Input, 'bottomTextPart2');
+        bindInput(elements.bottomFontSizeInput, 'bottomFontSize', elements.bottomFontSizeVal, 'px');
+        bindInput(elements.bottomPosYInput, 'bottomPosY', elements.bottomPosYVal, 'px');
+
+        bindInput(elements.fontFamilySelect, 'fontFamily');
+        bindInput(elements.strokeColorInput, 'strokeColor', elements.strokeColorVal);
+        bindInput(elements.strokeWidthInput, 'strokeWidth', elements.strokeWidthVal, 'px');
+        bindInput(elements.shadowBlurInput, 'shadowBlur', elements.shadowBlurVal, 'px');
+
+        elements.bgModeSelect?.addEventListener('change', (e) => {
+            state.bgMode = e.target.value;
+            elements.blurConfig?.classList.toggle('hidden', state.bgMode !== 'blur');
+            elements.bgColorConfig?.classList.toggle('hidden', state.bgMode !== 'color');
+            syncActiveClipProperty('bgMode', state.bgMode);
+        });
+
+        bindInput(elements.blurRadiusInput, 'blurRadius', elements.blurRadiusVal, 'px');
+        bindInput(elements.bgColorInput, 'bgColor');
+        bindInput(elements.videoScaleInput, 'videoScale', elements.videoScaleVal, '%');
+        bindInput(elements.videoOffsetYInput, 'videoOffsetY', elements.videoOffsetYVal, 'px');
+
+        // Initial inspector state toggle
+        elements.colorModeSelect?.dispatchEvent(new Event('change'));
+
+        // --- Canvas Mouse Controls (Drag Corner Handles to Scale Font Size, Drag Text to Move Y) ---
+        let dragStartCanvasY = 0;
+        let dragStartTextPosY = 0;
+        let dragStartMouseX = 0;
+        let dragStartMouseY = 0;
+        let dragStartFontSize = 65;
+
+        function getCanvasCoordinates(e) {
+            const rect = elements.mainCanvas.getBoundingClientRect();
+            const scaleX = state.canvasWidth / rect.width;
+            const scaleY = state.canvasHeight / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function getBoundingBox(target) {
+            const fontSize = target === 'top' ? state.topFontSize : state.bottomFontSize;
+            const posY = target === 'top' ? state.topPosY : state.bottomPosY;
+            const measuredW = target === 'top' ? (state.topMeasuredWidth || state.canvasWidth * 0.75) : (state.bottomMeasuredWidth || state.canvasWidth * 0.75);
+            const boxH = fontSize * 1.35;
+            const boxW = Math.max(180, Math.min(state.canvasWidth - 20, measuredW + 50));
+            const boxX = (state.canvasWidth - boxW) / 2;
+            const boxY = posY - boxH / 2;
+
+            return {
+                boxX, boxY, boxW, boxH,
+                corners: [
+                    { name: 'TL', x: boxX, y: boxY },
+                    { name: 'TR', x: boxX + boxW, y: boxY },
+                    { name: 'BL', x: boxX, y: boxY + boxH },
+                    { name: 'BR', x: boxX + boxW, y: boxY + boxH }
+                ]
+            };
+        }
+
+        function hitTestCornerHandle(canvasX, canvasY) {
+            const targets = ['top', 'bottom'];
+            for (const target of targets) {
+                const box = getBoundingBox(target);
+                for (const c of box.corners) {
+                    const dist = Math.hypot(canvasX - c.x, canvasY - c.y);
+                    if (dist <= 25) {
+                        return { target, handle: c.name };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function hitTestText(canvasX, canvasY) {
+            const topDistY = Math.abs(canvasY - state.topPosY);
+            const bottomDistY = Math.abs(canvasY - state.bottomPosY);
+
+            const topHitZoneY = Math.max(70, state.topFontSize * 1.2);
+            const bottomHitZoneY = Math.max(70, state.bottomFontSize * 1.2);
+
+            const isTopY = topDistY <= topHitZoneY;
+            const isBottomY = bottomDistY <= bottomHitZoneY;
+
+            if (isTopY && (!isBottomY || topDistY <= bottomDistY)) {
+                return 'top';
+            } else if (isBottomY) {
+                return 'bottom';
+            }
+            return null;
+        }
+
+        const handleWheelScale = (e) => {
+            if (state.currentScreen !== 2) return;
+            e.preventDefault();
+
+            const { x, y } = getCanvasCoordinates(e);
+            const target = hitTestText(x, y) || (y < state.canvasHeight / 2 ? 'top' : 'bottom');
+            const step = e.deltaY < 0 ? 4 : -4;
+
+            if (target === 'top') {
+                let newSize = Math.max(20, Math.min(150, parseFloat(state.topFontSize) + step));
+                state.topFontSize = newSize;
+                if (elements.topFontSizeInput) elements.topFontSizeInput.value = newSize;
+                if (elements.topFontSizeVal) elements.topFontSizeVal.textContent = newSize + 'px';
+                syncActiveClipProperty('topFontSize', newSize);
+            } else if (target === 'bottom') {
+                let newSize = Math.max(20, Math.min(150, parseFloat(state.bottomFontSize) + step));
+                state.bottomFontSize = newSize;
+                if (elements.bottomFontSizeInput) elements.bottomFontSizeInput.value = newSize;
+                if (elements.bottomFontSizeVal) elements.bottomFontSizeVal.textContent = newSize + 'px';
+                syncActiveClipProperty('bottomFontSize', newSize);
+            }
+        };
+
+        // Scroll Mouse Wheel to Scale Font Size (Main Canvas & Wrapper)
+        elements.mainCanvas.addEventListener('wheel', handleWheelScale, { passive: false });
+        elements.canvasWrapper?.addEventListener('wheel', handleWheelScale, { passive: false });
+
+        const handleMouseDown = (e) => {
+            if (state.currentScreen !== 2) return;
+            const { x, y } = getCanvasCoordinates(e);
+
+            // 1. Check corner handles first for scaling
+            const cornerHit = hitTestCornerHandle(x, y);
+            if (cornerHit) {
+                e.preventDefault();
+                state.isResizingText = true;
+                state.resizeTarget = cornerHit.target;
+                state.resizeHandle = cornerHit.handle;
+                dragStartMouseX = x;
+                dragStartMouseY = y;
+                dragStartFontSize = cornerHit.target === 'top' ? parseFloat(state.topFontSize) : parseFloat(state.bottomFontSize);
+                elements.mainCanvas.style.cursor = (cornerHit.handle === 'TL' || cornerHit.handle === 'BR') ? 'nwse-resize' : 'nesw-resize';
+                return;
+            }
+
+            // 2. Otherwise, check text area for dragging position Y
+            const target = hitTestText(x, y) || (y < state.canvasHeight / 2 ? 'top' : 'bottom');
+            if (target) {
+                e.preventDefault();
+                state.isDraggingText = true;
+                state.dragTarget = target;
+                state.hoveredTextTarget = target;
+                dragStartCanvasY = y;
+                dragStartTextPosY = target === 'top' ? parseFloat(state.topPosY) : parseFloat(state.bottomPosY);
+                elements.mainCanvas.style.cursor = 'grabbing';
+
+                // Focus inspector text input field
+                if (target === 'top') {
+                    const inputEl = state.colorMode === 'dual' ? elements.topTextPart1Input : elements.topTextInput;
+                    inputEl?.focus();
+                } else if (target === 'bottom') {
+                    const inputEl = state.colorMode === 'dual' ? elements.bottomTextPart1Input : elements.bottomTextInput;
+                    inputEl?.focus();
+                }
+            }
+        };
+
+        // Mouse Down on Canvas / Wrapper to Select & Start Dragging / Resizing
+        elements.mainCanvas.addEventListener('mousedown', handleMouseDown);
+        elements.canvasWrapper?.addEventListener('mousedown', handleMouseDown);
+
+        // Mouse Move for Dragging Y Position or Corner Scaling
+        window.addEventListener('mousemove', (e) => {
+            if (state.currentScreen !== 2) return;
+            const { x, y } = getCanvasCoordinates(e);
+
+            // 1. Corner Handle Dragging -> Resize Font Size
+            if (state.isResizingText && state.resizeTarget) {
+                const deltaX = x - dragStartMouseX;
+                const deltaY = y - dragStartMouseY;
+                
+                let scaleDelta = (deltaX + deltaY) * 0.3;
+                if (state.resizeHandle === 'TL' || state.resizeHandle === 'BL') {
+                    scaleDelta = (-deltaX + deltaY) * 0.3;
+                }
+
+                let newFontSize = Math.max(20, Math.min(150, Math.round(dragStartFontSize + scaleDelta)));
+
+                if (state.resizeTarget === 'top') {
+                    state.topFontSize = newFontSize;
+                    if (elements.topFontSizeInput) elements.topFontSizeInput.value = newFontSize;
+                    if (elements.topFontSizeVal) elements.topFontSizeVal.textContent = newFontSize + 'px';
+                    syncActiveClipProperty('topFontSize', newFontSize);
+                } else if (state.resizeTarget === 'bottom') {
+                    state.bottomFontSize = newFontSize;
+                    if (elements.bottomFontSizeInput) elements.bottomFontSizeInput.value = newFontSize;
+                    if (elements.bottomFontSizeVal) elements.bottomFontSizeVal.textContent = newFontSize + 'px';
+                    syncActiveClipProperty('bottomFontSize', newFontSize);
+                }
+                return;
+            }
+
+            // 2. Text Area Dragging -> Move Position Y
+            if (state.isDraggingText && state.dragTarget) {
+                const deltaY = y - dragStartCanvasY;
+                let targetY = Math.round(dragStartTextPosY + deltaY);
+
+                if (state.dragTarget === 'top') {
+                    targetY = Math.max(20, Math.min(Math.round(state.canvasHeight * 0.48), targetY));
+                    state.topPosY = targetY;
+                    if (elements.topPosYInput) elements.topPosYInput.value = targetY;
+                    if (elements.topPosYVal) elements.topPosYVal.textContent = targetY + 'px';
+                    syncActiveClipProperty('topPosY', targetY);
+                } else if (state.dragTarget === 'bottom') {
+                    targetY = Math.max(Math.round(state.canvasHeight * 0.52), Math.min(state.canvasHeight - 20, targetY));
+                    state.bottomPosY = targetY;
+                    if (elements.bottomPosYInput) elements.bottomPosYInput.value = targetY;
+                    if (elements.bottomPosYVal) elements.bottomPosYVal.textContent = targetY + 'px';
+                    syncActiveClipProperty('bottomPosY', targetY);
+                }
+                return;
+            }
+
+            // 3. Hover State Cursor Indicators
+            const cornerHit = hitTestCornerHandle(x, y);
+            if (cornerHit) {
+                state.hoveredTextTarget = cornerHit.target;
+                if (elements.mainCanvas) {
+                    elements.mainCanvas.style.cursor = (cornerHit.handle === 'TL' || cornerHit.handle === 'BR') ? 'nwse-resize' : 'nesw-resize';
+                }
+            } else {
+                const target = hitTestText(x, y);
+                state.hoveredTextTarget = target;
+                if (elements.mainCanvas) {
+                    elements.mainCanvas.style.cursor = target ? 'ns-resize' : 'default';
+                }
+            }
+        });
+
+        // Mouse Up / Window Blur to Release Drag / Resize
+        window.addEventListener('mouseup', () => {
+            if (state.isDraggingText || state.isResizingText) {
+                state.isDraggingText = false;
+                state.isResizingText = false;
+                state.dragTarget = null;
+                state.resizeTarget = null;
+                if (elements.mainCanvas) {
+                    elements.mainCanvas.style.cursor = state.hoveredTextTarget ? 'ns-resize' : 'default';
+                }
+            }
+        });
+
+        // Double Click on Canvas Text to Edit / Select All / Customize Inline
+        const handleDoubleClick = (e) => {
+            if (state.currentScreen !== 2) return;
+            const { x, y } = getCanvasCoordinates(e);
+            const target = hitTestText(x, y) || (y < state.canvasHeight / 2 ? 'top' : 'bottom');
+
+            if (target) {
+                e.preventDefault();
+                // Switch right sidebar tab to Text tab
+                elements.tabBtns[0]?.click();
+
+                // Open inline floating input directly on canvas
+                const inlineInput = elements.canvasInlineInput;
+                if (inlineInput) {
+                    const rect = elements.mainCanvas.getBoundingClientRect();
+                    const posY = target === 'top' ? state.topPosY : state.bottomPosY;
+                    const cssY = (posY / state.canvasHeight) * rect.height;
+                    const cssX = rect.width / 2;
+
+                    inlineInput.style.top = `${cssY}px`;
+                    inlineInput.style.left = `${cssX}px`;
+
+                    const currentVal = target === 'top' ? state.topText : state.bottomText;
+                    inlineInput.value = currentVal;
+                    inlineInput.dataset.target = target;
+                    inlineInput.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        inlineInput.focus();
+                        inlineInput.select();
+                    }, 50);
+                }
+
+                // Also Select All in the sidebar inspector input field
+                let inspectorInput;
+                if (target === 'top') {
+                    inspectorInput = state.colorMode === 'dual' ? elements.topTextPart1Input : elements.topTextInput;
+                } else {
+                    inspectorInput = state.colorMode === 'dual' ? elements.bottomTextPart1Input : elements.bottomTextInput;
+                }
+
+                if (inspectorInput) {
+                    inspectorInput.focus();
+                    inspectorInput.select();
+                }
+            }
+        };
+
+        elements.mainCanvas.addEventListener('dblclick', handleDoubleClick);
+        elements.canvasWrapper?.addEventListener('dblclick', handleDoubleClick);
+
+        // Commit inline input changes live
+        if (elements.canvasInlineInput) {
+            elements.canvasInlineInput.addEventListener('input', (e) => {
+                const target = e.target.dataset.target;
+                const val = e.target.value;
+
+                if (target === 'top') {
+                    state.topText = val;
+                    if (state.colorMode === 'dual') {
+                        const parts = val.trim().split(/\s+/);
+                        state.topTextPart1 = parts[0] || '';
+                        state.topTextPart2 = parts.slice(1).join(' ') || '';
+                        if (elements.topTextPart1Input) elements.topTextPart1Input.value = state.topTextPart1;
+                        if (elements.topTextPart2Input) elements.topTextPart2Input.value = state.topTextPart2;
+                        syncActiveClipProperty('topTextPart1', state.topTextPart1);
+                        syncActiveClipProperty('topTextPart2', state.topTextPart2);
+                    } else {
+                        if (elements.topTextInput) elements.topTextInput.value = val;
+                        syncActiveClipProperty('topText', val);
+                    }
+                } else if (target === 'bottom') {
+                    state.bottomText = val;
+                    if (state.colorMode === 'dual') {
+                        const parts = val.trim().split(/\s+/);
+                        state.bottomTextPart1 = parts[0] || '';
+                        state.bottomTextPart2 = parts.slice(1).join(' ') || '';
+                        if (elements.bottomTextPart1Input) elements.bottomTextPart1Input.value = state.bottomTextPart1;
+                        if (elements.bottomTextPart2Input) elements.bottomTextPart2Input.value = state.bottomTextPart2;
+                        syncActiveClipProperty('bottomTextPart1', state.bottomTextPart1);
+                        syncActiveClipProperty('bottomTextPart2', state.bottomTextPart2);
+                    } else {
+                        if (elements.bottomTextInput) elements.bottomTextInput.value = val;
+                        syncActiveClipProperty('bottomText', val);
+                    }
+                }
+            });
+
+            const closeInlineInput = () => {
+                elements.canvasInlineInput.classList.add('hidden');
+            };
+
+            elements.canvasInlineInput.addEventListener('blur', closeInlineInput);
+            elements.canvasInlineInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === 'Escape') {
+                    closeInlineInput();
+                }
+            });
+        }
+
+        // Auto Select All text when clicking inspector inputs
+        const autoSelectOnFocus = (el) => {
+            el?.addEventListener('focus', () => el.select());
+        };
+        autoSelectOnFocus(elements.topTextInput);
+        autoSelectOnFocus(elements.topTextPart1Input);
+        autoSelectOnFocus(elements.topTextPart2Input);
+        autoSelectOnFocus(elements.bottomTextInput);
+        autoSelectOnFocus(elements.bottomTextPart1Input);
+        autoSelectOnFocus(elements.bottomTextPart2Input);
+    }
+
+    window.clearTopText = function() {
+        state.topText = '';
+        state.topTextPart1 = '';
+        state.topTextPart2 = '';
+        if (elements.topTextInput) elements.topTextInput.value = '';
+        if (elements.topTextPart1Input) elements.topTextPart1Input.value = '';
+        if (elements.topTextPart2Input) elements.topTextPart2Input.value = '';
+        if (elements.canvasInlineInput && elements.canvasInlineInput.dataset.target === 'top') {
+            elements.canvasInlineInput.value = '';
+        }
+        syncActiveClipProperty('topText', '');
+        syncActiveClipProperty('topTextPart1', '');
+        syncActiveClipProperty('topTextPart2', '');
+    };
+
+    window.clearBottomText = function() {
+        state.bottomText = '';
+        state.bottomTextPart1 = '';
+        state.bottomTextPart2 = '';
+        if (elements.bottomTextInput) elements.bottomTextInput.value = '';
+        if (elements.bottomTextPart1Input) elements.bottomTextPart1Input.value = '';
+        if (elements.bottomTextPart2Input) elements.bottomTextPart2Input.value = '';
+        if (elements.canvasInlineInput && elements.canvasInlineInput.dataset.target === 'bottom') {
+            elements.canvasInlineInput.value = '';
+        }
+        syncActiveClipProperty('bottomText', '');
+        syncActiveClipProperty('bottomTextPart1', '');
+        syncActiveClipProperty('bottomTextPart2', '');
+    };
+
+    function renderWordColorChips() {
+        const topP1 = (state.topTextPart1 || 'ដើម').trim();
+        const topP2 = (state.topTextPart2 || 'ត្នោត').trim();
+
+        if (elements.topPart1Label) elements.topPart1Label.style.color = state.textColor1;
+        if (elements.topPart2Label) elements.topPart2Label.style.color = state.textColor2;
+
+        if (elements.topWordChips) {
+            elements.topWordChips.innerHTML = `
+                <span class="word-chip" onclick="document.getElementById('textColor1Input').click()" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                    <span class="word-chip-color-dot" style="background:${state.textColor1};"></span>
+                    <span>${topP1 || 'ពាក្យទី១'}</span> (ពណ៌ទី១)
+                </span>
+                <span class="word-chip" onclick="document.getElementById('textColor2Input').click()" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                    <span class="word-chip-color-dot" style="background:${state.textColor2};"></span>
+                    <span>${topP2 || 'ពាក្យទី២'}</span> (ពណ៌ទី២)
+                </span>
+            `;
+        }
+
+        const btmP1 = (state.bottomTextPart1 || 'អង់អាច').trim();
+        const btmP2 = (state.bottomTextPart2 || 'ក្លាហាន').trim();
+
+        if (elements.bottomPart1Label) elements.bottomPart1Label.style.color = state.textColor1;
+        if (elements.bottomPart2Label) elements.bottomPart2Label.style.color = state.textColor2;
+
+        if (elements.bottomWordChips) {
+            elements.bottomWordChips.innerHTML = `
+                <span class="word-chip" onclick="document.getElementById('textColor1Input').click()" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                    <span class="word-chip-color-dot" style="background:${state.textColor1};"></span>
+                    <span>${btmP1 || 'ពាក្យទី១'}</span> (ពណ៌ទី១)
+                </span>
+                <span class="word-chip" onclick="document.getElementById('textColor2Input').click()" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                    <span class="word-chip-color-dot" style="background:${state.textColor2};"></span>
+                    <span>${btmP2 || 'ពាក្យទី២'}</span> (ពណ៌ទី២)
+                </span>
+            `;
+        }
+    }
+
+    function syncActiveClipProperty(key, val) {
+        if (state.activeClipId) {
+            const clip = state.clips.find(c => c.id === state.activeClipId);
+            if (clip) {
+                clip[key] = val;
+                if (key === 'topTextPart1' || key === 'topTextPart2' || key === 'topText') {
+                    clip.topTextPart1 = state.topTextPart1;
+                    clip.topTextPart2 = state.topTextPart2;
+                    clip.topText = `${state.topTextPart1 || ''} ${state.topTextPart2 || ''}`.trim();
+                    state.topText = clip.topText;
+                }
+                if (key === 'bottomTextPart1' || key === 'bottomTextPart2' || key === 'bottomText') {
+                    clip.bottomTextPart1 = state.bottomTextPart1;
+                    clip.bottomTextPart2 = state.bottomTextPart2;
+                    clip.bottomText = `${state.bottomTextPart1 || ''} ${state.bottomTextPart2 || ''}`.trim();
+                    state.bottomText = clip.bottomText;
+                }
+                renderClipsList();
+            }
+        }
+        renderWordColorChips();
+    }
+
+    function bindInput(inputEl, key, displayEl = null, suffix = '') {
+        if (!inputEl) return;
+        inputEl.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (inputEl.type === 'range') val = parseFloat(val);
+            state[key] = val;
+            if (displayEl) displayEl.textContent = val + suffix;
+            syncActiveClipProperty(key, val);
+        });
+    }
+
+    // --- Video Upload Handler ---
+    function handleVideoUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        state.videoFile = file;
+        if (state.videoObjectURL) URL.revokeObjectURL(state.videoObjectURL);
+        state.videoObjectURL = URL.createObjectURL(file);
+
+        elements.mainVideoPlayer.src = state.videoObjectURL;
+        elements.hiddenVideo.src = state.videoObjectURL;
+
+        elements.dropzoneOverlay.classList.add('hidden');
+        elements.fileInfoBox.classList.remove('empty');
+        elements.fileInfoBox.innerHTML = `
+            <div class="info-item"><span class="info-label">ឈ្មោះ File:</span> <span class="info-val">${file.name}</span></div>
+            <div class="info-item"><span class="info-label">ទំហំ:</span> <span class="info-val">${(file.size / (1024 * 1024)).toFixed(1)} MB</span></div>
+            <div class="info-item"><span class="info-label">ប្រភេទ:</span> <span class="info-val">${file.type || 'video/mp4'}</span></div>
+        `;
+
+        elements.setInBtn.disabled = false;
+        elements.setOutBtn.disabled = false;
+        elements.addClipBtn.disabled = false;
+        if (elements.splitTrimBtn) elements.splitTrimBtn.disabled = false;
+        elements.timelineSlider.disabled = false;
+    }
+
+    function onVideoLoaded() {
+        state.duration = elements.mainVideoPlayer.duration;
+        state.trimIn = 0;
+        state.trimOut = Math.min(state.duration, 180);
+        updateTrimUI();
+    }
+
+    function updatePlayheadPosition() {
+        if (state.duration > 0) {
+            const pct = (state.currentTime / state.duration) * 100;
+            elements.playhead.style.left = `${pct}%`;
+            elements.timelineSlider.value = pct;
+        }
+    }
+
+    function updateTrimUI() {
+        elements.inTimeDisplay.textContent = formatTime(state.trimIn);
+        elements.outTimeDisplay.textContent = formatTime(state.trimOut);
+        elements.clipDurationDisplay.textContent = formatTime(state.trimOut - state.trimIn, false);
+
+        if (state.duration > 0) {
+            const inPct = (state.trimIn / state.duration) * 100;
+            const outPct = (state.trimOut / state.duration) * 100;
+            elements.trimSelectionRange.style.left = `${inPct}%`;
+            elements.trimSelectionRange.style.width = `${outPct - inPct}%`;
+        }
+    }
+
+    function updatePosYSliderRanges() {
+        const h = state.canvasHeight || 1920;
+        if (elements.topPosYInput) {
+            elements.topPosYInput.min = 20;
+            elements.topPosYInput.max = Math.round(h * 0.48);
+        }
+        if (elements.bottomPosYInput) {
+            elements.bottomPosYInput.min = Math.round(h * 0.52);
+            elements.bottomPosYInput.max = h - 20;
+        }
+    }
+
+    function updateAspectDimensions() {
+        const prevHeight = state.canvasHeight || 1920;
+        elements.canvasWrapper.classList.remove('aspect-9-16', 'aspect-1-1', 'aspect-16-9');
+        if (state.aspectRatio === '9:16') {
+            state.canvasWidth = 1080;
+            state.canvasHeight = 1920;
+            elements.canvasWrapper.classList.add('aspect-9-16');
+        } else if (state.aspectRatio === '1:1') {
+            state.canvasWidth = 1080;
+            state.canvasHeight = 1080;
+            elements.canvasWrapper.classList.add('aspect-1-1');
+        } else if (state.aspectRatio === '16:9') {
+            state.canvasWidth = 1920;
+            state.canvasHeight = 1080;
+            elements.canvasWrapper.classList.add('aspect-16-9');
+        }
+        elements.mainCanvas.width = state.canvasWidth;
+        elements.mainCanvas.height = state.canvasHeight;
+
+        // Proportional Y Scaling when aspect ratio changes
+        if (prevHeight !== state.canvasHeight && prevHeight > 0) {
+            const ratio = state.canvasHeight / prevHeight;
+            state.topPosY = Math.round(state.topPosY * ratio);
+            state.bottomPosY = Math.round(state.bottomPosY * ratio);
+
+            // Keep Y within valid range
+            state.topPosY = Math.max(20, Math.min(Math.round(state.canvasHeight * 0.48), state.topPosY));
+            state.bottomPosY = Math.max(Math.round(state.canvasHeight * 0.52), Math.min(state.canvasHeight - 20, state.bottomPosY));
+
+            syncActiveClipProperty('topPosY', state.topPosY);
+            syncActiveClipProperty('bottomPosY', state.bottomPosY);
+        }
+
+        updatePosYSliderRanges();
+        syncInspectorUI();
+    }
+
+    // --- State History Stack (Ctrl + Z Undo Engine) ---
+    const stateHistory = [];
+    const MAX_HISTORY = 30;
+
+    function pushStateToHistory() {
+        const snapshot = {
+            clips: JSON.parse(JSON.stringify(state.clips)),
+            activeClipId: state.activeClipId,
+            clipCounter: state.clipCounter
+        };
+        stateHistory.push(snapshot);
+        if (stateHistory.length > MAX_HISTORY) stateHistory.shift();
+    }
+
+    function undoLastAction() {
+        if (stateHistory.length === 0) {
+            showToast('⚠️ គ្មានសកម្មភាពអាច Undo ទៀតទេ!');
+            return;
+        }
+        const prev = stateHistory.pop();
+        state.clips = prev.clips;
+        state.activeClipId = prev.activeClipId;
+        state.clipCounter = prev.clipCounter;
+
+        if (state.activeClipId && state.clips.some(c => c.id === state.activeClipId)) {
+            selectClipForEditing(state.activeClipId);
+        } else if (state.clips.length > 0) {
+            selectClipForEditing(state.clips[0].id);
+        } else {
+            state.activeClipId = null;
+            renderClipsList();
+        }
+        showToast('⏪ បានត្រឡប់មកវិញ (Undo Successful)');
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toastNotification');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.classList.remove('hidden');
+        toast.style.opacity = '1';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 2200);
+    }
+
+    function toggleVideoPlayPause() {
+        if (state.currentScreen === 1) {
+            if (elements.mainVideoPlayer && elements.mainVideoPlayer.src) {
+                if (elements.mainVideoPlayer.paused) {
+                    elements.mainVideoPlayer.play().catch(() => {});
+                } else {
+                    elements.mainVideoPlayer.pause();
+                }
+            }
+        } else if (state.currentScreen === 2) {
+            if (!state.activeClipId) return;
+            if (state.isPlaying) {
+                elements.hiddenVideo.pause();
+                state.isPlaying = false;
+            } else {
+                if (elements.hiddenVideo.currentTime >= state.trimOut) {
+                    elements.hiddenVideo.currentTime = state.trimIn;
+                }
+                elements.hiddenVideo.play().catch(() => {});
+                state.isPlaying = true;
+            }
+            updatePlayPauseBtn();
+        }
+    }
+
+    function isTextInputFocused() {
+        const el = document.activeElement;
+        if (!el) return false;
+        if (el.isContentEditable) return true;
+        const tag = el.tagName ? el.tagName.toLowerCase() : '';
+        if (tag === 'textarea' || tag === 'select') return true;
+        if (tag === 'input') {
+            const type = (el.type || 'text').toLowerCase();
+            if (['text', 'search', 'password', 'email', 'url', 'number', 'tel'].includes(type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function handleGlobalKeyDown(e) {
+        if (isTextInputFocused()) return;
+
+        const code = e.code || '';
+        const key = (e.key || '').toLowerCase();
+        const keyCode = e.keyCode || e.which || 0;
+
+        // Spacebar (keyCode 32): Toggle Play / Pause Video
+        if (code === 'Space' || key === ' ' || keyCode === 32) {
+            e.preventDefault();
+            toggleVideoPlayPause();
+            return;
+        }
+
+        // S key (keyCode 83): Set In
+        if ((code === 'KeyS' || key === 's' || key === 'ស' || keyCode === 83) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            if (!state.videoFile) {
+                showToast('⚠️ សូមជ្រើសរើសវីដេអូជាមុនសិន!');
+                return;
+            }
+            if (elements.setInBtn) {
+                elements.setInBtn.click();
+                showToast('🚩 កំណត់ចំនុចដើម [Set In]: ' + formatTime(state.trimIn));
+            }
+            return;
+        }
+
+        // E key (keyCode 69): Set Out
+        if ((code === 'KeyE' || key === 'e' || key === 'ែ' || keyCode === 69) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            if (!state.videoFile) {
+                showToast('⚠️ សូមជ្រើសរើសវីដេអូជាមុនសិន!');
+                return;
+            }
+            if (elements.setOutBtn) {
+                elements.setOutBtn.click();
+                showToast('🏁 កំណត់ចំនុចបញ្ចប់ [Set Out]: ' + formatTime(state.trimOut));
+            }
+            return;
+        }
+
+        // A key (keyCode 65): Add Clip
+        if ((code === 'KeyA' || key === 'a' || key === 'ា' || keyCode === 65) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            if (!state.videoFile) {
+                showToast('⚠️ សូមជ្រើសរើសវីដេអូជាមុនសិន!');
+                return;
+            }
+            if (elements.addClipBtn) {
+                elements.addClipBtn.click();
+            }
+            return;
+        }
+
+        // Ctrl+Z / Cmd+Z (keyCode 90): Undo Last Action
+        if ((e.ctrlKey || e.metaKey) && (code === 'KeyZ' || key === 'z' || key === 'ដ' || keyCode === 90)) {
+            e.preventDefault();
+            undoLastAction();
+        }
+    }
+
+    // Register with capture = true so window catches keypresses before video elements swallow them!
+    window.addEventListener('keydown', handleGlobalKeyDown, true);
+
+    // --- Clip Reorder & Split Actions ---
+    window.moveClipUp = function(id, e) {
+        if (e) e.stopPropagation();
+        const idx = state.clips.findIndex(c => c.id === id);
+        if (idx <= 0) return;
+        pushStateToHistory();
+        const temp = state.clips[idx];
+        state.clips[idx] = state.clips[idx - 1];
+        state.clips[idx - 1] = temp;
+        renderClipsList();
+        showToast('⬆️ បានផ្លាស់ទី Clip ឡើងលើ');
+    };
+
+    window.moveClipDown = function(id, e) {
+        if (e) e.stopPropagation();
+        const idx = state.clips.findIndex(c => c.id === id);
+        if (idx < 0 || idx >= state.clips.length - 1) return;
+        pushStateToHistory();
+        const temp = state.clips[idx];
+        state.clips[idx] = state.clips[idx + 1];
+        state.clips[idx + 1] = temp;
+        renderClipsList();
+        showToast('⬇️ បានផ្លាស់ទី Clip ចុះក្រោម');
+    };
+
+    window.deleteClip = function(id) {
+        pushStateToHistory();
+        state.clips = state.clips.filter(c => c.id !== id);
+        if (state.activeClipId === id) {
+            state.activeClipId = state.clips.length > 0 ? state.clips[0].id : null;
+        }
+        renderClipsList();
+        if (state.activeClipId) {
+            selectClipForEditing(state.activeClipId);
+        }
+        showToast('🗑️ បានលុប Clip (ចុច Ctrl+Z ដើម្បើតបមកវិញ)');
+    };
+
+    window.renameClip = function(id, e) {
+        if (e) e.stopPropagation();
+        const clip = state.clips.find(c => c.id === id);
+        if (!clip) return;
+        const newName = prompt('កែសម្រួលចំណងជើង Clip:', clip.name);
+        if (newName !== null && newName.trim() !== '') {
+            pushStateToHistory();
+            clip.name = newName.trim();
+            if (state.activeClipId === id) {
+                if (elements.activeClipNameBadge) {
+                    elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
+                }
+                if (elements.activeClipTitleInput) {
+                    elements.activeClipTitleInput.value = clip.name;
+                }
+            }
+            renderClipsList();
+            showToast('✏️ បានប្ដូរចំណងជើង Clip!');
+        }
+    };
+
+    window.splitSelectedClip = function(id = null, e = null) {
+        if (e) e.stopPropagation();
+
+        const targetId = id || state.activeClipId;
+        if (!targetId) {
+            showToast('⚠️ សូមជ្រើសរើស Clip ជាមុនសិន!');
+            return;
+        }
+
+        const clipIndex = state.clips.findIndex(c => c.id === targetId);
+        if (clipIndex < 0) return;
+
+        const clip = state.clips[clipIndex];
+
+        // Determine split timestamp:
+        // Check active video playhead time
+        let activeTime = state.currentScreen === 1 ? elements.mainVideoPlayer.currentTime : elements.hiddenVideo.currentTime;
+        let splitTime;
+
+        if (activeTime > clip.startTime + 0.5 && activeTime < clip.endTime - 0.5) {
+            splitTime = activeTime;
+        } else {
+            // Split exact middle of selected clip
+            splitTime = clip.startTime + (clip.duration / 2);
+        }
+
+        pushStateToHistory();
+
+        // Remove old (ភាគN) suffix if present to avoid nested names like "(ភាគ១) (ភាគ១)"
+        const baseName = clip.name.replace(/\s*\(ភាគ\d+\)/g, '');
+
+        const clipA = {
+            ...clip,
+            name: `${baseName} (ភាគ១)`,
+            endTime: splitTime,
+            duration: splitTime - clip.startTime
+        };
+
+        const clipB = {
+            ...clip,
+            id: Date.now(),
+            name: `${baseName} (ភាគ២)`,
+            startTime: splitTime,
+            duration: clip.endTime - splitTime
+        };
+
+        state.clips.splice(clipIndex, 1, clipA, clipB);
+        state.activeClipId = clipA.id;
+
+        selectClipForEditing(clipA.id);
+        renderClipsList();
+        showToast(`✂️ បានពុះ "${clip.name}" ជា ២ ភាគរួចរាល់!`);
+    };
+
+    window.splitCurrentClip = window.splitSelectedClip;
+    window.splitTrimAtCurrentTime = window.splitSelectedClip;
+
+    window.applyStyleToAllClips = function() {
+        if (state.clips.length === 0) {
+            showToast('ℹ️ មិនទាន់មាន Clip ក្នុងបញ្ជីឡើយ!');
+            return;
+        }
+        pushStateToHistory();
+
+        state.clips.forEach(c => {
+            c.colorMode = state.colorMode;
+            c.textColor1 = state.textColor1;
+            c.textColor2 = state.textColor2;
+            c.fontFamily = state.fontFamily;
+            c.strokeColor = state.strokeColor;
+            c.strokeWidth = state.strokeWidth;
+            c.shadowBlur = state.shadowBlur;
+            c.topFontSize = state.topFontSize;
+            c.topPosY = state.topPosY;
+            c.bottomFontSize = state.bottomFontSize;
+            c.bottomPosY = state.bottomPosY;
+            c.topText = state.topText;
+            c.topTextPart1 = state.topTextPart1;
+            c.topTextPart2 = state.topTextPart2;
+            c.bottomText = state.bottomText;
+            c.bottomTextPart1 = state.bottomTextPart1;
+            c.bottomTextPart2 = state.bottomTextPart2;
+            c.bgMode = state.bgMode;
+            c.blurRadius = state.blurRadius;
+            c.bgColor = state.bgColor;
+            c.videoScale = state.videoScale;
+            c.videoOffsetY = state.videoOffsetY;
+            c.aspectRatio = state.aspectRatio;
+        });
+
+        renderClipsList();
+        showToast('📋 បានអនុវត្តម៉ូដនេះទៅ Clips ទាំងអស់!');
+    };
+
+    window.seekRelative = function(seconds) {
+        if (!state.activeClipId) return;
+        const newTime = elements.hiddenVideo.currentTime + seconds;
+        const clampedTime = Math.max(state.trimIn, Math.min(state.trimOut, newTime));
+        elements.hiddenVideo.currentTime = clampedTime;
+        state.currentTime = clampedTime;
+    };
+
+    // --- Clip Queue Manager ---
+    function addClipToList() {
+        if (!state.videoFile) return;
+
+        pushStateToHistory();
+
+        const customTitleInput = document.getElementById('clipTitleInput');
+        const customTitle = customTitleInput ? customTitleInput.value.trim() : '';
+
+        const clipName = customTitle || `Clip #${state.clipCounter++}`;
+
+        const clip = {
+            id: Date.now(),
+            name: clipName,
+            startTime: state.trimIn,
+            endTime: state.trimOut,
+            duration: state.trimOut - state.trimIn,
+            aspectRatio: state.aspectRatio || '9:16',
+            colorMode: state.colorMode,
+            textColor1: state.textColor1,
+            textColor2: state.textColor2,
+            topText: state.topText,
+            topTextPart1: state.topTextPart1,
+            topTextPart2: state.topTextPart2,
+            topFontSize: state.topFontSize,
+            topPosY: state.topPosY,
+            bottomText: state.bottomText,
+            bottomTextPart1: state.bottomTextPart1,
+            bottomTextPart2: state.bottomTextPart2,
+            bottomFontSize: state.bottomFontSize,
+            bottomPosY: state.bottomPosY,
+            fontFamily: state.fontFamily,
+            strokeColor: state.strokeColor,
+            strokeWidth: state.strokeWidth,
+            shadowBlur: state.shadowBlur,
+            bgMode: state.bgMode,
+            blurRadius: state.blurRadius,
+            bgColor: state.bgColor,
+            videoScale: state.videoScale,
+            videoOffsetY: state.videoOffsetY
+        };
+
+        state.clips.push(clip);
+        if (!state.activeClipId) {
+            state.activeClipId = clip.id;
+        }
+        renderClipsList();
+
+        if (customTitleInput) customTitleInput.value = '';
+
+        // Stay on Screen 1 so user can cut multiple clips continuously
+        const origText = elements.addClipBtn.innerHTML;
+        elements.addClipBtn.innerHTML = '✅ បានបន្ថែម Clip!';
+        elements.addClipBtn.classList.remove('btn-success');
+        elements.addClipBtn.classList.add('btn-primary');
+        setTimeout(() => {
+            elements.addClipBtn.innerHTML = origText;
+            elements.addClipBtn.classList.remove('btn-primary');
+            elements.addClipBtn.classList.add('btn-success');
+        }, 1500);
+    }
+
+    function renderClipsList() {
+        const count = state.clips.length;
+        elements.clipCountBadge.textContent = count;
+        if (elements.step2Badge) elements.step2Badge.textContent = `${count} Clips`;
+        if (elements.goToStep2Btn) elements.goToStep2Btn.disabled = count === 0;
+
+        const renderHTML = (forScreen2 = false) => {
+            if (count === 0) {
+                return `
+                    <div class="empty-clips-notice">
+                        <span class="icon">🎬</span>
+                        <p>មិនទាន់មាន Clip នៅឡើយទេ</p>
+                        <small>កំណត់ <strong>[Set In]</strong> និង <strong>[Set Out]</strong> រួចចុច <strong>"+ បន្ថែម Clip"</strong></small>
+                    </div>
+                `;
+            }
+
+            return state.clips.map((c, idx) => {
+                const isEditing = c.id === state.activeClipId;
+                const topStr = c.colorMode === 'dual' ? `${c.topTextPart1 || ''} ${c.topTextPart2 || ''}` : (c.topText || '');
+                const btmStr = c.colorMode === 'dual' ? `${c.bottomTextPart1 || ''} ${c.bottomTextPart2 || ''}` : (c.bottomText || '');
+                const isFirst = idx === 0;
+                const isLast = idx === count - 1;
+
+                return `
+                <div class="clip-card ${isEditing ? 'active-editing' : ''}" data-id="${c.id}">
+                    <div class="clip-card-main">
+                        <div style="flex:1;">
+                            <div class="clip-header">
+                                <span class="clip-title" onclick="renameClip(${c.id}, event)" title="ចុចដើម្បែកែសម្រួលចំណងជើង" style="cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                                    ${c.name} <span style="font-size:0.8em; opacity:0.7;">✏️</span>
+                                </span>
+                                <span class="clip-duration">⏱️ ${formatTime(c.duration, false)}</span>
+                            </div>
+                            <div class="clip-actions">
+                                <button class="btn ${isEditing ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="selectClipForEditing(${c.id})">
+                                    ${isEditing ? '✏️ កំពុងកែ' : '🎨 កែសម្រួល'}
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteClip(${c.id})" title="លុប Clip នេះ">🗑️ លុប</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        };
+
+        if (elements.clipsListScreen1) elements.clipsListScreen1.innerHTML = renderHTML(false);
+        if (elements.clipsListScreen2) elements.clipsListScreen2.innerHTML = renderHTML(true);
+    }
+
+    window.selectClipForEditing = function(id) {
+        const clip = state.clips.find(c => c.id === id);
+        if (!clip) return;
+
+        state.activeClipId = id;
+        state.trimIn = clip.startTime;
+        state.trimOut = clip.endTime;
+        
+        state.colorMode = clip.colorMode || 'dual';
+        state.textColor1 = clip.textColor1 || '#FFE600';
+        state.textColor2 = clip.textColor2 || '#FF5722';
+
+        state.topText = clip.topText || '';
+        state.topTextPart1 = clip.topTextPart1 || '';
+        state.topTextPart2 = clip.topTextPart2 || '';
+        state.topFontSize = clip.topFontSize || 65;
+        state.topPosY = clip.topPosY || 160;
+
+        state.bottomText = clip.bottomText || '';
+        state.bottomTextPart1 = clip.bottomTextPart1 || '';
+        state.bottomTextPart2 = clip.bottomTextPart2 || '';
+        state.bottomFontSize = clip.bottomFontSize || 65;
+        state.bottomPosY = clip.bottomPosY || 1750;
+
+        state.fontFamily = clip.fontFamily || 'Moul';
+        state.strokeColor = clip.strokeColor || '#FFFFFF';
+        state.strokeWidth = clip.strokeWidth || 12;
+        state.shadowBlur = clip.shadowBlur || 10;
+
+        state.bgMode = clip.bgMode || 'blur';
+        state.blurRadius = clip.blurRadius || 25;
+        state.bgColor = clip.bgColor || '#111827';
+        state.videoScale = clip.videoScale || 100;
+        state.videoOffsetY = clip.videoOffsetY || 0;
+
+        if (clip.aspectRatio) {
+            state.aspectRatio = clip.aspectRatio;
+            elements.aspectBtns.forEach(b => {
+                b.classList.toggle('active', b.dataset.ratio === state.aspectRatio);
+            });
+            updateAspectDimensions();
+        }
+
+        if (elements.activeClipNameBadge) {
+            elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
+        }
+        if (elements.studioClipScrubber) elements.studioClipScrubber.value = 0;
+        if (elements.studioClipTimeDisplay) {
+            elements.studioClipTimeDisplay.textContent = `00:00.00 / ${formatTime(clip.duration, false)}`;
+        }
+
+        syncInspectorUI();
+        renderClipsList();
+
+        // Switch to Screen 2 Studio when user selects a clip to edit
+        switchScreen(2);
+
+        // Always restart video from this clip's start time (fixes switching clips)
+        elements.hiddenVideo.currentTime = state.trimIn;
+        elements.hiddenVideo.play().catch(() => {});
+        state.isPlaying = true;
+        updatePlayPauseBtn();
+    };
+
+    function syncInspectorUI() {
+        const activeClip = state.clips.find(c => c.id === state.activeClipId);
+        if (activeClip && elements.activeClipTitleInput) {
+            elements.activeClipTitleInput.value = activeClip.name || '';
+        }
+
+        if (elements.colorModeSelect) {
+            elements.colorModeSelect.value = state.colorMode;
+            elements.colorModeSelect.dispatchEvent(new Event('change'));
+        }
+        if (elements.textColor1Input) elements.textColor1Input.value = state.textColor1;
+        if (elements.textColor2Input) elements.textColor2Input.value = state.textColor2;
+
+        if (elements.topTextInput) elements.topTextInput.value = state.topText;
+        if (elements.topTextPart1Input) elements.topTextPart1Input.value = state.topTextPart1;
+        if (elements.topTextPart2Input) elements.topTextPart2Input.value = state.topTextPart2;
+        if (elements.topFontSizeInput) {
+            elements.topFontSizeInput.value = state.topFontSize;
+            if (elements.topFontSizeVal) elements.topFontSizeVal.textContent = state.topFontSize + 'px';
+        }
+        if (elements.topPosYInput) {
+            elements.topPosYInput.value = state.topPosY;
+            if (elements.topPosYVal) elements.topPosYVal.textContent = state.topPosY + 'px';
+        }
+
+        if (elements.bottomTextInput) elements.bottomTextInput.value = state.bottomText;
+        if (elements.bottomTextPart1Input) elements.bottomTextPart1Input.value = state.bottomTextPart1;
+        if (elements.bottomTextPart2Input) elements.bottomTextPart2Input.value = state.bottomTextPart2;
+        if (elements.bottomFontSizeInput) {
+            elements.bottomFontSizeInput.value = state.bottomFontSize;
+            if (elements.bottomFontSizeVal) elements.bottomFontSizeVal.textContent = state.bottomFontSize + 'px';
+        }
+        if (elements.bottomPosYInput) {
+            elements.bottomPosYInput.value = state.bottomPosY;
+            if (elements.bottomPosYVal) elements.bottomPosYVal.textContent = state.bottomPosY + 'px';
+        }
+
+        if (elements.fontFamilySelect) elements.fontFamilySelect.value = state.fontFamily;
+        if (elements.strokeColorInput) elements.strokeColorInput.value = state.strokeColor;
+        if (elements.strokeWidthInput) {
+            elements.strokeWidthInput.value = state.strokeWidth;
+            if (elements.strokeWidthVal) elements.strokeWidthVal.textContent = state.strokeWidth + 'px';
+        }
+        if (elements.shadowBlurInput) {
+            elements.shadowBlurInput.value = state.shadowBlur;
+            if (elements.shadowBlurVal) elements.shadowBlurVal.textContent = state.shadowBlur + 'px';
+        }
+
+        if (elements.bgModeSelect) {
+            elements.bgModeSelect.value = state.bgMode;
+            elements.bgModeSelect.dispatchEvent(new Event('change'));
+        }
+        if (elements.blurRadiusInput) {
+            elements.blurRadiusInput.value = state.blurRadius;
+            if (elements.blurRadiusVal) elements.blurRadiusVal.textContent = state.blurRadius + 'px';
+        }
+        if (elements.bgColorInput) elements.bgColorInput.value = state.bgColor;
+
+        if (elements.videoScaleInput) {
+            elements.videoScaleInput.value = state.videoScale;
+            if (elements.videoScaleVal) elements.videoScaleVal.textContent = state.videoScale + '%';
+        }
+        if (elements.videoOffsetYInput) {
+            elements.videoOffsetYInput.value = state.videoOffsetY;
+            if (elements.videoOffsetYVal) elements.videoOffsetYVal.textContent = state.videoOffsetY + 'px';
+        }
+    }
+
+    window.deleteClip = function(id) {
+        state.clips = state.clips.filter(c => c.id !== id);
+        if (state.activeClipId === id) {
+            state.activeClipId = state.clips.length > 0 ? state.clips[0].id : null;
+        }
+        renderClipsList();
+    };
+
+    // --- Canvas Render Loop (Screen 2 Studio) ---
+    function renderLoop() {
+        if (state.currentScreen === 2) {
+            renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
+        }
+        requestAnimationFrame(renderLoop);
+    }
+
+    function renderCanvasFrame(ctx, width, height) {
+        // ALWAYS clear canvas on every frame to prevent text trail / smearing!
+        ctx.clearRect(0, 0, width, height);
+
+        const video = elements.hiddenVideo;
+
+        // 1. Draw Background
+        if (state.bgMode === 'blur') {
+            if (video.readyState >= 2) {
+                ctx.save();
+                ctx.filter = `blur(${state.blurRadius}px) brightness(0.6)`;
+                const vAspect = video.videoWidth / video.videoHeight;
+                const cAspect = width / height;
+                let bgW, bgH, bgX, bgY;
+                if (vAspect > cAspect) {
+                    bgH = height;
+                    bgW = height * vAspect;
+                    bgX = (width - bgW) / 2;
+                    bgY = 0;
+                } else {
+                    bgW = width;
+                    bgH = width / vAspect;
+                    bgX = 0;
+                    bgY = (height - bgH) / 2;
+                }
+                ctx.drawImage(video, bgX, bgY, bgW, bgH);
+                ctx.restore();
+            } else {
+                const grad = ctx.createLinearGradient(0, 0, 0, height);
+                grad.addColorStop(0, '#0f172a');
+                grad.addColorStop(0.5, '#1e293b');
+                grad.addColorStop(1, '#090d16');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, width, height);
+            }
+        } else if (state.bgMode === 'color') {
+            ctx.fillStyle = state.bgColor;
+            ctx.fillRect(0, 0, width, height);
+        } else {
+            const grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, '#0f172a');
+            grad.addColorStop(0.5, '#1e293b');
+            grad.addColorStop(1, '#090d16');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // 2. Draw Source Video Frame (Centered)
+        if (video.readyState >= 2) {
+            ctx.save();
+            const scaleFactor = state.videoScale / 100;
+            const vAspect = video.videoWidth / video.videoHeight;
+            let targetW = width * scaleFactor;
+            let targetH = (width / vAspect) * scaleFactor;
+            let targetX = (width - targetW) / 2;
+            let targetY = (height - targetH) / 2 + parseFloat(state.videoOffsetY);
+
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+            ctx.shadowBlur = 20;
+            ctx.drawImage(video, targetX, targetY, targetW, targetH);
+            ctx.restore();
+        }
+
+        // 3. Render Top & Bottom Khmer Text Overlays
+        renderTextOverlay(ctx, width, height);
+
+        // 4. Render Active Selection Outline on Canvas Hover / Drag
+        const activeTarget = state.resizeTarget || state.dragTarget || state.hoveredTextTarget;
+        if (activeTarget === 'top') {
+            renderSelectionOutline(ctx, 'top', state.topPosY, state.topFontSize, width);
+        } else if (activeTarget === 'bottom') {
+            renderSelectionOutline(ctx, 'bottom', state.bottomPosY, state.bottomFontSize, width);
+        }
+    }
+
+    function renderSelectionOutline(ctx, target, posY, fontSize, canvasWidth) {
+        ctx.save();
+        ctx.strokeStyle = '#FFE600';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 4]);
+
+        const measuredW = target === 'top' ? (state.topMeasuredWidth || canvasWidth * 0.75) : (state.bottomMeasuredWidth || canvasWidth * 0.75);
+        const boxH = fontSize * 1.35;
+        const boxW = Math.max(180, Math.min(canvasWidth - 20, measuredW + 50));
+        const boxX = (canvasWidth - boxW) / 2;
+        const boxY = posY - boxH / 2;
+
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+        // Draw 4 Solid Gold Corner Handles with Dark Border
+        const corners = [
+            { x: boxX, y: boxY },
+            { x: boxX + boxW, y: boxY },
+            { x: boxX, y: boxY + boxH },
+            { x: boxX + boxW, y: boxY + boxH }
+        ];
+
+        ctx.setLineDash([]);
+        corners.forEach(c => {
+            ctx.fillStyle = '#FFE600';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        ctx.restore();
+    }
+
+    function renderTextOverlay(ctx, width, height) {
+        renderSingleTextLine(
+            ctx,
+            state.topTextPart1,
+            state.topTextPart2,
+            state.topText,
+            state.topFontSize,
+            state.topPosY,
+            width,
+            'top'
+        );
+
+        renderSingleTextLine(
+            ctx,
+            state.bottomTextPart1,
+            state.bottomTextPart2,
+            state.bottomText,
+            state.bottomFontSize,
+            state.bottomPosY,
+            width,
+            'bottom'
+        );
+    }
+
+    function renderSingleTextLine(ctx, part1, part2, fullText, fontSize, posY, canvasWidth, targetName) {
+        ctx.save();
+        const fontName = state.fontFamily;
+        let drawFontSize = parseFloat(fontSize);
+        ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = state.strokeColor;
+        ctx.lineWidth = parseFloat(state.strokeWidth);
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+
+        const maxAllowedW = canvasWidth - 60; // 30px safe margin on left and right edges
+
+        if (state.colorMode === 'dual') {
+            const p1 = (part1 || '').trim();
+            const p2 = (part2 || '').trim();
+            if (!p1 && !p2) { ctx.restore(); return; }
+
+            // 1. Initial measurement at full font size
+            const getSpaceW = () => Math.max(14, Math.round(drawFontSize * 0.22)); // Proportional clean Khmer space
+            let w1 = p1 ? ctx.measureText(p1).width : 0;
+            let w2 = p2 ? ctx.measureText(p2).width : 0;
+            let spaceW = (p1 && p2) ? getSpaceW() : 0;
+            let measuredW = w1 + spaceW + w2;
+
+            // 2. Auto-scale font size down if text exceeds max allowed width
+            if (measuredW > maxAllowedW && measuredW > 0) {
+                const scale = maxAllowedW / measuredW;
+                drawFontSize = Math.max(14, Math.floor(drawFontSize * scale));
+                ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+                
+                // Re-measure accurately with updated font size
+                w1 = p1 ? ctx.measureText(p1).width : 0;
+                w2 = p2 ? ctx.measureText(p2).width : 0;
+                spaceW = (p1 && p2) ? getSpaceW() : 0;
+                measuredW = w1 + spaceW + w2;
+            }
+
+            if (targetName === 'top') {
+                state.topMeasuredWidth = measuredW;
+            } else if (targetName === 'bottom') {
+                state.bottomMeasuredWidth = measuredW;
+            }
+
+            if (state.shadowBlur > 0) {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+                ctx.shadowBlur = parseFloat(state.shadowBlur);
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 4;
+            }
+
+            const y = parseFloat(posY);
+            ctx.textAlign = 'left';
+
+            // Center starting position X safely
+            let startX = Math.max(30, (canvasWidth - measuredW) / 2);
+
+            // STEP 1: Draw ALL Strokes (Outlines) FIRST so Part 2 stroke never clips over Part 1 fill!
+            if (state.strokeWidth > 0) {
+                let xPtr = startX;
+                if (p1) {
+                    ctx.strokeText(p1, xPtr, y);
+                    xPtr += w1 + spaceW;
+                }
+                if (p2) {
+                    ctx.strokeText(p2, xPtr, y);
+                }
+            }
+
+            // STEP 2: Draw ALL Fills SECOND on top of the outlines!
+            let xPtr = startX;
+            if (p1) {
+                ctx.fillStyle = state.textColor1;
+                ctx.fillText(p1, xPtr, y);
+                xPtr += w1 + spaceW;
+            }
+            if (p2) {
+                ctx.fillStyle = state.textColor2;
+                ctx.fillText(p2, xPtr, y);
+            }
+        } else if (state.colorMode === 'gradient') {
+            const txt = (fullText || '').trim();
+            if (!txt) { ctx.restore(); return; }
+
+            let textW = ctx.measureText(txt).width;
+            if (textW > maxAllowedW && textW > 0) {
+                const scale = maxAllowedW / textW;
+                drawFontSize = Math.max(14, Math.floor(drawFontSize * scale));
+                ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+                textW = ctx.measureText(txt).width;
+            }
+
+            if (targetName === 'top') {
+                state.topMeasuredWidth = textW;
+            } else if (targetName === 'bottom') {
+                state.bottomMeasuredWidth = textW;
+            }
+
+            if (state.shadowBlur > 0) {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+                ctx.shadowBlur = parseFloat(state.shadowBlur);
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 4;
+            }
+
+            const y = parseFloat(posY);
+            ctx.textAlign = 'center';
+            const startX = Math.max(30, (canvasWidth - textW) / 2);
+
+            const grad = ctx.createLinearGradient(startX, 0, startX + textW, 0);
+            grad.addColorStop(0, state.textColor1);
+            grad.addColorStop(1, state.textColor2);
+
+            if (state.strokeWidth > 0) ctx.strokeText(txt, canvasWidth / 2, y);
+            ctx.fillStyle = grad;
+            ctx.fillText(txt, canvasWidth / 2, y);
+        } else {
+            const txt = (fullText || '').trim();
+            if (!txt) { ctx.restore(); return; }
+
+            let textW = ctx.measureText(txt).width;
+            if (textW > maxAllowedW && textW > 0) {
+                const scale = maxAllowedW / textW;
+                drawFontSize = Math.max(14, Math.floor(drawFontSize * scale));
+                ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+                textW = ctx.measureText(txt).width;
+            }
+
+            if (targetName === 'top') {
+                state.topMeasuredWidth = textW;
+            } else if (targetName === 'bottom') {
+                state.bottomMeasuredWidth = textW;
+            }
+
+            if (state.shadowBlur > 0) {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+                ctx.shadowBlur = parseFloat(state.shadowBlur);
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 4;
+            }
+
+            const y = parseFloat(posY);
+            ctx.textAlign = 'center';
+            if (state.strokeWidth > 0) ctx.strokeText(txt, canvasWidth / 2, y);
+            ctx.fillStyle = state.textColor1;
+            ctx.fillText(txt, canvasWidth / 2, y);
+        }
+
+        ctx.restore();
+    }
+
+    // --- Export Engine ---
+    window.exportSingleClip = function(id) {
+        const clip = state.clips.find(c => c.id === id);
+        if (clip) exportClipsQueue([clip]);
+    };
+
+    function exportAllClips() {
+        if (state.clips.length > 0) exportClipsQueue(state.clips);
+    }
+
+    async function exportClipsQueue(queue) {
+        if (state.isExporting) return;
+        state.isExporting = true;
+        state.cancelExportRequested = false;
+
+        elements.exportModal.classList.remove('hidden');
+
+        for (let i = 0; i < queue.length; i++) {
+            if (state.cancelExportRequested) break;
+            const clip = queue[i];
+            elements.exportStatusText.textContent = `កំពុង Export ${clip.name} (${i + 1}/${queue.length})...`;
+            await processSingleClipExport(clip, (pct) => {
+                const totalPct = Math.round(((i + pct / 100) / queue.length) * 100);
+                elements.exportProgressBar.style.width = `${totalPct}%`;
+                elements.exportPercentText.textContent = `${totalPct}%`;
+            });
+        }
+
+        state.isExporting = false;
+        elements.exportModal.classList.add('hidden');
+    }
+
+    function processSingleClipExport(clip, onProgress) {
+        return new Promise((resolve) => {
+            selectClipForEditing(clip.id);
+
+            const video = elements.hiddenVideo;
+            const canvas = elements.mainCanvas;
+
+            const origTime = video.currentTime;
+            video.currentTime = clip.startTime;
+
+            const stream = canvas.captureStream(30);
+
+            let audioTrack = null;
+            try {
+                if (!window.audioCtx) {
+                    window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    window.audioSrc = window.audioCtx.createMediaElementSource(video);
+                    window.audioDest = window.audioCtx.createMediaStreamDestination();
+                    window.audioSrc.connect(window.audioDest);
+                    window.audioSrc.connect(window.audioCtx.destination);
+                }
+                audioTrack = window.audioDest.stream.getAudioTracks()[0];
+                if (audioTrack) stream.addTrack(audioTrack);
+            } catch (err) {
+                console.warn('Audio export fallback:', err);
+            }
+
+            // Determine supported container & codec (Prefer MP4 for Windows compatibility)
+            let mimeType = 'video/mp4;codecs=avc1,mp4a';
+            let ext = 'mp4';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                if (MediaRecorder.isTypeSupported('video/mp4')) {
+                    mimeType = 'video/mp4';
+                    ext = 'mp4';
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+                    mimeType = 'video/webm;codecs=vp9,opus';
+                    ext = 'webm';
+                } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                    mimeType = 'video/webm';
+                    ext = 'webm';
+                } else {
+                    mimeType = '';
+                    ext = 'mp4';
+                }
+            }
+
+            const recorderOptions = mimeType ? { mimeType, videoBitsPerSecond: 3500000 } : { videoBitsPerSecond: 3500000 };
+            const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                video.pause();
+                video.currentTime = origTime;
+                
+                if (!state.cancelExportRequested && chunks.length > 0) {
+                    const blob = new Blob(chunks, { type: mediaRecorder.mimeType || mimeType || 'video/mp4' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+
+                    // Clean filename while preserving Khmer Unicode text
+                    let safeName = (clip.name || 'Clip')
+                        .replace(/[\\/:*?"<>|]/g, '_') // Replace illegal Windows filename chars only
+                        .replace(/\s+/g, '_')
+                        .trim();
+                    if (!safeName) safeName = 'Clip';
+
+                    a.download = `${safeName}_Short.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                }
+                resolve();
+            };
+
+            mediaRecorder.start(100);
+            video.play();
+
+            const checkInterval = setInterval(() => {
+                const elapsed = video.currentTime - clip.startTime;
+                const progress = Math.min(100, (elapsed / clip.duration) * 100);
+                onProgress(progress);
+
+                if (video.currentTime >= clip.endTime || state.cancelExportRequested || video.ended) {
+                    clearInterval(checkInterval);
+                    if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+                }
+            }, 100);
+        });
+    }
+
+    // Start App Engine
+    init();
+});

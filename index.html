@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khmer Video Clipper Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700;900&family=Kantumruy+Pro:ital,wght@0,400..700;1,400..700&family=Moul&family=Preahvihear&family=Siemreap&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=14.0">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo-icon">&#127916;</div>
+                <div class="brand-text">
+                    <h1>Khmer Video Clipper Pro</h1>
+                    <span class="sub-title">កាត់វីដេអូ & ដាក់អក្សរខ្មែរ</span>
+                </div>
+            </div>
+
+            <div class="step-nav">
+                <button id="step1TabBtn" class="step-btn active">
+                    <span class="step-num">១</span>
+                    <span>✂️ កាត់ Clip</span>
+                </button>
+                <div class="step-arrow">→</div>
+                <button id="step2TabBtn" class="step-btn">
+                    <span class="step-num">២</span>
+                    <span>🎨 កែអក្សរ</span>
+                    <span id="step2Badge" class="badge-count">0</span>
+                </button>
+            </div>
+
+            <div class="header-actions">
+                <label for="videoUploadInput" class="btn btn-primary btn-upload">
+                    <span>📁 ជ្រើសរើសវីដេអូ</span>
+                    <input type="file" id="videoUploadInput" accept="video/*" hidden>
+                </label>
+            </div>
+        </header>
+
+        <div id="dropzoneOverlay" class="dropzone-overlay">
+            <div class="dropzone-card">
+                <div class="upload-icon">&#127909;</div>
+                <h2>ទម្លាក់វីដេអូនៅទីនេះ</h2>
+                <p>ឬចុចដើម្បីជ្រើសរើសវីដេអូ</p>
+                <button class="btn btn-primary btn-lg" onclick="document.getElementById('videoUploadInput').click()">
+                    📁 ជ្រើសរើសវីដេអូ
+                </button>
+            </div>
+        </div>
+
+        <main id="screen1View" class="workspace screen-layout-1">
+            <aside class="sidebar left-sidebar">
+                <div class="panel-section">
+                    <h3 class="panel-title">📁 ឯកសារ</h3>
+                    <div id="fileInfoBox" class="file-info-box empty">
+                        <p class="placeholder-text">សូមជ្រើសរើសវីដេអូ...</p>
+                    </div>
+                </div>
+
+                <div class="panel-section clips-section flex-grow">
+                    <div class="section-header">
+                        <h3 class="panel-title">🎬 រៀបលំដាប់ Clips (<span id="clipCount">0</span>)</h3>
+                    </div>
+                    <div id="clipsListScreen1" class="clips-list">
+                        <div class="empty-clips-notice">
+                            <span class="icon">&#127916;</span>
+                            <p>មិនទាន់មាន Clip</p>
+                            <small>កំណត់ <strong>Set In</strong> &amp; <strong>Set Out</strong> រួចចុច <strong>+ បន្ថែម</strong></small>
+                        </div>
+                    </div>
+                    <div class="panel-footer-box">
+                        <button id="goToStep2Btn" class="btn btn-primary btn-lg btn-block" disabled>
+                            ➡️ ទៅកែអក្សរ
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="stage-container trimmer-stage">
+                <div class="video-player-container">
+                    <video id="mainVideoPlayer" controls playsinline></video>
+                </div>
+
+                <div class="timeline-panel">
+                    <div class="clip-name-bar">
+                        <div class="clip-name-input-group">
+                            <label for="clipTitleInput">🏷️ ចំណងជើង Clip:</label>
+                            <input type="text" id="clipTitleInput" class="form-control clip-title-input" placeholder="ឧ. Clip 1 - ភាគ១...">
+                        </div>
+                        <div class="clip-action-btns">
+                            <button id="addClipBtn" class="btn btn-success btn-lg btn-add-clip" disabled title="Shortcut: គ្រាប់ចុច A">
+                                ➕ បន្ថែម Clip [A]
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="trim-actions-bar">
+                        <div class="trim-inputs">
+                            <div class="trim-btn-group">
+                                <span id="inTimeDisplay" class="badge badge-in">00:00:00.00</span>
+                                <button id="setInBtn" class="btn btn-lg btn-in" disabled title="Shortcut: គ្រាប់ចុច S">
+                                    🚩 Set In [S]
+                                </button>
+                            </div>
+                            <div class="trim-btn-group">
+                                <span id="outTimeDisplay" class="badge badge-out">00:00:00.00</span>
+                                <button id="setOutBtn" class="btn btn-lg btn-out" disabled title="Shortcut: គ្រាប់ចុច E">
+                                    🏁 Set Out [E]
+                                </button>
+                            </div>
+                            <div class="duration-badge-group">
+                                <label>រយៈពេល:</label>
+                                <span id="clipDurationDisplay" class="badge badge-duration">00:00.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scrubber-container expanded-scrubber">
+                        <div id="timelineTrack" class="timeline-track">
+                            <div id="trimSelectionRange" class="trim-selection-range"></div>
+                            <div id="playhead" class="playhead"></div>
+                        </div>
+                        <input type="range" id="timelineSlider" min="0" max="100" value="0" step="0.01" disabled>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <main id="screen2View" class="workspace screen-layout-2 hidden">
+            <aside class="sidebar left-sidebar">
+                <div class="panel-section">
+                    <h3 class="panel-title">🎬 រៀបលំដាប់ Clips</h3>
+                    <p class="help-text">ចុច ▲ ▼ ដើម្បីតំរៀបលំដាប់</p>
+                </div>
+                <div class="panel-section clips-section flex-grow">
+                    <div id="clipsListScreen2" class="clips-list"></div>
+                </div>
+                <div class="panel-footer-box">
+                    <button id="backToStep1Btn" class="btn btn-secondary btn-md btn-block">
+                        ⬅️ ត្រឡប់ទៅកាត់ Clips
+                    </button>
+                </div>
+            </aside>
+
+            <section class="stage-container studio-stage">
+                <div class="studio-top-bar">
+                    <div class="aspect-ratio-selector">
+                        <label>ទម្រង់:</label>
+                        <div class="segmented-control">
+                            <button class="aspect-btn active" data-ratio="9:16">📱 9:16</button>
+                            <button class="aspect-btn" data-ratio="1:1">🔲 1:1</button>
+                            <button class="aspect-btn" data-ratio="16:9">🖥️ 16:9</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="canvas-viewport">
+                    <div id="canvasWrapper" class="canvas-wrapper aspect-9-16">
+                        <canvas id="mainCanvas" width="1080" height="1920"></canvas>
+                        <input type="text" id="canvasInlineInput" class="canvas-inline-input hidden" placeholder="វាយអក្សរ...">
+                        <div id="canvasLoadingSpinner" class="canvas-loader hidden">
+                            <div class="spinner"></div>
+                            <span>កំពុង Export...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="studio-bottom-panel">
+                    <div class="studio-scrubber-bar">
+                        <span id="studioClipTimeDisplay" class="badge">00:00.00 / 00:00.00</span>
+                        <input type="range" id="studioClipScrubber" min="0" max="100" value="0" step="0.05" class="studio-slider" title="អូសដើម្បីមើល / Playback Clip ចុះឡើង">
+                    </div>
+                    <div class="studio-controls-row">
+                        <div class="clip-play-info">
+                            <span id="activeClipNameBadge" class="badge badge-duration">Clip #1</span>
+                            <div class="playback-controls-group">
+                                <button id="seekBackBtn" class="btn btn-icon btn-secondary btn-sm">⏪ -5s</button>
+                                <button id="canvasPlayPauseBtn" class="btn btn-icon btn-play-pause">▶ Play</button>
+                                <button id="seekForwardBtn" class="btn btn-icon btn-secondary btn-sm">⏩ +5s</button>
+                            </div>
+                        </div>
+                        <div class="studio-export-btns">
+                            <button id="exportActiveClipBtn" class="btn btn-primary btn-md">⚡ Export Clip នេះ</button>
+                            <button id="exportAllClipsStudioBtn" class="btn btn-success btn-md">📦 Export ទាំងអស់</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="sidebar right-sidebar">
+                <div class="sidebar-global-actions" style="padding: 10px 12px 4px 12px;">
+                    <button id="applyToAllClipsBtn" class="btn btn-primary btn-block btn-apply-all" onclick="applyStyleToAllClips()">
+                        📋 អនុវត្តម៉ូដទៅ Clips ទាំងអស់
+                    </button>
+                </div>
+
+                <div class="sidebar-tabs">
+                    <button class="tab-btn active" data-tab="textTab">✍️ អក្សរ</button>
+                    <button class="tab-btn" data-tab="colorFontTab">🎨 ពណ៌ & Font</button>
+                    <button class="tab-btn" data-tab="layoutTab">🖼️ Layout</button>
+                </div>
+
+                <div class="tab-contents">
+
+                    <div id="textTab" class="tab-content active">
+                        <div class="control-card">
+                            <div class="card-header-flex">
+                                <h4 class="card-title">🏷️ ចំណងជើង Clip (Clip Title)</h4>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="text" id="activeClipTitleInput" class="form-control" placeholder="វាយចំណងជើង Clip ទីនេះ...">
+                            </div>
+                        </div>
+
+                        <div class="control-card">
+                            <div class="card-header-flex">
+                                <h4 class="card-title">📌 អក្សរខាងលើ</h4>
+                                <button class="btn btn-outline btn-xs" onclick="clearTopText()">🗑️ លុប</button>
+                            </div>
+                            <div id="topTextSingleGroup" class="form-group hidden">
+                                <input type="text" id="topTextInput" class="form-control" value="អក្សរខាងលើ" placeholder="អក្សរខាងលើ...">
+                            </div>
+                            <div id="topTextDualGroup" class="dual-text-stack">
+                                <div class="form-group">
+                                    <label id="topPart1Label" style="color:#FFE600;">&#9654; ពាក្យទី១ (លឿង):</label>
+                                    <input type="text" id="topTextPart1Input" class="form-control" value="ដើម" placeholder="ពាក្យទី១...">
+                                </div>
+                                <div class="form-group">
+                                    <label id="topPart2Label" style="color:#FF5722;">&#9654; ពាក្យទី២ (ក្រហម):</label>
+                                    <input type="text" id="topTextPart2Input" class="form-control" value="ត្នោត" placeholder="ពាក្យទី២...">
+                                </div>
+                            </div>
+                            <div id="topWordChips" class="word-chips-container"></div>
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <label>ទំហំ:</label>
+                                    <input type="range" id="topFontSizeInput" min="20" max="140" value="65">
+                                    <span id="topFontSizeVal" class="val-badge">65px</span>
+                                </div>
+                                <div class="form-group col">
+                                    <label>ទីតាំង Y:</label>
+                                    <input type="range" id="topPosYInput" min="20" max="900" value="160">
+                                    <span id="topPosYVal" class="val-badge">160px</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="control-card">
+                            <div class="card-header-flex">
+                                <h4 class="card-title">📌 អក្សរខាងក្រោម</h4>
+                                <button class="btn btn-outline btn-xs" onclick="clearBottomText()">🗑️ លុប</button>
+                            </div>
+                            <div id="bottomTextSingleGroup" class="form-group hidden">
+                                <input type="text" id="bottomTextInput" class="form-control" value="អក្សរខាងក្រោម" placeholder="អក្សរខាងក្រោម...">
+                            </div>
+                            <div id="bottomTextDualGroup" class="dual-text-stack">
+                                <div class="form-group">
+                                    <label id="bottomPart1Label" style="color:#FFE600;">&#9654; ពាក្យទី១ (លឿង):</label>
+                                    <input type="text" id="bottomTextPart1Input" class="form-control" value="អក្សរ" placeholder="ពាក្យទី១...">
+                                </div>
+                                <div class="form-group">
+                                    <label id="bottomPart2Label" style="color:#FF5722;">&#9654; ពាក្យទី២ (ក្រហម):</label>
+                                    <input type="text" id="bottomTextPart2Input" class="form-control" value="ក្រោម" placeholder="ពាក្យទី២...">
+                                </div>
+                            </div>
+                            <div id="bottomWordChips" class="word-chips-container"></div>
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <label>ទំហំ:</label>
+                                    <input type="range" id="bottomFontSizeInput" min="20" max="120" value="65">
+                                    <span id="bottomFontSizeVal" class="val-badge">65px</span>
+                                </div>
+                                <div class="form-group col">
+                                    <label>ទីតាំង Y:</label>
+                                    <input type="range" id="bottomPosYInput" min="400" max="1900" value="1750">
+                                    <span id="bottomPosYVal" class="val-badge">1750px</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="colorFontTab" class="tab-content">
+                        <div class="control-card">
+                            <h4 class="card-title">🎨 ម៉ូដស៊ុម & Font</h4>
+                            <div class="form-group">
+                                <label>Font ខ្មែរ:</label>
+                                <select id="fontFamilySelect" class="form-control">
+                                    <option value="Moul" selected>Moul (ម៉ូល)</option>
+                                    <option value="Kantumruy Pro">Kantumruy Pro</option>
+                                    <option value="Battambang">Battambang</option>
+                                    <option value="Preahvihear">Preahvihear</option>
+                                    <option value="Siemreap">Siemreap</option>
+                                    <option value="sans-serif">System Default</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <label>ពណ៌ស៊ុម:</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="strokeColorInput" value="#FFFFFF">
+                                        <span id="strokeColorVal" class="color-val">#FFFFFF (ស)</span>
+                                    </div>
+                                </div>
+                                <div class="form-group col">
+                                    <label>កម្រាស់ស៊ុម:</label>
+                                    <input type="range" id="strokeWidthInput" min="0" max="30" value="12">
+                                    <span id="strokeWidthVal" class="val-badge">12px</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Glow Shadow:</label>
+                                <input type="range" id="shadowBlurInput" min="0" max="30" value="10">
+                                <span id="shadowBlurVal" class="val-badge">10px</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="layoutTab" class="tab-content">
+                        <div class="control-card">
+                            <h4 class="card-title">🖼️ ផ្ទៃខាងក្រោយ</h4>
+                            <div class="form-group">
+                                <label>របៀបផ្ទៃ:</label>
+                                <select id="bgModeSelect" class="form-control">
+                                    <option value="blur" selected>✨ Blur Video</option>
+                                    <option value="color">🎨 ពណ៌ផ្ទៃ</option>
+                                    <option value="gradient">🌈 Gradient</option>
+                                </select>
+                            </div>
+                            <div id="blurConfig" class="form-group">
+                                <label>កម្រិត Blur:</label>
+                                <input type="range" id="blurRadiusInput" min="5" max="50" value="25">
+                                <span id="blurRadiusVal" class="val-badge">25px</span>
+                            </div>
+                            <div id="bgColorConfig" class="form-group hidden">
+                                <label>ជ្រើសពណ៌ផ្ទៃ:</label>
+                                <input type="color" id="bgColorInput" value="#111827">
+                            </div>
+                        </div>
+
+                        <div class="control-card">
+                            <h4 class="card-title">📐 ទំហំ & ទីតាំងវីដេអូ</h4>
+                            <div class="form-group">
+                                <label>ទំហំ (Scale %):</label>
+                                <input type="range" id="videoScaleInput" min="50" max="150" value="100">
+                                <span id="videoScaleVal" class="val-badge">100%</span>
+                            </div>
+                            <div class="form-group">
+                                <label>ទីតាំង Y Offset:</label>
+                                <input type="range" id="videoOffsetYInput" min="-300" max="300" value="0">
+                                <span id="videoOffsetYVal" class="val-badge">0px</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <video id="hiddenVideo" playsinline style="display:none;"></video>
+
+    <div id="exportModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>⚡ កំពុង Export...</h3>
+            </div>
+            <div class="modal-body">
+                <div class="progress-bar-container">
+                    <div id="exportProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+                <div class="progress-stats">
+                    <span id="exportStatusText">រៀបចំ...</span>
+                    <span id="exportPercentText">0%</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelExportBtn" class="btn btn-danger btn-sm">❌ បោះបង់</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="toast-notification hidden"></div>
+
+    <script src="app.js?v=38.0"></script>
+</body>
+</html>
