@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const val = e.target.value;
                 const clip = state.clips.find(c => c.id === state.activeClipId);
                 if (clip) {
-                    clip.name = val || `Clip #${clip.id}`;
+                    clip.name = val || 'Clip';
                     if (elements.activeClipNameBadge) {
                         elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
                     }
