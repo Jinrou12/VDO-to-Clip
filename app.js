@@ -162,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         blurRadiusInput: document.getElementById('blurRadiusInput'),
         blurRadiusVal: document.getElementById('blurRadiusVal'),
         bgColorInput: document.getElementById('bgColorInput'),
+        bgColorVal: document.getElementById('bgColorVal'),
         videoScaleInput: document.getElementById('videoScaleInput'),
         videoScaleVal: document.getElementById('videoScaleVal'),
         videoOffsetYInput: document.getElementById('videoOffsetYInput'),
@@ -444,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         bindInput(elements.blurRadiusInput, 'blurRadius', elements.blurRadiusVal, 'px');
-        bindInput(elements.bgColorInput, 'bgColor');
+        bindInput(elements.bgColorInput, 'bgColor', elements.bgColorVal);
         bindInput(elements.videoScaleInput, 'videoScale', elements.videoScaleVal, '%');
         bindInput(elements.videoOffsetYInput, 'videoOffsetY', elements.videoOffsetYVal, 'px');
 
@@ -816,6 +817,21 @@ document.addEventListener('DOMContentLoaded', () => {
         syncActiveClipProperty('bottomTextPart2', '');
     };
 
+    function openColorPicker(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        if (typeof input.showPicker === 'function') {
+            try {
+                input.showPicker();
+            } catch (e) {
+                input.click();
+            }
+        } else {
+            input.click();
+        }
+    }
+    window.openColorPicker = openColorPicker;
+
     function renderWordColorChips() {
         const topP1 = (state.topTextPart1 || 'ដើម').trim();
         const topP2 = (state.topTextPart2 || 'ត្នោត').trim();
@@ -825,11 +841,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (elements.topWordChips) {
             elements.topWordChips.innerHTML = `
-                <span class="word-chip" onclick="document.getElementById('textColor1Input').click()" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                <span class="word-chip" onclick="openColorPicker('textColor1Input')" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
                     <span class="word-chip-color-dot" style="background:${state.textColor1};"></span>
                     <span>${topP1 || 'ពាក្យទី១'}</span> (ពណ៌ទី១)
                 </span>
-                <span class="word-chip" onclick="document.getElementById('textColor2Input').click()" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                <span class="word-chip" onclick="openColorPicker('textColor2Input')" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
                     <span class="word-chip-color-dot" style="background:${state.textColor2};"></span>
                     <span>${topP2 || 'ពាក្យទី២'}</span> (ពណ៌ទី២)
                 </span>
@@ -844,11 +860,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (elements.bottomWordChips) {
             elements.bottomWordChips.innerHTML = `
-                <span class="word-chip" onclick="document.getElementById('textColor1Input').click()" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                <span class="word-chip" onclick="openColorPicker('textColor1Input')" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
                     <span class="word-chip-color-dot" style="background:${state.textColor1};"></span>
                     <span>${btmP1 || 'ពាក្យទី១'}</span> (ពណ៌ទី១)
                 </span>
-                <span class="word-chip" onclick="document.getElementById('textColor2Input').click()" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                <span class="word-chip" onclick="openColorPicker('textColor2Input')" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
                     <span class="word-chip-color-dot" style="background:${state.textColor2};"></span>
                     <span>${btmP2 || 'ពាក្យទី២'}</span> (ពណ៌ទី២)
                 </span>

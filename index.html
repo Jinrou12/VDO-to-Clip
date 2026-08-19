@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700;900&family=Kantumruy+Pro:ital,wght@0,400..700;1,400..700&family=Moul&family=Preahvihear&family=Siemreap&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=14.0">
+    <link rel="stylesheet" href="styles.css?v=15.0">
 </head>
 <body class="dark-theme">
     <div class="app-container">
@@ -278,17 +278,17 @@
                             <div class="form-row">
                                 <div class="form-group col">
                                     <label>ពណ៌ទី១ (ពាក្យទី១):</label>
-                                    <div class="color-picker-wrapper">
+                                    <label class="color-picker-wrapper" for="textColor1Input">
                                         <input type="color" id="textColor1Input" value="#FFE600">
                                         <span id="textColor1Val" class="color-val">#FFE600</span>
-                                    </div>
+                                    </label>
                                 </div>
                                 <div id="color2Group" class="form-group col">
                                     <label>ពណ៌ទី២ (ពាក្យទី២):</label>
-                                    <div class="color-picker-wrapper">
+                                    <label class="color-picker-wrapper" for="textColor2Input">
                                         <input type="color" id="textColor2Input" value="#FF5722">
                                         <span id="textColor2Val" class="color-val">#FF5722</span>
-                                    </div>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -309,10 +309,10 @@
                             <div class="form-row">
                                 <div class="form-group col">
                                     <label>ពណ៌ស៊ុម:</label>
-                                    <div class="color-picker-wrapper">
+                                    <label class="color-picker-wrapper" for="strokeColorInput">
                                         <input type="color" id="strokeColorInput" value="#FFFFFF">
                                         <span id="strokeColorVal" class="color-val">#FFFFFF (ស)</span>
-                                    </div>
+                                    </label>
                                 </div>
                                 <div class="form-group col">
                                     <label>កម្រាស់ស៊ុម:</label>
@@ -346,7 +346,10 @@
                             </div>
                             <div id="bgColorConfig" class="form-group hidden">
                                 <label>ជ្រើសពណ៌ផ្ទៃ:</label>
-                                <input type="color" id="bgColorInput" value="#111827">
+                                <label class="color-picker-wrapper" for="bgColorInput">
+                                    <input type="color" id="bgColorInput" value="#111827">
+                                    <span id="bgColorVal" class="color-val">#111827</span>
+                                </label>
                             </div>
                         </div>
 
@@ -395,6 +398,6 @@
     <div id="toastNotification" class="toast-notification hidden"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=42.0"></script>
+    <script src="app.js?v=43.0"></script>
 </body>
 </html>
