@@ -294,6 +294,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Set In / Set Out Trimming
         elements.setInBtn.addEventListener('click', () => {
+            document.activeElement?.blur();
+            pushStateToHistory();
             state.trimIn = elements.mainVideoPlayer.currentTime;
             if (state.trimOut <= state.trimIn) {
                 state.trimOut = Math.min(state.duration, state.trimIn + 30);
@@ -303,11 +305,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         elements.setOutBtn.addEventListener('click', () => {
             if (elements.mainVideoPlayer.currentTime > state.trimIn) {
+                document.activeElement?.blur();
+                pushStateToHistory();
                 state.trimOut = elements.mainVideoPlayer.currentTime;
+                updateTrimUI();
             } else {
                 alert('ចំនុចបញ្ចប់ [Set Out] ត្រូវតែធំជាងចំនុចចាប់ផ្តើម [Set In]!');
             }
-            updateTrimUI();
         });
 
         // Add Clip
@@ -382,6 +386,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Color Mode & Text Controls Binding
         elements.colorModeSelect?.addEventListener('change', (e) => {
+            if (e._fromSync) return; // skip history for programmatic syncs
+            pushStateToHistory();
             state.colorMode = e.target.value;
             const isDual = state.colorMode === 'dual';
             const isSingle = state.colorMode === 'single';
@@ -429,6 +435,8 @@ document.addEventListener('DOMContentLoaded', () => {
         bindInput(elements.shadowBlurInput, 'shadowBlur', elements.shadowBlurVal, 'px');
 
         elements.bgModeSelect?.addEventListener('change', (e) => {
+            if (e._fromSync) return;
+            pushStateToHistory();
             state.bgMode = e.target.value;
             elements.blurConfig?.classList.toggle('hidden', state.bgMode !== 'blur');
             elements.bgColorConfig?.classList.toggle('hidden', state.bgMode !== 'color');
@@ -547,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cornerHit = hitTestCornerHandle(x, y);
             if (cornerHit) {
                 e.preventDefault();
+                pushStateToHistory(); // snapshot before resize
                 state.isResizingText = true;
                 state.resizeTarget = cornerHit.target;
                 state.resizeHandle = cornerHit.handle;
@@ -561,6 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = hitTestText(x, y) || (y < state.canvasHeight / 2 ? 'top' : 'bottom');
             if (target) {
                 e.preventDefault();
+                pushStateToHistory(); // snapshot before drag
                 state.isDraggingText = true;
                 state.dragTarget = target;
                 state.hoveredTextTarget = target;
@@ -871,7 +881,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function bindInput(inputEl, key, displayEl = null, suffix = '') {
         if (!inputEl) return;
+        // Capture snapshot on focus (before any change is made)
+        let _histPushed = false;
+        inputEl.addEventListener('focus', () => { _histPushed = false; });
         inputEl.addEventListener('input', (e) => {
+            if (!_histPushed) {
+                pushStateToHistory();
+                _histPushed = true;
+            }
             let val = e.target.value;
             if (inputEl.type === 'range') val = parseFloat(val);
             state[key] = val;
@@ -911,6 +928,8 @@ document.addEventListener('DOMContentLoaded', () => {
         state.duration = elements.mainVideoPlayer.duration;
         state.trimIn = 0;
         state.trimOut = Math.min(state.duration, 180);
+        stateHistory.length = 0;
+        pushStateToHistory(); // Record initial base state
         updateTrimUI();
     }
 
@@ -988,14 +1007,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const stateHistory = [];
     const MAX_HISTORY = 30;
 
+    // Keys of state that are fully serialisable and should be part of every undo snapshot
+    const UNDO_STATE_KEYS = [
+        'trimIn', 'trimOut',
+        'aspectRatio', 'colorMode', 'textColor1', 'textColor2',
+        'topText', 'topTextPart1', 'topTextPart2', 'topFontSize', 'topPosY',
+        'bottomText', 'bottomTextPart1', 'bottomTextPart2', 'bottomFontSize', 'bottomPosY',
+        'fontFamily', 'strokeColor', 'strokeWidth', 'shadowBlur',
+        'bgMode', 'blurRadius', 'bgColor', 'videoScale', 'videoOffsetY'
+    ];
+
     function pushStateToHistory() {
         const snapshot = {
             clips: JSON.parse(JSON.stringify(state.clips)),
             activeClipId: state.activeClipId,
-            clipCounter: state.clipCounter
+            clipCounter: state.clipCounter,
+            playerTime: (elements.mainVideoPlayer && !isNaN(elements.mainVideoPlayer.currentTime)) ? elements.mainVideoPlayer.currentTime : state.currentTime
         };
+        UNDO_STATE_KEYS.forEach(k => { snapshot[k] = state[k]; });
         stateHistory.push(snapshot);
         if (stateHistory.length > MAX_HISTORY) stateHistory.shift();
+    }
+
+    function restoreStateFromSnapshot(prev) {
+        state.clips = prev.clips;
+        state.activeClipId = prev.activeClipId;
+        state.clipCounter = prev.clipCounter;
+        UNDO_STATE_KEYS.forEach(k => { if (prev[k] !== undefined) state[k] = prev[k]; });
     }
 
     function undoLastAction() {
@@ -1003,20 +1041,47 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('⚠️ គ្មានសកម្មភាពអាច Undo ទៀតទេ!');
             return;
         }
-        const prev = stateHistory.pop();
-        state.clips = prev.clips;
-        state.activeClipId = prev.activeClipId;
-        state.clipCounter = prev.clipCounter;
 
-        if (state.activeClipId && state.clips.some(c => c.id === state.activeClipId)) {
-            selectClipForEditing(state.activeClipId);
-        } else if (state.clips.length > 0) {
-            selectClipForEditing(state.clips[0].id);
-        } else {
-            state.activeClipId = null;
+        // Pop last state if history has more than 1 item, or restore initial base state if length === 1
+        const prev = stateHistory.length > 1 ? stateHistory.pop() : stateHistory[0];
+        restoreStateFromSnapshot(prev);
+
+        const currentScreen = state.currentScreen;
+        if (currentScreen === 1) {
+            // Restore trimmer UI on Screen 1
+            updateTrimUI();
+            if (elements.mainVideoPlayer && state.duration > 0) {
+                const targetTime = (prev.playerTime !== undefined) ? prev.playerTime : state.trimIn;
+                elements.mainVideoPlayer.currentTime = targetTime;
+                state.currentTime = targetTime;
+                updatePlayheadPosition();
+            }
             renderClipsList();
+        } else {
+            // Restore full studio UI on Screen 2
+            if (state.activeClipId && state.clips.some(c => c.id === state.activeClipId)) {
+                // Reload active clip data into state then re-sync inspector
+                const clip = state.clips.find(c => c.id === state.activeClipId);
+                if (clip) {
+                    // Overwrite state with clip data (which was already restored from snapshot)
+                    state.trimIn = clip.startTime;
+                    state.trimOut = clip.endTime;
+                }
+                syncInspectorUI();
+                renderClipsList();
+            } else if (state.clips.length > 0) {
+                selectClipForEditing(state.clips[0].id, false);
+            } else {
+                state.activeClipId = null;
+                renderClipsList();
+            }
         }
-        showToast('⏪ បានត្រឡប់មកវិញ (Undo Successful)');
+
+        if (stateHistory.length <= 1) {
+            showToast('⏪ បានត្រឡប់ទៅចំនុចដើមដំបូង (Restored to Original Start)');
+        } else {
+            showToast('⏪ បានត្រឡប់មកវិញ (Undo Successful)');
+        }
     }
 
     function showToast(msg) {
@@ -1127,11 +1192,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Ctrl+Z / Cmd+Z (keyCode 90): Undo Last Action
-        if ((e.ctrlKey || e.metaKey) && (code === 'KeyZ' || key === 'z' || key === 'ដ' || keyCode === 90)) {
+        if ((e.ctrlKey || e.metaKey) && (code === 'KeyZ' || key === 'z' || key === 'ដ' || key === 'ឆ' || keyCode === 90 || keyCode === 231)) {
             e.preventDefault();
             undoLastAction();
         }
     }
+
+    window.undoLastAction = undoLastAction;
 
     // Register with capture = true so window catches keypresses before video elements swallow them!
     window.addEventListener('keydown', handleGlobalKeyDown, true);
@@ -1410,7 +1477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (elements.clipsListScreen2) elements.clipsListScreen2.innerHTML = renderHTML(true);
     }
 
-    window.selectClipForEditing = function(id) {
+    window.selectClipForEditing = function(id, autoSwitchScreen = true) {
         const clip = state.clips.find(c => c.id === id);
         if (!clip) return;
 
@@ -1464,14 +1531,18 @@ document.addEventListener('DOMContentLoaded', () => {
         syncInspectorUI();
         renderClipsList();
 
-        // Switch to Screen 2 Studio when user selects a clip to edit
-        switchScreen(2);
+        // Switch to Screen 2 Studio only if requested
+        if (autoSwitchScreen) {
+            switchScreen(2);
+        }
 
         // Always restart video from this clip's start time (fixes switching clips)
         elements.hiddenVideo.currentTime = state.trimIn;
-        elements.hiddenVideo.play().catch(() => {});
-        state.isPlaying = true;
-        updatePlayPauseBtn();
+        if (autoSwitchScreen) {
+            elements.hiddenVideo.play().catch(() => {});
+            state.isPlaying = true;
+            updatePlayPauseBtn();
+        }
     };
 
     function syncInspectorUI() {
@@ -1482,7 +1553,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (elements.colorModeSelect) {
             elements.colorModeSelect.value = state.colorMode;
-            elements.colorModeSelect.dispatchEvent(new Event('change'));
+            const evtColorMode = new Event('change');
+            evtColorMode._fromSync = true;
+            elements.colorModeSelect.dispatchEvent(evtColorMode);
         }
         if (elements.textColor1Input) elements.textColor1Input.value = state.textColor1;
         if (elements.textColor2Input) elements.textColor2Input.value = state.textColor2;
@@ -1512,7 +1585,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (elements.fontFamilySelect) elements.fontFamilySelect.value = state.fontFamily;
-        if (elements.strokeColorInput) elements.strokeColorInput.value = state.strokeColor;
+        if (elements.strokeColorInput) {
+            elements.strokeColorInput.value = state.strokeColor;
+            if (elements.strokeColorVal) elements.strokeColorVal.textContent = state.strokeColor;
+        }
         if (elements.strokeWidthInput) {
             elements.strokeWidthInput.value = state.strokeWidth;
             if (elements.strokeWidthVal) elements.strokeWidthVal.textContent = state.strokeWidth + 'px';
@@ -1524,7 +1600,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (elements.bgModeSelect) {
             elements.bgModeSelect.value = state.bgMode;
-            elements.bgModeSelect.dispatchEvent(new Event('change'));
+            const evtBgMode = new Event('change');
+            evtBgMode._fromSync = true;
+            elements.bgModeSelect.dispatchEvent(evtBgMode);
         }
         if (elements.blurRadiusInput) {
             elements.blurRadiusInput.value = state.blurRadius;
@@ -1860,25 +1938,81 @@ document.addEventListener('DOMContentLoaded', () => {
         state.cancelExportRequested = false;
 
         elements.exportModal.classList.remove('hidden');
+        elements.exportProgressBar.style.width = '0%';
+        elements.exportPercentText.textContent = '0%';
+
+        const isZipExport = queue.length > 1;
+        const exportedFiles = [];
 
         for (let i = 0; i < queue.length; i++) {
             if (state.cancelExportRequested) break;
             const clip = queue[i];
             elements.exportStatusText.textContent = `កំពុង Export ${clip.name} (${i + 1}/${queue.length})...`;
-            await processSingleClipExport(clip, (pct) => {
-                const totalPct = Math.round(((i + pct / 100) / queue.length) * 100);
+            
+            const fileData = await processSingleClipExport(clip, (pct) => {
+                const totalPct = Math.round(((i + pct / 100) / queue.length) * (isZipExport ? 80 : 100));
                 elements.exportProgressBar.style.width = `${totalPct}%`;
                 elements.exportPercentText.textContent = `${totalPct}%`;
-            });
+            }, !isZipExport);
+
+            if (fileData && fileData.blob) {
+                exportedFiles.push(fileData);
+            }
+        }
+
+        if (isZipExport && !state.cancelExportRequested && exportedFiles.length > 0) {
+            elements.exportStatusText.textContent = `📦 កំពុងបង្កើត File ZIP...`;
+            elements.exportProgressBar.style.width = '85%';
+            elements.exportPercentText.textContent = '85%';
+
+            if (typeof JSZip !== 'undefined') {
+                const zip = new JSZip();
+                exportedFiles.forEach((file, idx) => {
+                    let filename = `${file.safeName}_Short.${file.ext}`;
+                    zip.file(filename, file.blob);
+                });
+
+                const zipBlob = await zip.generateAsync({ type: 'blob' }, (metadata) => {
+                    const zipPct = 85 + Math.round((metadata.percent / 100) * 15);
+                    elements.exportProgressBar.style.width = `${zipPct}%`;
+                    elements.exportPercentText.textContent = `${zipPct}%`;
+                });
+
+                const url = URL.createObjectURL(zipBlob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `Khmer_Clips_All.zip`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            } else {
+                exportedFiles.forEach(file => {
+                    const url = URL.createObjectURL(file.blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${file.safeName}_Short.${file.ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                });
+            }
         }
 
         state.isExporting = false;
         elements.exportModal.classList.add('hidden');
     }
 
-    function processSingleClipExport(clip, onProgress) {
+    function processSingleClipExport(clip, onProgress, autoDownload = true) {
         return new Promise((resolve) => {
-            selectClipForEditing(clip.id);
+            selectClipForEditing(clip.id, false);
 
             const video = elements.hiddenVideo;
             const canvas = elements.mainCanvas;
@@ -1934,13 +2068,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 video.pause();
                 video.currentTime = origTime;
                 
+                let result = null;
                 if (!state.cancelExportRequested && chunks.length > 0) {
                     const blob = new Blob(chunks, { type: mediaRecorder.mimeType || mimeType || 'video/mp4' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-
+                    
                     // Clean filename while preserving Khmer Unicode text
                     let safeName = (clip.name || 'Clip')
                         .replace(/[\\/:*?"<>|]/g, '_') // Replace illegal Windows filename chars only
@@ -1948,15 +2079,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         .trim();
                     if (!safeName) safeName = 'Clip';
 
-                    a.download = `${safeName}_Short.${ext}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 100);
+                    result = { blob, safeName, ext };
+
+                    if (autoDownload) {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = `${safeName}_Short.${ext}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(() => {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        }, 100);
+                    }
                 }
-                resolve();
+                resolve(result);
             };
 
             mediaRecorder.start(100);

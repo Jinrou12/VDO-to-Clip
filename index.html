@@ -113,6 +113,11 @@
                                     🏁 Set Out [E]
                                 </button>
                             </div>
+                            <div class="trim-btn-group">
+                                <button id="undoTrimBtn" class="btn btn-lg btn-secondary" onclick="window.undoLastAction && window.undoLastAction()" title="Shortcut: Ctrl + Z (ត្រឡប់ថយក្រោយ)">
+                                    ↩️ Undo [Ctrl+Z]
+                                </button>
+                            </div>
                             <div class="duration-badge-group">
                                 <label>រយៈពេល:</label>
                                 <span id="clipDurationDisplay" class="badge badge-duration">00:00.00</span>
@@ -261,6 +266,34 @@
 
                     <div id="colorFontTab" class="tab-content">
                         <div class="control-card">
+                            <h4 class="card-title">🎨 ពណ៌អក្សរ (Text Colors)</h4>
+                            <div class="form-group">
+                                <label>របៀបពណ៌:</label>
+                                <select id="colorModeSelect" class="form-control">
+                                    <option value="dual" selected>🎨 ពណ៌២ខ្ទង់ (Dual 2-Color)</option>
+                                    <option value="single">🖌️ ពណ៌តែមួយ (Single Color)</option>
+                                    <option value="gradient">🌈 Gradient</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <label>ពណ៌ទី១ (ពាក្យទី១):</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="textColor1Input" value="#FFE600">
+                                        <span id="textColor1Val" class="color-val">#FFE600</span>
+                                    </div>
+                                </div>
+                                <div id="color2Group" class="form-group col">
+                                    <label>ពណ៌ទី២ (ពាក្យទី២):</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="textColor2Input" value="#FF5722">
+                                        <span id="textColor2Val" class="color-val">#FF5722</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="control-card">
                             <h4 class="card-title">🎨 ម៉ូដស៊ុម & Font</h4>
                             <div class="form-group">
                                 <label>Font ខ្មែរ:</label>
@@ -361,6 +394,7 @@
 
     <div id="toastNotification" class="toast-notification hidden"></div>
 
-    <script src="app.js?v=40.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js?v=42.0"></script>
 </body>
 </html>
