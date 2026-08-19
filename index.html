@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700;900&family=Kantumruy+Pro:ital,wght@0,400..700;1,400..700&family=Moul&family=Preahvihear&family=Siemreap&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=15.0">
+    <link rel="stylesheet" href="styles.css?v=16.0">
 </head>
 <body class="dark-theme">
     <div class="app-container">
@@ -266,29 +266,52 @@
 
                     <div id="colorFontTab" class="tab-content">
                         <div class="control-card">
-                            <h4 class="card-title">🎨 ពណ៌អក្សរ (Text Colors)</h4>
-                            <div class="form-group">
-                                <label>របៀបពណ៌:</label>
+                            <h4 class="card-title">🎨 របៀបពណ៌អក្សរ (Color Mode)</h4>
+                            <div class="form-group" style="margin-bottom:0;">
                                 <select id="colorModeSelect" class="form-control">
                                     <option value="dual" selected>🎨 ពណ៌២ខ្ទង់ (Dual 2-Color)</option>
                                     <option value="single">🖌️ ពណ៌តែមួយ (Single Color)</option>
                                     <option value="gradient">🌈 Gradient</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div class="control-card">
+                            <h4 class="card-title">📌 ពណ៌អក្សរខាងលើ (Top Text Colors)</h4>
                             <div class="form-row">
                                 <div class="form-group col">
                                     <label>ពណ៌ទី១ (ពាក្យទី១):</label>
-                                    <label class="color-picker-wrapper" for="textColor1Input">
-                                        <input type="color" id="textColor1Input" value="#FFE600">
-                                        <span id="textColor1Val" class="color-val">#FFE600</span>
-                                    </label>
+                                    <div class="color-picker-swatch-box" data-target="topTextColor1" id="topTextColor1Box">
+                                        <span class="swatch-circle" id="topTextColor1Swatch" style="background:#FFE600;"></span>
+                                        <span id="topTextColor1Val" class="color-val">#FFE600</span>
+                                    </div>
                                 </div>
-                                <div id="color2Group" class="form-group col">
+                                <div id="topColor2Group" class="form-group col">
                                     <label>ពណ៌ទី២ (ពាក្យទី២):</label>
-                                    <label class="color-picker-wrapper" for="textColor2Input">
-                                        <input type="color" id="textColor2Input" value="#FF5722">
-                                        <span id="textColor2Val" class="color-val">#FF5722</span>
-                                    </label>
+                                    <div class="color-picker-swatch-box" data-target="topTextColor2" id="topTextColor2Box">
+                                        <span class="swatch-circle" id="topTextColor2Swatch" style="background:#FF5722;"></span>
+                                        <span id="topTextColor2Val" class="color-val">#FF5722</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="control-card">
+                            <h4 class="card-title">📌 ពណ៌អក្សរខាងក្រោម (Bottom Text Colors)</h4>
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <label>ពណ៌ទី១ (ពាក្យទី១):</label>
+                                    <div class="color-picker-swatch-box" data-target="bottomTextColor1" id="bottomTextColor1Box">
+                                        <span class="swatch-circle" id="bottomTextColor1Swatch" style="background:#FFE600;"></span>
+                                        <span id="bottomTextColor1Val" class="color-val">#FFE600</span>
+                                    </div>
+                                </div>
+                                <div id="bottomColor2Group" class="form-group col">
+                                    <label>ពណ៌ទី២ (ពាក្យទី២):</label>
+                                    <div class="color-picker-swatch-box" data-target="bottomTextColor2" id="bottomTextColor2Box">
+                                        <span class="swatch-circle" id="bottomTextColor2Swatch" style="background:#FF5722;"></span>
+                                        <span id="bottomTextColor2Val" class="color-val">#FF5722</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -309,10 +332,10 @@
                             <div class="form-row">
                                 <div class="form-group col">
                                     <label>ពណ៌ស៊ុម:</label>
-                                    <label class="color-picker-wrapper" for="strokeColorInput">
-                                        <input type="color" id="strokeColorInput" value="#FFFFFF">
-                                        <span id="strokeColorVal" class="color-val">#FFFFFF (ស)</span>
-                                    </label>
+                                    <div class="color-picker-swatch-box" data-target="strokeColor" id="strokeColorBox">
+                                        <span class="swatch-circle" id="strokeColorSwatch" style="background:#FFFFFF;"></span>
+                                        <span id="strokeColorVal" class="color-val">#FFFFFF</span>
+                                    </div>
                                 </div>
                                 <div class="form-group col">
                                     <label>កម្រាស់ស៊ុម:</label>
@@ -346,10 +369,10 @@
                             </div>
                             <div id="bgColorConfig" class="form-group hidden">
                                 <label>ជ្រើសពណ៌ផ្ទៃ:</label>
-                                <label class="color-picker-wrapper" for="bgColorInput">
-                                    <input type="color" id="bgColorInput" value="#111827">
+                                <div class="color-picker-swatch-box" data-target="bgColor" id="bgColorBox">
+                                    <span class="swatch-circle" id="bgColorSwatch" style="background:#111827;"></span>
                                     <span id="bgColorVal" class="color-val">#111827</span>
-                                </label>
+                                </div>
                             </div>
                         </div>
 
@@ -395,9 +418,42 @@
         </div>
     </div>
 
+    <!-- Custom In-DOM Color Picker Popover (Guaranteed Anchored Layout - Never jumps to top-left (0,0)) -->
+    <div id="customColorPopover" class="custom-color-popover hidden">
+        <div class="popover-header">
+            <span id="popoverTitle" class="popover-title">🎨 ជ្រើសរើសពណ៌</span>
+            <button id="closePopoverBtn" class="popover-close-btn">&times;</button>
+        </div>
+        <div class="popover-body">
+            <div class="preset-label">ពណ៌ប្រៀបរៀប (Quick Palette):</div>
+            <div class="preset-grid">
+                <button class="preset-chip" data-color="#FFE600" style="background:#FFE600;" title="លឿង (Gold)"></button>
+                <button class="preset-chip" data-color="#FF5722" style="background:#FF5722;" title="ក្រហម (Red)"></button>
+                <button class="preset-chip" data-color="#10B981" style="background:#10B981;" title="បៃតង (Green)"></button>
+                <button class="preset-chip" data-color="#06B6D4" style="background:#06B6D4;" title="ខៀវស្រាល (Cyan)"></button>
+                <button class="preset-chip" data-color="#3B82F6" style="background:#3B82F6;" title="ខៀវ (Blue)"></button>
+                <button class="preset-chip" data-color="#A855F7" style="background:#A855F7;" title="ស្វាយ (Purple)"></button>
+                <button class="preset-chip" data-color="#EC4899" style="background:#EC4899;" title="ផ្កាឈូក (Pink)"></button>
+                <button class="preset-chip" data-color="#FFFFFF" style="background:#FFFFFF;" title="ស (White)"></button>
+                <button class="preset-chip" data-color="#000000" style="background:#000000;" title="ខ្មៅ (Black)"></button>
+                <button class="preset-chip" data-color="#111827" style="background:#111827;" title="ផ្ទៃងងឹត (Dark)"></button>
+                <button class="preset-chip" data-color="#F97316" style="background:#F97316;" title="ទឹកក្រូច (Orange)"></button>
+                <button class="preset-chip" data-color="#EAB308" style="background:#EAB308;" title="លឿងចាស់ (Amber)"></button>
+            </div>
+            <div class="popover-input-row">
+                <span id="popoverPreviewSwatch" class="popover-preview-swatch"></span>
+                <input type="text" id="popoverHexInput" class="form-control popover-hex-input" maxlength="7" placeholder="#HEX">
+                <label for="popoverNativeColorInput" class="popover-native-btn" title="Custom Wheel">
+                    🎨 Color Wheel
+                    <input type="color" id="popoverNativeColorInput" class="popover-native-picker">
+                </label>
+            </div>
+        </div>
+    </div>
+
     <div id="toastNotification" class="toast-notification hidden"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=43.0"></script>
+    <script src="app.js?v=44.0"></script>
 </body>
 </html>

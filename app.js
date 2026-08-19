@@ -23,8 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Active Khmer Text & Color Settings (per clip editable)
         colorMode: 'dual', // 'dual', 'single', 'gradient'
-        textColor1: '#FFE600',
-        textColor2: '#FF5722',
+        topTextColor1: '#FFE600',
+        topTextColor2: '#FF5722',
+        bottomTextColor1: '#FFE600',
+        bottomTextColor2: '#FF5722',
         
         topText: 'អំពើហិង្សាជាអំពើ',
         topTextPart1: 'អំពើហិង្សា',
@@ -118,11 +120,32 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Right Inspector Inputs (Screen 2)
         colorModeSelect: document.getElementById('colorModeSelect'),
-        textColor1Input: document.getElementById('textColor1Input'),
-        textColor1Val: document.getElementById('textColor1Val'),
-        textColor2Input: document.getElementById('textColor2Input'),
-        textColor2Val: document.getElementById('textColor2Val'),
-        color2Group: document.getElementById('color2Group'),
+        topTextColor1Box: document.getElementById('topTextColor1Box'),
+        topTextColor1Swatch: document.getElementById('topTextColor1Swatch'),
+        topTextColor1Val: document.getElementById('topTextColor1Val'),
+        topTextColor2Box: document.getElementById('topTextColor2Box'),
+        topTextColor2Swatch: document.getElementById('topTextColor2Swatch'),
+        topTextColor2Val: document.getElementById('topTextColor2Val'),
+        topColor2Group: document.getElementById('topColor2Group'),
+
+        bottomTextColor1Box: document.getElementById('bottomTextColor1Box'),
+        bottomTextColor1Swatch: document.getElementById('bottomTextColor1Swatch'),
+        bottomTextColor1Val: document.getElementById('bottomTextColor1Val'),
+        bottomTextColor2Box: document.getElementById('bottomTextColor2Box'),
+        bottomTextColor2Swatch: document.getElementById('bottomTextColor2Swatch'),
+        bottomTextColor2Val: document.getElementById('bottomTextColor2Val'),
+        bottomColor2Group: document.getElementById('bottomColor2Group'),
+
+        strokeColorBox: document.getElementById('strokeColorBox'),
+        strokeColorSwatch: document.getElementById('strokeColorSwatch'),
+        strokeColorVal: document.getElementById('strokeColorVal'),
+
+        customColorPopover: document.getElementById('customColorPopover'),
+        popoverTitle: document.getElementById('popoverTitle'),
+        closePopoverBtn: document.getElementById('closePopoverBtn'),
+        popoverPreviewSwatch: document.getElementById('popoverPreviewSwatch'),
+        popoverHexInput: document.getElementById('popoverHexInput'),
+        popoverNativeColorInput: document.getElementById('popoverNativeColorInput'),
         
         topTextSingleGroup: document.getElementById('topTextSingleGroup'),
         topTextDualGroup: document.getElementById('topTextDualGroup'),
@@ -393,7 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const isDual = state.colorMode === 'dual';
             const isSingle = state.colorMode === 'single';
 
-            elements.color2Group?.classList.toggle('hidden', isSingle);
+            elements.topColor2Group?.classList.toggle('hidden', isSingle);
+            elements.bottomColor2Group?.classList.toggle('hidden', isSingle);
             elements.topTextSingleGroup?.classList.toggle('hidden', isDual);
             elements.topTextDualGroup?.classList.toggle('hidden', !isDual);
             elements.bottomTextSingleGroup?.classList.toggle('hidden', isDual);
@@ -402,8 +426,52 @@ document.addEventListener('DOMContentLoaded', () => {
             syncActiveClipProperty('colorMode', state.colorMode);
         });
 
-        bindInput(elements.textColor1Input, 'textColor1', elements.textColor1Val);
-        bindInput(elements.textColor2Input, 'textColor2', elements.textColor2Val);
+        // Swatch Box Click Listeners for Custom Color Popover
+        document.querySelectorAll('.color-picker-swatch-box').forEach(box => {
+            box.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetKey = box.dataset.target;
+                if (targetKey) {
+                    openCustomColorPopover(targetKey, box);
+                }
+            });
+        });
+
+        // Close Popover Btn
+        elements.closePopoverBtn?.addEventListener('click', closeCustomColorPopover);
+
+        // Click outside popover to close
+        window.addEventListener('click', (e) => {
+            const popover = elements.customColorPopover;
+            if (popover && !popover.classList.contains('hidden')) {
+                if (!popover.contains(e.target) && !e.target.closest('.color-picker-swatch-box') && !e.target.closest('.word-chip')) {
+                    closeCustomColorPopover();
+                }
+            }
+        });
+
+        // Preset Chips Click Listener
+        document.querySelectorAll('.preset-chip').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const color = chip.dataset.color;
+                if (color) applyPopoverColor(color);
+            });
+        });
+
+        // Popover Hex Input
+        elements.popoverHexInput?.addEventListener('input', (e) => {
+            let val = e.target.value.trim();
+            if (!val.startsWith('#') && val.length > 0) val = '#' + val;
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                applyPopoverColor(val);
+            }
+        });
+
+        // Popover Native Picker Input
+        elements.popoverNativeColorInput?.addEventListener('input', (e) => {
+            applyPopoverColor(e.target.value);
+        });
 
         if (elements.activeClipTitleInput) {
             elements.activeClipTitleInput.addEventListener('input', (e) => {
@@ -817,36 +885,93 @@ document.addEventListener('DOMContentLoaded', () => {
         syncActiveClipProperty('bottomTextPart2', '');
     };
 
-    function openColorPicker(inputId) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-        if (typeof input.showPicker === 'function') {
-            try {
-                input.showPicker();
-            } catch (e) {
-                input.click();
-            }
-        } else {
-            input.click();
+    // --- Custom DOM Color Picker Popover Engine ---
+    let activePopoverTargetKey = null;
+
+    function openCustomColorPopover(targetKey, anchorEl) {
+        activePopoverTargetKey = targetKey;
+        const popover = elements.customColorPopover || document.getElementById('customColorPopover');
+        if (!popover || !anchorEl) return;
+
+        const rect = anchorEl.getBoundingClientRect();
+        const popoverWidth = 280;
+        const popoverHeight = 180;
+
+        let top = rect.bottom + 6;
+        let left = rect.left;
+
+        if (left + popoverWidth > window.innerWidth - 10) {
+            left = Math.max(10, window.innerWidth - popoverWidth - 10);
+        }
+        if (top + popoverHeight > window.innerHeight - 10) {
+            top = Math.max(10, rect.top - popoverHeight - 6);
+        }
+
+        popover.style.top = `${top}px`;
+        popover.style.left = `${left}px`;
+
+        const currentColor = state[targetKey] || '#FFFFFF';
+        updatePopoverUI(currentColor);
+        popover.classList.remove('hidden');
+    }
+    window.openCustomColorPopover = openCustomColorPopover;
+
+    function closeCustomColorPopover() {
+        const popover = elements.customColorPopover || document.getElementById('customColorPopover');
+        if (popover) popover.classList.add('hidden');
+        activePopoverTargetKey = null;
+    }
+    window.closeCustomColorPopover = closeCustomColorPopover;
+
+    function updatePopoverUI(colorHex) {
+        if (!colorHex) return;
+        colorHex = colorHex.toUpperCase();
+        if (elements.popoverPreviewSwatch) elements.popoverPreviewSwatch.style.background = colorHex;
+        if (elements.popoverHexInput) elements.popoverHexInput.value = colorHex;
+        if (elements.popoverNativeColorInput && colorHex.length === 7 && colorHex.startsWith('#')) {
+            elements.popoverNativeColorInput.value = colorHex;
         }
     }
-    window.openColorPicker = openColorPicker;
+
+    function applyPopoverColor(colorHex) {
+        if (!activePopoverTargetKey) return;
+        pushStateToHistory();
+        state[activePopoverTargetKey] = colorHex;
+        updatePopoverUI(colorHex);
+        updateColorSwatchesUI();
+        syncActiveClipProperty(activePopoverTargetKey, colorHex);
+    }
+
+    function updateColorSwatchesUI() {
+        const setSwatch = (targetKey, swatchEl, valEl) => {
+            const val = state[targetKey] || '#FFFFFF';
+            if (swatchEl) swatchEl.style.background = val;
+            if (valEl) valEl.textContent = val;
+        };
+
+        setSwatch('topTextColor1', elements.topTextColor1Swatch, elements.topTextColor1Val);
+        setSwatch('topTextColor2', elements.topTextColor2Swatch, elements.topTextColor2Val);
+        setSwatch('bottomTextColor1', elements.bottomTextColor1Swatch, elements.bottomTextColor1Val);
+        setSwatch('bottomTextColor2', elements.bottomTextColor2Swatch, elements.bottomTextColor2Val);
+        setSwatch('strokeColor', elements.strokeColorSwatch, elements.strokeColorVal);
+        setSwatch('bgColor', elements.bgColorSwatch, elements.bgColorVal);
+    }
 
     function renderWordColorChips() {
         const topP1 = (state.topTextPart1 || 'ដើម').trim();
         const topP2 = (state.topTextPart2 || 'ត្នោត').trim();
 
-        if (elements.topPart1Label) elements.topPart1Label.style.color = state.textColor1;
-        if (elements.topPart2Label) elements.topPart2Label.style.color = state.textColor2;
+        if (elements.topPart1Label) elements.topPart1Label.style.color = state.topTextColor1;
+        if (elements.topPart2Label) elements.topPart2Label.style.color = state.topTextColor2;
 
         if (elements.topWordChips) {
             elements.topWordChips.innerHTML = `
-                <span class="word-chip" onclick="openColorPicker('textColor1Input')" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
-                    <span class="word-chip-color-dot" style="background:${state.textColor1};"></span>
+                <span class="word-chip" onclick="openCustomColorPopover('topTextColor1', document.getElementById('topTextColor1Box'))" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                    <span class="word-chip-color-dot" style="background:${state.topTextColor1};"></span>
                     <span>${topP1 || 'ពាក្យទី១'}</span> (ពណ៌ទី១)
                 </span>
-                <span class="word-chip" onclick="openColorPicker('textColor2Input')" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
-                    <span class="word-chip-color-dot" style="background:${state.textColor2};"></span>
+                <span class="word-chip" onclick="openCustomColorPopover('topTextColor2', document.getElementById('topTextColor2Box'))" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                    <span class="word-chip-color-dot" style="background:${state.topTextColor2};"></span>
                     <span>${topP2 || 'ពាក្យទី២'}</span> (ពណ៌ទី២)
                 </span>
             `;
@@ -855,17 +980,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const btmP1 = (state.bottomTextPart1 || 'អង់អាច').trim();
         const btmP2 = (state.bottomTextPart2 || 'ក្លាហាន').trim();
 
-        if (elements.bottomPart1Label) elements.bottomPart1Label.style.color = state.textColor1;
-        if (elements.bottomPart2Label) elements.bottomPart2Label.style.color = state.textColor2;
+        if (elements.bottomPart1Label) elements.bottomPart1Label.style.color = state.bottomTextColor1;
+        if (elements.bottomPart2Label) elements.bottomPart2Label.style.color = state.bottomTextColor2;
 
         if (elements.bottomWordChips) {
             elements.bottomWordChips.innerHTML = `
-                <span class="word-chip" onclick="openColorPicker('textColor1Input')" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
-                    <span class="word-chip-color-dot" style="background:${state.textColor1};"></span>
+                <span class="word-chip" onclick="openCustomColorPopover('bottomTextColor1', document.getElementById('bottomTextColor1Box'))" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                    <span class="word-chip-color-dot" style="background:${state.bottomTextColor1};"></span>
                     <span>${btmP1 || 'ពាក្យទី១'}</span> (ពណ៌ទី១)
                 </span>
-                <span class="word-chip" onclick="openColorPicker('textColor2Input')" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
-                    <span class="word-chip-color-dot" style="background:${state.textColor2};"></span>
+                <span class="word-chip" onclick="openCustomColorPopover('bottomTextColor2', document.getElementById('bottomTextColor2Box'))" title="ចុចដើម្បីប្តូរពណ៌ពាក្យនេះ">
+                    <span class="word-chip-color-dot" style="background:${state.bottomTextColor2};"></span>
                     <span>${btmP2 || 'ពាក្យទី២'}</span> (ពណ៌ទី២)
                 </span>
             `;
@@ -1026,7 +1151,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Keys of state that are fully serialisable and should be part of every undo snapshot
     const UNDO_STATE_KEYS = [
         'trimIn', 'trimOut',
-        'aspectRatio', 'colorMode', 'textColor1', 'textColor2',
+        'aspectRatio', 'colorMode',
+        'topTextColor1', 'topTextColor2', 'bottomTextColor1', 'bottomTextColor2',
         'topText', 'topTextPart1', 'topTextPart2', 'topFontSize', 'topPosY',
         'bottomText', 'bottomTextPart1', 'bottomTextPart2', 'bottomFontSize', 'bottomPosY',
         'fontFamily', 'strokeColor', 'strokeWidth', 'shadowBlur',
@@ -1399,8 +1525,10 @@ document.addEventListener('DOMContentLoaded', () => {
             duration: state.trimOut - state.trimIn,
             aspectRatio: state.aspectRatio || '9:16',
             colorMode: state.colorMode,
-            textColor1: state.textColor1,
-            textColor2: state.textColor2,
+            topTextColor1: state.topTextColor1,
+            topTextColor2: state.topTextColor2,
+            bottomTextColor1: state.bottomTextColor1,
+            bottomTextColor2: state.bottomTextColor2,
             topText: state.topText,
             topTextPart1: state.topTextPart1,
             topTextPart2: state.topTextPart2,
@@ -1502,8 +1630,10 @@ document.addEventListener('DOMContentLoaded', () => {
         state.trimOut = clip.endTime;
         
         state.colorMode = clip.colorMode || 'dual';
-        state.textColor1 = clip.textColor1 || '#FFE600';
-        state.textColor2 = clip.textColor2 || '#FF5722';
+        state.topTextColor1 = clip.topTextColor1 || clip.textColor1 || '#FFE600';
+        state.topTextColor2 = clip.topTextColor2 || clip.textColor2 || '#FF5722';
+        state.bottomTextColor1 = clip.bottomTextColor1 || clip.textColor1 || '#FFE600';
+        state.bottomTextColor2 = clip.bottomTextColor2 || clip.textColor2 || '#FF5722';
 
         state.topText = clip.topText || '';
         state.topTextPart1 = clip.topTextPart1 || '';
@@ -1573,8 +1703,7 @@ document.addEventListener('DOMContentLoaded', () => {
             evtColorMode._fromSync = true;
             elements.colorModeSelect.dispatchEvent(evtColorMode);
         }
-        if (elements.textColor1Input) elements.textColor1Input.value = state.textColor1;
-        if (elements.textColor2Input) elements.textColor2Input.value = state.textColor2;
+        updateColorSwatchesUI();
 
         if (elements.topTextInput) elements.topTextInput.value = state.topText;
         if (elements.topTextPart1Input) elements.topTextPart1Input.value = state.topTextPart1;
@@ -1859,12 +1988,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // STEP 2: Draw ALL Fills SECOND on top of the outlines!
             let xPtr = startX;
             if (p1) {
-                ctx.fillStyle = state.textColor1;
+                ctx.fillStyle = targetName === 'top' ? state.topTextColor1 : state.bottomTextColor1;
                 ctx.fillText(p1, xPtr, y);
                 xPtr += w1 + spaceW;
             }
             if (p2) {
-                ctx.fillStyle = state.textColor2;
+                ctx.fillStyle = targetName === 'top' ? state.topTextColor2 : state.bottomTextColor2;
                 ctx.fillText(p2, xPtr, y);
             }
         } else if (state.colorMode === 'gradient') {
@@ -1896,9 +2025,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.textAlign = 'center';
             const startX = Math.max(30, (canvasWidth - textW) / 2);
 
+            const c1 = targetName === 'top' ? state.topTextColor1 : state.bottomTextColor1;
+            const c2 = targetName === 'top' ? state.topTextColor2 : state.bottomTextColor2;
             const grad = ctx.createLinearGradient(startX, 0, startX + textW, 0);
-            grad.addColorStop(0, state.textColor1);
-            grad.addColorStop(1, state.textColor2);
+            grad.addColorStop(0, c1);
+            grad.addColorStop(1, c2);
 
             if (state.strokeWidth > 0) ctx.strokeText(txt, canvasWidth / 2, y);
             ctx.fillStyle = grad;
