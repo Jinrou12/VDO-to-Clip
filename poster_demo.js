@@ -617,7 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selfieSegmentationInstance = null;
 
     async function processMediaPipeSelfieCutout(imageElement) {
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
             try {
                 const w = imageElement.naturalWidth || imageElement.width || 600;
                 const h = imageElement.naturalHeight || imageElement.height || 800;
@@ -627,9 +627,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 tempCanvas.height = h;
                 const tCtx = tempCanvas.getContext('2d');
 
+                let resolved = false;
+
+                // 4-second safety timeout fallback
+                const timeoutTimer = setTimeout(async () => {
+                    if (!resolved) {
+                        resolved = true;
+                        showToast('⚡ កំពុងប្រើប្រាស់ Adaptive Human AI...');
+                        const fallback = await processHumanSegmentation(imageElement);
+                        resolve(fallback);
+                    }
+                }, 4000);
+
                 if (!window.SelfieSegmentation) {
-                    showToast('⚠️ កំពុងប្រើប្រាស់ Adaptive Human AI...');
-                    processHumanSegmentation(imageElement).then(resolve);
+                    clearTimeout(timeoutTimer);
+                    resolved = true;
+                    const fallback = await processHumanSegmentation(imageElement);
+                    resolve(fallback);
                     return;
                 }
 
@@ -643,6 +657,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 selfieSegmentationInstance.onResults((results) => {
+                    if (resolved) return;
+                    resolved = true;
+                    clearTimeout(timeoutTimer);
+
                     tCtx.clearRect(0, 0, w, h);
                     tCtx.drawImage(results.segmentationMask, 0, 0, w, h);
                     
@@ -654,10 +672,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     cleanImg.src = tempCanvas.toDataURL('image/png');
                 });
 
-                selfieSegmentationInstance.send({ image: imageElement });
+                await selfieSegmentationInstance.send({ image: imageElement });
             } catch (err) {
                 console.error('MediaPipe error:', err);
-                processHumanSegmentation(imageElement).then(resolve);
+                const fallback = await processHumanSegmentation(imageElement);
+                resolve(fallback);
             }
         });
     }
@@ -1178,7 +1197,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Canvas Drawing & Animation Loop ---
     function startCanvasLoop() {
         function loop() {
-            renderPosterCanvas();
+            try {
+                renderPosterCanvas();
+            } catch (err) {
+                console.error('Canvas render frame error:', err);
+            }
             requestAnimationFrame(loop);
         }
         requestAnimationFrame(loop);
