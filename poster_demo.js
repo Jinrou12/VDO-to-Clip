@@ -1046,22 +1046,64 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 elements.mediaPipeAiBtn.disabled = true;
-                elements.mediaPipeAiBtn.textContent = '⏳ AI កំពុងកាត់ BG...';
+                elements.mediaPipeAiBtn.textContent = '⏳ AI Loading... (Load ២-៥ វិ)';
 
                 try {
-                    const hasTasksAI = !!window._mpTasksSegmenter;
-                    showToast(hasTasksAI ? '🤖 MediaPipe Tasks AI (ស្អាតថ្មី)...' : '🧠 MediaPipe Selfie AI...');
-                    const cleanImg = await processMediaPipeSelfieCutout(state.rawSpeakerImg);
+                    // ---- RMBG-1.4 via @imgly/background-removal (WASM, runs 100% in browser) ----
+                    showToast('🤖 RMBG-1.4 AI: Loading model... (ដំបូង ២-៥ វិនាទី)');
+
+                    const imgUrl = state.rawSpeakerImg.src || state.rawSpeakerImg.currentSrc;
+                    if (!imgUrl || imgUrl === '') throw new Error('no src');
+
+                    const IMGLY_VERSION = '1.5.5';
+                    const IMGLY_CDN = `https://cdn.jsdelivr.net/npm/@imgly/background-removal@${IMGLY_VERSION}/dist/`;
+
+                    const { removeBackground } = await import(`${IMGLY_CDN}browser/index.js`);
+
+                    const resultBlob = await removeBackground(imgUrl, {
+                        publicPath: `${IMGLY_CDN}`,
+                        model: 'medium',
+                        output: { format: 'image/png', quality: 0.95 },
+                        progress: (key, current, total) => {
+                            const pct = total > 0 ? Math.round(current / total * 100) : 0;
+                            elements.mediaPipeAiBtn.textContent = `⏳ RMBG AI: ${pct}%`;
+                        }
+                    });
+
+                    // Convert blob to dataURL to avoid canvas taint
+                    const blobToDataURL = (blob) => new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    const dataURL = await blobToDataURL(resultBlob);
+                    const cleanImg = await new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = reject;
+                        img.src = dataURL;
+                    });
+
                     initSpeakerCanvas(cleanImg);
-                    state.speakerGlowSize = 12;
-                    if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
-                    if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
-                    showToast('✅ AI Remove BG រួចរាល់ ស្អាត!');
+                    state.speakerGlowSize = 10;
+                    if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 10;
+                    if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '10px';
+                    showToast('✅ RMBG-1.4 AI: BG Removed ស្អាត 100%!');
+
                 } catch (err) {
-                    console.error('AI BG remove error:', err);
-                    showToast('⚠️ Error - ប្រើ Human AI...');
-                    const fallback = await processHumanSegmentation(state.rawSpeakerImg);
-                    initSpeakerCanvas(fallback);
+                    console.error('RMBG AI error:', err);
+                    // Fallback to MediaPipe segmentation
+                    try {
+                        showToast('⚡ Fallback: MediaPipe Segmentation...');
+                        const cleanImg2 = await processMediaPipeSelfieCutout(state.rawSpeakerImg);
+                        initSpeakerCanvas(cleanImg2);
+                        showToast('✅ MediaPipe Remove BG done!');
+                    } catch (err2) {
+                        showToast('⚠️ Error. ប្រើ Adaptive AI...');
+                        const fallback = await processHumanSegmentation(state.rawSpeakerImg);
+                        initSpeakerCanvas(fallback);
+                    }
                 } finally {
                     elements.mediaPipeAiBtn.disabled = false;
                     elements.mediaPipeAiBtn.textContent = '🤖 Remove BG ជាមួយ RMBG AI (ស្អាតបំផុត)';
