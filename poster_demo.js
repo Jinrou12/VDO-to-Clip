@@ -927,13 +927,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast('⚠️ សូម Upload រូប Speaker ជាមុនសិន!');
                     return;
                 }
-                showToast('🧠 កំពុងកាត់រូបមនុស្សតាមបែប Google MediaPipe AI (100% ស្អាត)...');
-                const cleanImg = await processMediaPipeSelfieCutout(state.rawSpeakerImg);
-                initSpeakerCanvas(cleanImg);
-                state.speakerGlowSize = 12;
-                if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
-                if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
-                showToast('✅ Google MediaPipe AI កាត់រូបមនុស្សបាន 100% ស្អាត!');
+
+                elements.mediaPipeAiBtn.disabled = true;
+                elements.mediaPipeAiBtn.textContent = '⏳ AI កំពុង Load + កាត់ BG...';
+
+                try {
+                    // Try RMBG-1.4 AI first (best quality)
+                    if (window.removeBackgroundRmbg) {
+                        showToast('🤖 RMBG-1.4 AI: កំពុង Load Model (~40MB ครั้งแรก)...');
+                        const cleanImg = await window.removeBackgroundRmbg(state.rawSpeakerImg);
+                        if (cleanImg) {
+                            initSpeakerCanvas(cleanImg);
+                            state.speakerGlowSize = 12;
+                            if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
+                            if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
+                            showToast('✅ RMBG-1.4 AI កាត់ BG បានស្អាត 100%!');
+                            return;
+                        }
+                    }
+                    // Fallback: MediaPipe
+                    showToast('🧠 Google MediaPipe AI (100% ស្អាត)...');
+                    const cleanImg2 = await processMediaPipeSelfieCutout(state.rawSpeakerImg);
+                    initSpeakerCanvas(cleanImg2);
+                    state.speakerGlowSize = 12;
+                    if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
+                    if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
+                    showToast('✅ MediaPipe AI កាត់ BG រួចរាល់!');
+                } catch (err) {
+                    console.error('AI BG remove error:', err);
+                    showToast('⚠️ AI Error - ប្រើ Adaptive Human AI...');
+                    const fallback = await processHumanSegmentation(state.rawSpeakerImg);
+                    initSpeakerCanvas(fallback);
+                } finally {
+                    elements.mediaPipeAiBtn.disabled = false;
+                    elements.mediaPipeAiBtn.textContent = '🧠 Google MediaPipe AI (កាត់រូបមនុស្ស 100% ស្អាត)';
+                }
             });
         }
 
