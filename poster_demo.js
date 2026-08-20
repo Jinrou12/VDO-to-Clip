@@ -515,13 +515,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Post-process: Clean up ragged/noisy alpha edges ---
+    // --- Post-process: Clean up ragged/noisy alpha edges & remove isolated specks ---
     function refineEdges(imageElement, options = {}) {
         const {
             erodeRadius = 1,      // shrink mask to remove fringe
             featherRadius = 2,    // soften edge
-            hardThreshold = 30,   // alpha < this → fully transparent
-            softThreshold = 180   // alpha > this → fully opaque
+            hardThreshold = 55,   // alpha < this → fully transparent
+            softThreshold = 200,  // alpha > this → fully opaque
+            despeckleMinSize = 400 // remove isolated pixel clusters smaller than this
         } = options;
 
         return new Promise(resolve => {
@@ -533,33 +534,100 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.drawImage(imageElement, 0, 0);
             const imgData = ctx.getImageData(0, 0, w, h);
             const d = imgData.data;
+            const totalPixels = w * h;
 
-            // Step 1: Hard threshold + erode — remove near-transparent fringe
+            // Step 1: Hard thresholding to kill low-alpha noise/haze
             for (let i = 0; i < d.length; i += 4) {
                 const a = d[i + 3];
                 if (a < hardThreshold) d[i + 3] = 0;
                 else if (a > softThreshold) d[i + 3] = 255;
             }
 
-            // Step 2: Erode alpha (remove 1-pixel fringes at edge)
+            // Step 2: Despeckle - Connected Component Labeling to remove isolated specks/dots
+            const visited = new Uint8Array(totalPixels);
+            const islandSizes = [];
+            const islandPixels = [];
+
+            for (let y = 0; y < h; y += 2) {
+                for (let x = 0; x < w; x += 2) {
+                    const idx = y * w + x;
+                    if (visited[idx] || d[idx * 4 + 3] === 0) continue;
+
+                    const queue = [idx];
+                    visited[idx] = 1;
+                    const component = [idx];
+
+                    let head = 0;
+                    while (head < queue.length) {
+                        const curr = queue[head++];
+                        const cx = curr % w;
+                        const cy = Math.floor(curr / w);
+
+                        const neighbors = [
+                            cy > 0 ? curr - w : -1,
+                            cy < h - 1 ? curr + w : -1,
+                            cx > 0 ? curr - 1 : -1,
+                            cx < w - 1 ? curr + 1 : -1
+                        ];
+
+                        for (const n of neighbors) {
+                            if (n !== -1 && !visited[n] && d[n * 4 + 3] > 0) {
+                                visited[n] = 1;
+                                queue.push(n);
+                                component.push(n);
+                            }
+                        }
+                    }
+
+                    islandSizes.push(component.length);
+                    islandPixels.push(component);
+                }
+            }
+
+            // Find the main body (largest island)
+            let maxIslandSize = 0;
+            for (const sz of islandSizes) {
+                if (sz > maxIslandSize) maxIslandSize = sz;
+            }
+
+            // Erase small isolated specks disconnected from main body
+            const minKeepSize = Math.max(despeckleMinSize, Math.floor(maxIslandSize * 0.03));
+            for (let i = 0; i < islandPixels.length; i++) {
+                if (islandSizes[i] < minKeepSize) {
+                    const pts = islandPixels[i];
+                    for (let p = 0; p < pts.length; p++) {
+                        const pixelIdx = pts[p];
+                        d[pixelIdx * 4 + 3] = 0;
+                        // Clear 2x2 neighborhood for safety
+                        if (pixelIdx + 1 < totalPixels) d[(pixelIdx + 1) * 4 + 3] = 0;
+                        if (pixelIdx + w < totalPixels) d[(pixelIdx + w) * 4 + 3] = 0;
+                        if (pixelIdx + w + 1 < totalPixels) d[(pixelIdx + w + 1) * 4 + 3] = 0;
+                    }
+                }
+            }
+
+            // Step 3: Erode alpha (remove 1-pixel fringes at edge)
             const eroded = new Uint8ClampedArray(d.length);
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
                     const idx = (y * w + x) * 4;
                     let minA = d[idx + 3];
-                    for (let dy = -erodeRadius; dy <= erodeRadius; dy++) {
-                        for (let dx = -erodeRadius; dx <= erodeRadius; dx++) {
-                            const nx = x + dx, ny = y + dy;
-                            if (nx < 0 || ny < 0 || nx >= w || ny >= h) { minA = 0; continue; }
-                            const nidx = (ny * w + nx) * 4;
-                            if (d[nidx + 3] < minA) minA = d[nidx + 3];
+                    if (minA > 0) {
+                        for (let dy = -erodeRadius; dy <= erodeRadius; dy++) {
+                            for (let dx = -erodeRadius; dx <= erodeRadius; dx++) {
+                                const nx = x + dx, ny = y + dy;
+                                if (nx < 0 || ny < 0 || nx >= w || ny >= h) { minA = 0; break; }
+                                const nidx = (ny * w + nx) * 4;
+                                if (d[nidx + 3] < minA) minA = d[nidx + 3];
+                            }
+                            if (minA === 0) break;
                         }
                     }
                     eroded[idx] = d[idx]; eroded[idx+1] = d[idx+1]; eroded[idx+2] = d[idx+2]; eroded[idx+3] = minA;
                 }
             }
 
-            // Step 3: Feather — box blur the alpha channel only
+            // Step 4: Feather — box blur the alpha channel only
             const feathered = new Uint8ClampedArray(eroded.length);
             const r = featherRadius;
             for (let y = 0; y < h; y++) {
@@ -1159,20 +1227,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         img.src = dataURL;
                     });
 
-                    // Refine edges: remove fringe, erode 1px, feather 2px
-                    elements.mediaPipeAiBtn.textContent = '✨ Edge Refinement...';
+                    // Refine edges: remove fringe, despeckle isolated dots, erode 1px, feather 2px
+                    elements.mediaPipeAiBtn.textContent = '✨ Despeckling & Refining...';
                     const refinedImg = await refineEdges(cleanImg, {
                         erodeRadius: 1,
                         featherRadius: 2,
-                        hardThreshold: 25,
-                        softThreshold: 200
+                        hardThreshold: 60,
+                        softThreshold: 200,
+                        despeckleMinSize: 500
                     });
 
                     initSpeakerCanvas(refinedImg);
-                    state.speakerGlowSize = 10;
-                    if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 10;
-                    if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '10px';
-                    showToast('✅ RMBG-1.4 AI: BG Removed + Edge ស្អាត 100%!');
+                    state.speakerGlowSize = 0;
+                    if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 0;
+                    if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '0px';
+                    showToast('✅ RMBG-1.4 AI: BG Removed ស្អាត 100%!');
 
                 } catch (err) {
                     console.error('RMBG AI error:', err);
@@ -1388,9 +1457,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('🧠 កំពុងកាត់រូបមនុស្ស (Human Segmentation AI)...');
                 state.speakerImg = await processHumanSegmentation(state.rawSpeakerImg);
                 state.isBgRemoved = true;
-                state.speakerGlowSize = 12;
-                if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
-                if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
+                state.speakerGlowSize = 0;
+                if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 0;
+                if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '0px';
                 showToast('✅ AI Human Segmentation កាត់រូបមនុស្សជោគជ័យ!');
             });
         }
