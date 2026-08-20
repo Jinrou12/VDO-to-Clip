@@ -62,13 +62,17 @@
             <div class="studio-layout">
                 <!-- Center Canvas Area -->
                 <div class="canvas-container">
+                    <div style="font-size:0.85rem; color:var(--primary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        💡 <span>អាចប្រើ Mouse ចុចចាប់អូស (Drag & Drop) ទីតាំងអក្សរ, រូប Speaker, និង Waveform លើ Canvas ដោយផ្ទាល់!</span>
+                    </div>
+
                     <div class="aspect-selector">
                         <button class="aspect-btn active" data-ratio="16:9">16:9 Landscape</button>
                         <button class="aspect-btn" data-ratio="1:1">1:1 Square</button>
                         <button class="aspect-btn" data-ratio="9:16">9:16 Story/Reels</button>
                     </div>
 
-                    <canvas id="posterCanvas" width="1280" height="720"></canvas>
+                    <canvas id="posterCanvas" width="1280" height="720" style="cursor:grab;"></canvas>
 
                     <!-- Playback controls -->
                     <div class="canvas-playback-bar">
@@ -97,13 +101,21 @@
                                 <input type="file" id="speakerPhotoInput" accept="image/*" class="form-control">
                             </div>
                             <div class="form-row">
+                                <button class="btn btn-secondary btn-sm" id="flipSpeakerBtn" style="flex:1;">🔄 ត្រឡប់រូប (Flip ⇄)</button>
+                                <button class="btn btn-primary btn-sm" id="removeBgBtn" style="flex:1;">✨ លុប BG Auto</button>
+                            </div>
+                            <div class="form-group" id="bgToleranceGroup" style="display:none; margin-top:6px;">
+                                <label class="form-label">កម្រិតលុប BG (Tolerance): <span id="bgToleranceVal">30</span></label>
+                                <input type="range" id="bgToleranceInput" min="5" max="80" value="30">
+                            </div>
+                            <div class="form-row" style="margin-top:6px;">
                                 <div class="form-group">
                                     <label class="form-label">ទំហំ (Scale): <span id="speakerScaleVal">100%</span></label>
                                     <input type="range" id="speakerScaleInput" min="20" max="200" value="100">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">ទីតាំង X: <span id="speakerXVal">0px</span></label>
-                                    <input type="range" id="speakerXInput" min="-400" max="400" value="0">
+                                    <input type="range" id="speakerXInput" min="-400" max="800" value="0">
                                 </div>
                             </div>
                             <div class="form-row">
@@ -129,13 +141,27 @@
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
+                                    <label class="form-label">ទំហំ (Scale): <span id="bgScaleVal">100%</span></label>
+                                    <input type="range" id="bgScaleInput" min="50" max="300" value="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ទីតាំង X: <span id="bgXVal">0px</span></label>
+                                    <input type="range" id="bgXInput" min="-500" max="500" value="0">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">ទីតាំង Y: <span id="bgYVal">0px</span></label>
+                                    <input type="range" id="bgYInput" min="-500" max="500" value="0">
+                                </div>
+                                <div class="form-group">
                                     <label class="form-label">ទំហំ Blur: <span id="bgBlurVal">0px</span></label>
                                     <input type="range" id="bgBlurInput" min="0" max="30" value="0">
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">ពន្លឺ (Brightness): <span id="bgBrightVal">100%</span></label>
-                                    <input type="range" id="bgBrightInput" min="20" max="150" value="100">
-                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ពន្លឺ (Brightness): <span id="bgBrightVal">100%</span></label>
+                                <input type="range" id="bgBrightInput" min="20" max="150" value="100">
                             </div>
                         </div>
                     </div>

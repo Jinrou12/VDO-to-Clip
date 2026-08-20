@@ -11,13 +11,20 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Speaker Layer (Left)
         speakerImg: null,
+        rawSpeakerImg: null,
         speakerScale: 100,
         speakerX: 0,
         speakerY: 0,
         speakerRadius: 0,
+        speakerFlipH: false,
+        bgTolerance: 30,
+        isBgRemoved: false,
 
         // Background Layer (Right)
         bgImg: null,
+        bgScale: 100,
+        bgX: 0,
+        bgY: 0,
         bgBlur: 0,
         bgBright: 100,
 
@@ -27,12 +34,21 @@ document.addEventListener('DOMContentLoaded', () => {
         titleFontSize: 65,
         titleColor1: '#FFE600',
         titleColor2: '#FF9900',
+        titleOffsetX: 0,
+        titleOffsetY: 0,
+
         subTitle: 'លោកគ្រូសាន ភិរម្យ ធម្មទានកាត់ខ្លី',
+        subTitleOffsetY: 0,
 
         // Waveform Visualizer
         waveColor: '#FFFFFF',
         waveHeight: 80,
         waveY: 62,
+
+        // Dragging & Interaction State
+        dragTarget: null,
+        dragStartX: 0,
+        dragStartY: 0,
 
         // Audio & Visualizer State
         audioCtx: null,
@@ -66,6 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Control Inputs
         speakerPhotoInput: document.getElementById('speakerPhotoInput'),
+        flipSpeakerBtn: document.getElementById('flipSpeakerBtn'),
+        removeBgBtn: document.getElementById('removeBgBtn'),
+        bgToleranceGroup: document.getElementById('bgToleranceGroup'),
+        bgToleranceInput: document.getElementById('bgToleranceInput'),
+        bgToleranceVal: document.getElementById('bgToleranceVal'),
+
         speakerScaleInput: document.getElementById('speakerScaleInput'),
         speakerScaleVal: document.getElementById('speakerScaleVal'),
         speakerXInput: document.getElementById('speakerXInput'),
@@ -75,6 +97,12 @@ document.addEventListener('DOMContentLoaded', () => {
         speakerRadiusInput: document.getElementById('speakerRadiusInput'),
 
         bgPhotoInput: document.getElementById('bgPhotoInput'),
+        bgScaleInput: document.getElementById('bgScaleInput'),
+        bgScaleVal: document.getElementById('bgScaleVal'),
+        bgXInput: document.getElementById('bgXInput'),
+        bgXVal: document.getElementById('bgXVal'),
+        bgYInput: document.getElementById('bgYInput'),
+        bgYVal: document.getElementById('bgYVal'),
         bgBlurInput: document.getElementById('bgBlurInput'),
         bgBlurVal: document.getElementById('bgBlurVal'),
         bgBrightInput: document.getElementById('bgBrightInput'),
@@ -101,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupTabEvents();
         setupFileUploadEvents();
         setupControlEvents();
+        setupCanvasMouseEvents();
         setupAudioVisualizer();
         createDemoImages();
         startCanvasLoop();
@@ -194,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 duration: 0
             };
 
-            // Get media duration
             const tempMedia = document.createElement(isVideo ? 'video' : 'audio');
             tempMedia.src = mediaItem.url;
             tempMedia.onloadedmetadata = () => {
@@ -277,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.activeAudioSelect.value = id;
         setAudioSource(item);
         
-        // Switch to Studio Tab
         document.querySelector('[data-tab="tab-studio"]').click();
         showToast(`បានបើក "${item.name}" ក្នុង Studio`);
     };
@@ -332,6 +359,137 @@ document.addEventListener('DOMContentLoaded', () => {
             await convertSingleVideo(v.id);
         }
     });
+
+    // --- Background Removal Algorithm ---
+    async function processAutoRemoveBg(imageElement, tolerance = 30) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = imageElement.naturalWidth || imageElement.width;
+        tempCanvas.height = imageElement.naturalHeight || imageElement.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.drawImage(imageElement, 0, 0);
+
+        const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imgData.data;
+
+        // Sample corner pixel colors (Top-Left & Top-Right)
+        const sampleR = (data[0] + data[(tempCanvas.width - 1) * 4]) / 2;
+        const sampleG = (data[1] + data[(tempCanvas.width - 1) * 4 + 1]) / 2;
+        const sampleB = (data[2] + data[(tempCanvas.width - 1) * 4 + 2]) / 2;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            const diff = Math.sqrt((r - sampleR) ** 2 + (g - sampleG) ** 2 + (b - sampleB) ** 2);
+            if (diff < tolerance * 2.5) {
+                data[i + 3] = 0; // Set Alpha to 0 (Transparent)
+            }
+        }
+
+        tCtx.putImageData(imgData, 0, 0);
+        return new Promise((resolve) => {
+            const cleanImg = new Image();
+            cleanImg.onload = () => resolve(cleanImg);
+            cleanImg.src = tempCanvas.toDataURL('image/png');
+        });
+    }
+
+    // --- Interactive Mouse Dragging on Canvas ---
+    function setupCanvasMouseEvents() {
+        const canvas = elements.posterCanvas;
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getMousePos(e);
+            
+            // Check Main Title hit
+            const titleX = (state.canvasWidth * 0.72) + state.titleOffsetX;
+            const titleY = (state.canvasHeight * 0.52) + state.titleOffsetY;
+            if (Math.abs(pos.x - titleX) < 250 && Math.abs(pos.y - titleY) < 60) {
+                state.dragTarget = 'title';
+                state.dragStartX = pos.x - state.titleOffsetX;
+                state.dragStartY = pos.y - state.titleOffsetY;
+                canvas.style.cursor = 'grabbing';
+                return;
+            }
+
+            // Check Subtitle hit
+            const subY = titleY + state.titleFontSize * 0.8 + state.subTitleOffsetY;
+            if (Math.abs(pos.x - titleX) < 250 && Math.abs(pos.y - subY) < 40) {
+                state.dragTarget = 'subtitle';
+                state.dragStartX = pos.x - state.titleOffsetX;
+                state.dragStartY = pos.y - state.subTitleOffsetY;
+                canvas.style.cursor = 'grabbing';
+                return;
+            }
+
+            // Check Speaker hit
+            const scale = state.speakerScale / 100;
+            const spWidth = (state.canvasWidth * 0.45) * scale;
+            const spHeight = (state.canvasHeight * 0.9) * scale;
+            const spX = 30 + state.speakerX;
+            const spY = (state.canvasHeight - spHeight) + state.speakerY;
+
+            if (pos.x >= spX && pos.x <= spX + spWidth && pos.y >= spY && pos.y <= spY + spHeight) {
+                state.dragTarget = 'speaker';
+                state.dragStartX = pos.x - state.speakerX;
+                state.dragStartY = pos.y - state.speakerY;
+                canvas.style.cursor = 'grabbing';
+                return;
+            }
+
+            // Default to Background drag
+            state.dragTarget = 'background';
+            state.dragStartX = pos.x - state.bgX;
+            state.dragStartY = pos.y - state.bgY;
+            canvas.style.cursor = 'grabbing';
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e);
+
+            if (!state.dragTarget) {
+                canvas.style.cursor = 'grab';
+                return;
+            }
+
+            if (state.dragTarget === 'title') {
+                state.titleOffsetX = pos.x - state.dragStartX;
+                state.titleOffsetY = pos.y - state.dragStartY;
+            } else if (state.dragTarget === 'subtitle') {
+                state.subTitleOffsetY = pos.y - state.dragStartY;
+            } else if (state.dragTarget === 'speaker') {
+                state.speakerX = pos.x - state.dragStartX;
+                state.speakerY = pos.y - state.dragStartY;
+                if (elements.speakerXInput) elements.speakerXInput.value = state.speakerX;
+                if (elements.speakerYInput) elements.speakerYInput.value = state.speakerY;
+                if (elements.speakerXVal) elements.speakerXVal.textContent = Math.round(state.speakerX) + 'px';
+                if (elements.speakerYVal) elements.speakerYVal.textContent = Math.round(state.speakerY) + 'px';
+            } else if (state.dragTarget === 'background') {
+                state.bgX = pos.x - state.dragStartX;
+                state.bgY = pos.y - state.dragStartY;
+                if (elements.bgXInput) elements.bgXInput.value = state.bgX;
+                if (elements.bgYInput) elements.bgYInput.value = state.bgY;
+                if (elements.bgXVal) elements.bgXVal.textContent = Math.round(state.bgX) + 'px';
+                if (elements.bgYVal) elements.bgYVal.textContent = Math.round(state.bgY) + 'px';
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            state.dragTarget = null;
+            if (canvas) canvas.style.cursor = 'grab';
+        });
+    }
 
     // --- Web Audio API & Visualizer Setup ---
     function setupAudioVisualizer() {
@@ -397,11 +555,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Control Inputs & Listeners ---
     function setupControlEvents() {
-        elements.speakerPhotoInput.addEventListener('change', (e) => {
+        // Speaker Upload & Actions
+        elements.speakerPhotoInput.addEventListener('change', async (e) => {
             if (e.target.files[0]) {
                 const img = new Image();
-                img.onload = () => { state.speakerImg = img; };
+                img.onload = async () => {
+                    state.rawSpeakerImg = img;
+                    state.speakerImg = img;
+                    showToast('បាន Upload រូប Speaker រួចរាល់!');
+                };
                 img.src = URL.createObjectURL(e.target.files[0]);
+            }
+        });
+
+        elements.flipSpeakerBtn.addEventListener('click', () => {
+            state.speakerFlipH = !state.speakerFlipH;
+            showToast(`បានត្រឡប់រូប ${state.speakerFlipH ? 'ឆ្វេង-ស្តាំ' : 'ធម្មតា'}`);
+        });
+
+        elements.removeBgBtn.addEventListener('click', async () => {
+            if (!state.rawSpeakerImg) {
+                showToast('⚠️ សូម Upload រូប Speaker ជាមុនសិន!');
+                return;
+            }
+
+            elements.bgToleranceGroup.style.display = 'block';
+            showToast('✨ កំពុងលុប Background Auto...');
+            state.speakerImg = await processAutoRemoveBg(state.rawSpeakerImg, state.bgTolerance);
+            state.isBgRemoved = true;
+            showToast('✅ លុប Background រួចរាល់!');
+        });
+
+        elements.bgToleranceInput.addEventListener('input', async (e) => {
+            state.bgTolerance = parseInt(e.target.value);
+            elements.bgToleranceVal.textContent = state.bgTolerance;
+            if (state.rawSpeakerImg && state.isBgRemoved) {
+                state.speakerImg = await processAutoRemoveBg(state.rawSpeakerImg, state.bgTolerance);
             }
         });
 
@@ -424,12 +613,28 @@ document.addEventListener('DOMContentLoaded', () => {
             state.speakerRadius = parseInt(e.target.value);
         });
 
+        // Background Upload & Actions
         elements.bgPhotoInput.addEventListener('change', (e) => {
             if (e.target.files[0]) {
                 const img = new Image();
                 img.onload = () => { state.bgImg = img; };
                 img.src = URL.createObjectURL(e.target.files[0]);
             }
+        });
+
+        elements.bgScaleInput.addEventListener('input', (e) => {
+            state.bgScale = parseInt(e.target.value);
+            elements.bgScaleVal.textContent = state.bgScale + '%';
+        });
+
+        elements.bgXInput.addEventListener('input', (e) => {
+            state.bgX = parseInt(e.target.value);
+            elements.bgXVal.textContent = state.bgX + 'px';
+        });
+
+        elements.bgYInput.addEventListener('input', (e) => {
+            state.bgY = parseInt(e.target.value);
+            elements.bgYVal.textContent = state.bgY + 'px';
         });
 
         elements.bgBlurInput.addEventListener('input', (e) => {
@@ -473,11 +678,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.clearRect(0, 0, width, height);
 
-        // 1. Draw Background Layer (Right Side / Full Canvas)
+        // 1. Draw Custom Background Layer (Right Side / Full Canvas)
         if (state.bgImg) {
             ctx.save();
             ctx.filter = `blur(${state.bgBlur}px) brightness(${state.bgBright}%)`;
-            ctx.drawImage(state.bgImg, 0, 0, width, height);
+            const bgScale = state.bgScale / 100;
+            const bgW = width * bgScale;
+            const bgH = height * bgScale;
+            const bgX = (width - bgW) / 2 + state.bgX;
+            const bgY = (height - bgH) / 2 + state.bgY;
+
+            ctx.drawImage(state.bgImg, bgX, bgY, bgW, bgH);
             ctx.restore();
         } else {
             // Default Landscape Gradient Background
@@ -504,7 +715,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.clip();
             }
 
-            ctx.drawImage(state.speakerImg, spX, spY, spWidth, spHeight);
+            if (state.speakerFlipH) {
+                ctx.translate(spX + spWidth / 2, spY + spHeight / 2);
+                ctx.scale(-1, 1);
+                ctx.drawImage(state.speakerImg, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
+            } else {
+                ctx.drawImage(state.speakerImg, spX, spY, spWidth, spHeight);
+            }
+
             ctx.restore();
         }
 
@@ -532,8 +750,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 4. Draw Khmer Typography (Main Title & Subtitle)
         ctx.save();
-        const titleX = width * 0.72;
-        const titleY = height * 0.52;
+        const titleX = (width * 0.72) + state.titleOffsetX;
+        const titleY = (height * 0.52) + state.titleOffsetY;
 
         ctx.textAlign = 'center';
         ctx.font = `bold ${state.titleFontSize}px "${state.titleFont}", sans-serif`;
@@ -555,18 +773,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Subtitle
         if (state.subTitle) {
+            const subY = titleY + state.titleFontSize * 0.8 + state.subTitleOffsetY;
             ctx.font = `600 ${Math.round(state.titleFontSize * 0.45)}px "Kantumruy Pro", sans-serif`;
             ctx.lineWidth = 4;
-            ctx.strokeText(state.subTitle, titleX, titleY + state.titleFontSize * 0.8);
+            ctx.strokeText(state.subTitle, titleX, subY);
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillText(state.subTitle, titleX, titleY + state.titleFontSize * 0.8);
+            ctx.fillText(state.subTitle, titleX, subY);
         }
         ctx.restore();
+
+        // 5. Draw Active Selection Outline Box when Dragging
+        if (state.dragTarget) {
+            ctx.save();
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+
+            if (state.dragTarget === 'title') {
+                ctx.strokeRect(titleX - 220, titleY - state.titleFontSize, 440, state.titleFontSize * 1.3);
+            } else if (state.dragTarget === 'subtitle') {
+                const subY = titleY + state.titleFontSize * 0.8 + state.subTitleOffsetY;
+                ctx.strokeRect(titleX - 200, subY - state.titleFontSize * 0.45, 400, state.titleFontSize * 0.7);
+            } else if (state.dragTarget === 'speaker' && state.speakerImg) {
+                const scale = state.speakerScale / 100;
+                const spWidth = (width * 0.45) * scale;
+                const spHeight = (height * 0.9) * scale;
+                const spX = 30 + state.speakerX;
+                const spY = (height - spHeight) + state.speakerY;
+                ctx.strokeRect(spX, spY, spWidth, spHeight);
+            }
+            ctx.restore();
+        }
     }
 
     // --- Generate Default Demo Images ---
     function createDemoImages() {
-        // Create canvas demo speaker image (Orange Robe Monk cutout representation)
         const spCanvas = document.createElement('canvas');
         spCanvas.width = 400;
         spCanvas.height = 600;
@@ -578,14 +819,16 @@ document.addEventListener('DOMContentLoaded', () => {
         sCtx.fillStyle = grad;
         sCtx.fillRect(50, 150, 300, 450);
 
-        // Head
         sCtx.fillStyle = '#fde047';
         sCtx.beginPath();
         sCtx.arc(200, 120, 70, 0, Math.PI * 2);
         sCtx.fill();
 
         const demoSpImg = new Image();
-        demoSpImg.onload = () => { state.speakerImg = demoSpImg; };
+        demoSpImg.onload = () => {
+            state.rawSpeakerImg = demoSpImg;
+            state.speakerImg = demoSpImg;
+        };
         demoSpImg.src = spCanvas.toDataURL();
     }
 
