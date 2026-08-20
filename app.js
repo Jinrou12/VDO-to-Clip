@@ -2115,7 +2115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof JSZip !== 'undefined') {
                 const zip = new JSZip();
                 exportedFiles.forEach((file, idx) => {
-                    let filename = `${file.safeName}_Short.${file.ext}`;
+                    let filename = `${file.safeName}.${file.ext}`;
                     zip.file(filename, file.blob);
                 });
 
@@ -2142,7 +2142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    a.download = `${file.safeName}_Short.${file.ext}`;
+                    a.download = `${file.safeName}.${file.ext}`;
                     document.body.appendChild(a);
                     a.click();
                     setTimeout(() => {
@@ -2233,7 +2233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const a = document.createElement('a');
                         a.style.display = 'none';
                         a.href = url;
-                        a.download = `${safeName}_Short.${ext}`;
+                        a.download = `${safeName}.${ext}`;
                         document.body.appendChild(a);
                         a.click();
                         setTimeout(() => {
