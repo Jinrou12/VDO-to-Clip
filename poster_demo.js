@@ -626,11 +626,64 @@ document.addEventListener('DOMContentLoaded', () => {
     let selfieSegmentationInstance = null;
 
     async function processMediaPipeSelfieCutout(imageElement) {
+        const w = imageElement.naturalWidth || imageElement.width || 600;
+        const h = imageElement.naturalHeight || imageElement.height || 800;
+
+        // --- Try MediaPipe Tasks Vision (New, better quality) ---
+        if (window._mpTasksSegmenter) {
+            try {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = w;
+                tempCanvas.height = h;
+                const tCtx = tempCanvas.getContext('2d');
+                tCtx.drawImage(imageElement, 0, 0, w, h);
+
+                const result = window._mpTasksSegmenter.segment(tempCanvas);
+                if (result && result.confidenceMasks && result.confidenceMasks.length > 0) {
+                    const mask = result.confidenceMasks[0];
+                    const maskCanvas = mask.getAsWebGLTexture ? null : mask.getAsImageData ? mask.getAsImageData() : null;
+
+                    // Build output with mask alpha
+                    const outCanvas = document.createElement('canvas');
+                    outCanvas.width = w;
+                    outCanvas.height = h;
+                    const oCtx = outCanvas.getContext('2d');
+                    oCtx.drawImage(imageElement, 0, 0, w, h);
+                    const imgData = oCtx.getImageData(0, 0, w, h);
+
+                    let maskPixels;
+                    if (maskCanvas) {
+                        maskPixels = maskCanvas.data;
+                    } else {
+                        // Try canvas-based mask extraction
+                        const mCanvas = document.createElement('canvas');
+                        mCanvas.width = w;
+                        mCanvas.height = h;
+                        const mCtx = mCanvas.getContext('2d');
+                        mask.draw(mCanvas);
+                        maskPixels = mCtx.getImageData(0, 0, w, h).data;
+                    }
+
+                    for (let i = 0; i < imgData.data.length / 4; i++) {
+                        const maskVal = maskPixels[i * 4] ?? maskPixels[i];
+                        imgData.data[i * 4 + 3] = maskVal;
+                    }
+                    oCtx.putImageData(imgData, 0, 0);
+
+                    return new Promise(resolve => {
+                        const cleanImg = new Image();
+                        cleanImg.onload = () => resolve(cleanImg);
+                        cleanImg.src = outCanvas.toDataURL('image/png');
+                    });
+                }
+            } catch (e) {
+                console.warn('MediaPipe Tasks segmentation error:', e);
+            }
+        }
+
+        // --- Fallback: Old MediaPipe selfie_segmentation ---
         return new Promise(async (resolve) => {
             try {
-                const w = imageElement.naturalWidth || imageElement.width || 600;
-                const h = imageElement.naturalHeight || imageElement.height || 800;
-
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = w;
                 tempCanvas.height = h;
@@ -638,15 +691,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let resolved = false;
 
-                // 4-second safety timeout fallback
                 const timeoutTimer = setTimeout(async () => {
                     if (!resolved) {
                         resolved = true;
-                        showToast('⚡ កំពុងប្រើប្រាស់ Adaptive Human AI...');
+                        showToast('⚡ Adaptive Human AI...');
                         const fallback = await processHumanSegmentation(imageElement);
                         resolve(fallback);
                     }
-                }, 4000);
+                }, 5000);
 
                 if (!window.SelfieSegmentation) {
                     clearTimeout(timeoutTimer);
@@ -660,22 +712,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     selfieSegmentationInstance = new window.SelfieSegmentation({
                         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
                     });
-                    selfieSegmentationInstance.setOptions({
-                        modelSelection: 1,
-                    });
+                    selfieSegmentationInstance.setOptions({ modelSelection: 1 });
                 }
 
                 selfieSegmentationInstance.onResults((results) => {
                     if (resolved) return;
                     resolved = true;
                     clearTimeout(timeoutTimer);
-
                     tCtx.clearRect(0, 0, w, h);
                     tCtx.drawImage(results.segmentationMask, 0, 0, w, h);
-                    
                     tCtx.globalCompositeOperation = 'source-in';
                     tCtx.drawImage(imageElement, 0, 0, w, h);
-
                     const cleanImg = new Image();
                     cleanImg.onload = () => resolve(cleanImg);
                     cleanImg.src = tempCanvas.toDataURL('image/png');
@@ -929,38 +976,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 elements.mediaPipeAiBtn.disabled = true;
-                elements.mediaPipeAiBtn.textContent = '⏳ AI កំពុង Load + កាត់ BG...';
+                elements.mediaPipeAiBtn.textContent = '⏳ AI កំពុងកាត់ BG...';
 
                 try {
-                    // Try RMBG-1.4 AI first (best quality)
-                    if (window.removeBackgroundRmbg) {
-                        showToast('🤖 RMBG-1.4 AI: កំពុង Load Model (~40MB ครั้งแรก)...');
-                        const cleanImg = await window.removeBackgroundRmbg(state.rawSpeakerImg);
-                        if (cleanImg) {
-                            initSpeakerCanvas(cleanImg);
-                            state.speakerGlowSize = 12;
-                            if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
-                            if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
-                            showToast('✅ RMBG-1.4 AI កាត់ BG បានស្អាត 100%!');
-                            return;
-                        }
-                    }
-                    // Fallback: MediaPipe
-                    showToast('🧠 Google MediaPipe AI (100% ស្អាត)...');
-                    const cleanImg2 = await processMediaPipeSelfieCutout(state.rawSpeakerImg);
-                    initSpeakerCanvas(cleanImg2);
+                    const hasTasksAI = !!window._mpTasksSegmenter;
+                    showToast(hasTasksAI ? '🤖 MediaPipe Tasks AI (ស្អាតថ្មី)...' : '🧠 MediaPipe Selfie AI...');
+                    const cleanImg = await processMediaPipeSelfieCutout(state.rawSpeakerImg);
+                    initSpeakerCanvas(cleanImg);
                     state.speakerGlowSize = 12;
                     if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
                     if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
-                    showToast('✅ MediaPipe AI កាត់ BG រួចរាល់!');
+                    showToast('✅ AI Remove BG រួចរាល់ ស្អាត!');
                 } catch (err) {
                     console.error('AI BG remove error:', err);
-                    showToast('⚠️ AI Error - ប្រើ Adaptive Human AI...');
+                    showToast('⚠️ Error - ប្រើ Human AI...');
                     const fallback = await processHumanSegmentation(state.rawSpeakerImg);
                     initSpeakerCanvas(fallback);
                 } finally {
                     elements.mediaPipeAiBtn.disabled = false;
-                    elements.mediaPipeAiBtn.textContent = '🧠 Google MediaPipe AI (កាត់រូបមនុស្ស 100% ស្អាត)';
+                    elements.mediaPipeAiBtn.textContent = '🤖 Remove BG ជាមួយ RMBG AI (ស្អាតបំផុត)';
                 }
             });
         }
