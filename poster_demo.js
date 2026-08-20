@@ -517,13 +517,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Post-process: White-bleed De-spill, Mask Erosion & Anti-aliased Matting ---
+    // --- Post-process: HD Smooth Anti-Aliased Edge Refinement ---
     function refineEdges(imageElement, options = {}) {
         const {
-            erodePixels = 3,       // Shave 3px off outer edge to destroy white background border
-            lowAlphaCutoff = 50,   // Erase ambient noise/haze
-            highAlphaCap = 220,    // Solidify subject silhouette
-            despeckleMinSize = 300 // Erase isolated pixel clusters smaller than this
+            erodePixels = 1,       // 1px subtle edge trim
+            featherRadius = 1,     // 1px soft anti-aliased edge blur
+            lowAlphaCutoff = 25,   // Erase background noise/haze
+            despeckleMinSize = 100 // Erase tiny isolated pixel specks
         } = options;
 
         return new Promise(resolve => {
@@ -537,15 +537,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = imgData.data;
             const totalPixels = w * h;
 
-            // Step 1: Despeckle - Remove isolated floating pixel clusters (dots/specks)
+            // Step 1: Kill ambient low-alpha noise
+            for (let i = 0; i < d.length; i += 4) {
+                if (d[i + 3] < lowAlphaCutoff) {
+                    d[i + 3] = 0;
+                }
+            }
+
+            // Step 2: Full 1x1 Resolution Despeckle (Remove tiny isolated floating specks)
             const visited = new Uint8Array(totalPixels);
             const islandSizes = [];
             const islandPixels = [];
 
-            for (let y = 0; y < h; y += 2) {
-                for (let x = 0; x < w; x += 2) {
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
                     const idx = y * w + x;
-                    if (visited[idx] || d[idx * 4 + 3] < lowAlphaCutoff) continue;
+                    if (visited[idx] || d[idx * 4 + 3] === 0) continue;
 
                     const queue = [idx];
                     visited[idx] = 1;
@@ -565,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ];
 
                         for (const n of neighbors) {
-                            if (n !== -1 && !visited[n] && d[n * 4 + 3] >= lowAlphaCutoff) {
+                            if (n !== -1 && !visited[n] && d[n * 4 + 3] > 0) {
                                 visited[n] = 1;
                                 queue.push(n);
                                 component.push(n);
@@ -578,28 +585,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Find main body (largest component)
             let maxIslandSize = 0;
             for (const sz of islandSizes) {
                 if (sz > maxIslandSize) maxIslandSize = sz;
             }
 
             // Erase small isolated specks disconnected from main body
-            const minKeepSize = Math.max(despeckleMinSize, Math.floor(maxIslandSize * 0.02));
+            const minKeepSize = Math.max(despeckleMinSize, Math.floor(maxIslandSize * 0.01));
             for (let i = 0; i < islandPixels.length; i++) {
                 if (islandSizes[i] < minKeepSize) {
                     const pts = islandPixels[i];
                     for (let p = 0; p < pts.length; p++) {
-                        const pixelIdx = pts[p];
-                        d[pixelIdx * 4 + 3] = 0;
-                        if (pixelIdx + 1 < totalPixels) d[(pixelIdx + 1) * 4 + 3] = 0;
-                        if (pixelIdx + w < totalPixels) d[(pixelIdx + w) * 4 + 3] = 0;
-                        if (pixelIdx + w + 1 < totalPixels) d[(pixelIdx + w + 1) * 4 + 3] = 0;
+                        d[pts[p] * 4 + 3] = 0;
                     }
                 }
             }
 
-            // Step 2: Mask Erosion (Choke `erodePixels` inward to cut off white background boundary)
+            // Step 3: Subtle Alpha Erosion (1px edge trim)
             if (erodePixels > 0) {
                 const erodedAlpha = new Uint8ClampedArray(totalPixels);
                 for (let y = 0; y < h; y++) {
@@ -625,71 +627,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Step 3: White Edge De-spill & Luminance Cleaning
-            // Kills white/light-grey background halos along outer silhouette
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    const idx = (y * w + x) * 4;
-                    const a = d[idx + 3];
-                    if (a > 0) {
-                        const r = d[idx], g = d[idx + 1], b = d[idx + 2];
-                        const isNearWhite = (r > 180 && g > 180 && b > 180 && Math.abs(r - g) < 30 && Math.abs(r - b) < 30);
-                        
-                        // Check if pixel is within 6px of outer background
-                        let nearEdge = false;
-                        for (let dy = -5; dy <= 5 && !nearEdge; dy += 2) {
-                            for (let dx = -5; dx <= 5 && !nearEdge; dx += 2) {
+            // Step 4: 1px Soft Feathering (Smooth anti-aliased edge)
+            if (featherRadius > 0) {
+                const featheredAlpha = new Uint8ClampedArray(totalPixels);
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        let sumA = 0, cnt = 0;
+                        for (let dy = -featherRadius; dy <= featherRadius; dy++) {
+                            for (let dx = -featherRadius; dx <= featherRadius; dx++) {
                                 const nx = x + dx, ny = y + dy;
-                                if (nx < 0 || ny < 0 || nx >= w || ny >= h || d[(ny * w + nx) * 4 + 3] === 0) {
-                                    nearEdge = true;
-                                }
+                                if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+                                sumA += d[(ny * w + nx) * 4 + 3];
+                                cnt++;
                             }
                         }
-
-                        if (nearEdge && isNearWhite) {
-                            // Find inner non-white color or drop alpha
-                            let foundR = r, foundG = g, foundB = b;
-                            let found = false;
-                            for (let dist = 2; dist <= 8 && !found; dist++) {
-                                for (let dy = -dist; dy <= dist && !found; dy += 2) {
-                                    for (let dx = -dist; dx <= dist && !found; dx += 2) {
-                                        const nx = x + dx, ny = y + dy;
-                                        if (nx >= 0 && ny >= 0 && nx < w && ny < h) {
-                                            const nidx = (ny * w + nx) * 4;
-                                            const nr = d[nidx], ng = d[nidx + 1], nb = d[nidx + 2], na = d[nidx + 3];
-                                            if (na > 200 && !(nr > 180 && ng > 180 && nb > 180)) {
-                                                foundR = nr; foundG = ng; foundB = nb;
-                                                found = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if (found) {
-                                d[idx] = foundR;
-                                d[idx + 1] = foundG;
-                                d[idx + 2] = foundB;
-                            } else {
-                                d[idx + 3] = Math.max(0, a - 200); // Drop white haze
-                            }
-                        }
+                        featheredAlpha[y * w + x] = Math.round(sumA / cnt);
                     }
                 }
-            }
-
-            // Step 4: Smoothstep Hermite Interpolation (Anti-aliased edge curve)
-            const tMin = lowAlphaCutoff / 255;
-            const tMax = highAlphaCap / 255;
-            for (let i = 0; i < d.length; i += 4) {
-                const a = d[i + 3] / 255;
-                if (a <= tMin) {
-                    d[i + 3] = 0;
-                } else if (a >= tMax) {
-                    d[i + 3] = 255;
-                } else {
-                    const x = (a - tMin) / (tMax - tMin);
-                    const smoothA = x * x * (3 - 2 * x); // Hermite curve
-                    d[i + 3] = Math.round(smoothA * 255);
+                for (let i = 0; i < totalPixels; i++) {
+                    d[i * 4 + 3] = featheredAlpha[i];
                 }
             }
 
