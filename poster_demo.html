@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khmer Audio & Video Poster Studio Demo</title>
     <link rel="stylesheet" href="poster_demo.css">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <!-- Navbar Header -->
@@ -104,12 +105,23 @@
                                 <button class="btn btn-secondary btn-sm" id="flipSpeakerBtn" style="flex:1;">🔄 ត្រឡប់រូប (Flip ⇄)</button>
                                 <button class="btn btn-secondary btn-sm" id="resetSpeakerImgBtn" style="flex:1;">🔄 ស្តាររូបដើម</button>
                             </div>
-                            <div class="form-row" style="margin-top:6px;">
-                                <button class="btn btn-primary btn-sm" id="removeBgBtn" style="flex:1;">✨ លុប BG Auto</button>
-                                <button class="btn btn-green btn-sm" id="humanSegBtn" style="flex:1;">🧠 AI Cutout</button>
+                            <div class="form-group" style="margin-top:6px;">
+                                <button class="btn btn-green btn-sm" id="mediaPipeAiBtn" style="width:100%; font-weight:bold;">🧠 Google MediaPipe AI (កាត់រូបមនុស្ស 100% ស្អាត)</button>
                             </div>
                             <div class="form-row" style="margin-top:6px;">
-                                <button class="btn btn-secondary btn-sm" id="eraserToolBtn" style="flex:1;">🧹 ជក់លុប BG (Eraser)</button>
+                                <button class="btn btn-primary btn-sm" id="removeBgBtn" style="flex:1;">✨ លុប BG Auto</button>
+                                <button class="btn btn-secondary btn-sm" id="removeBgApiBtn" style="flex:1;">⚡ Remove.bg HD AI</button>
+                            </div>
+                            <div class="form-group" id="removeBgApiGroup" style="display:none; margin-top:6px;">
+                                <label class="form-label">Remove.bg API Key (Free 50 images):</label>
+                                <div style="display:flex; gap:6px;">
+                                    <input type="password" id="removeBgApiKeyInput" placeholder="បិទភ្ជាប់ API Key..." class="form-control" style="flex:1;">
+                                    <button class="btn btn-green btn-sm" id="runRemoveBgApiBtn"> Run </button>
+                                </div>
+                            </div>
+                            <div class="form-row" style="margin-top:6px;">
+                                <button class="btn btn-secondary btn-sm" id="eraserToolBtn" style="flex:1;">🧹 ជក់លុប BG</button>
+                                <button class="btn btn-secondary btn-sm" id="lassoToolBtn" style="flex:1;">✂️ Lasso គូសលុប</button>
                                 <button class="btn btn-secondary btn-sm" id="pickColorKeyBtn" style="flex:1;">🎯 ចុចរើសពណ៌លុប</button>
                             </div>
                             <div class="form-group" id="eraserSizeGroup" style="display:none; margin-top:6px;">

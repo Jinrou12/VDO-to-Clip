@@ -27,8 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
         speakerMaskShape: 'none',
 
         // Tools
-        activeTool: 'select', // 'select' | 'eraser' | 'colorKey'
+        activeTool: 'select', // 'select' | 'eraser' | 'colorKey' | 'lasso'
         eraserSize: 30,
+        lassoPoints: [],
 
         // Background Layer (Right)
         bgImg: null,
@@ -95,8 +96,14 @@ document.addEventListener('DOMContentLoaded', () => {
         flipSpeakerBtn: document.getElementById('flipSpeakerBtn'),
         resetSpeakerImgBtn: document.getElementById('resetSpeakerImgBtn'),
         removeBgBtn: document.getElementById('removeBgBtn'),
+        mediaPipeAiBtn: document.getElementById('mediaPipeAiBtn'),
+        removeBgApiBtn: document.getElementById('removeBgApiBtn'),
+        removeBgApiGroup: document.getElementById('removeBgApiGroup'),
+        removeBgApiKeyInput: document.getElementById('removeBgApiKeyInput'),
+        runRemoveBgApiBtn: document.getElementById('runRemoveBgApiBtn'),
         humanSegBtn: document.getElementById('humanSegBtn'),
         eraserToolBtn: document.getElementById('eraserToolBtn'),
+        lassoToolBtn: document.getElementById('lassoToolBtn'),
         pickColorKeyBtn: document.getElementById('pickColorKeyBtn'),
         eraserSizeGroup: document.getElementById('eraserSizeGroup'),
         eraserSizeInput: document.getElementById('eraserSizeInput'),
@@ -564,6 +571,126 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('🎯 បានលុបពណ៌ដែលបានរើសរួចរាល់!');
     }
 
+    function eraseLassoRegion() {
+        if (!state.speakerCanvas || !state.speakerCtx || state.lassoPoints.length < 3) return;
+        const scale = state.speakerScale / 100;
+        const spWidth = (state.canvasWidth * 0.45) * scale;
+        const spHeight = (state.canvasHeight * 0.9) * scale;
+        const spX = 30 + state.speakerX;
+        const spY = (state.canvasHeight - spHeight) + state.speakerY;
+
+        const sCtx = state.speakerCtx;
+        sCtx.save();
+        sCtx.globalCompositeOperation = 'destination-out';
+        sCtx.beginPath();
+
+        state.lassoPoints.forEach((pt, idx) => {
+            let relX = (pt.x - spX) / spWidth;
+            let relY = (pt.y - spY) / spHeight;
+            if (state.speakerFlipH) relX = 1 - relX;
+            const imgX = relX * state.speakerCanvas.width;
+            const imgY = relY * state.speakerCanvas.height;
+
+            if (idx === 0) sCtx.moveTo(imgX, imgY);
+            else sCtx.lineTo(imgX, imgY);
+        });
+
+        sCtx.closePath();
+        sCtx.fill();
+        sCtx.restore();
+
+        state.lassoPoints = [];
+        const editedImg = new Image();
+        editedImg.onload = () => { state.speakerImg = editedImg; };
+        editedImg.src = state.speakerCanvas.toDataURL('image/png');
+        showToast('✂️ បានលុបតំបន់គូសរង្វង់ (Lasso) រួចរាល់!');
+    }
+
+    let selfieSegmentationInstance = null;
+
+    async function processMediaPipeSelfieCutout(imageElement) {
+        return new Promise((resolve) => {
+            try {
+                const w = imageElement.naturalWidth || imageElement.width || 600;
+                const h = imageElement.naturalHeight || imageElement.height || 800;
+
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = w;
+                tempCanvas.height = h;
+                const tCtx = tempCanvas.getContext('2d');
+
+                if (!window.SelfieSegmentation) {
+                    showToast('⚠️ កំពុងប្រើប្រាស់ Adaptive Human AI...');
+                    processHumanSegmentation(imageElement).then(resolve);
+                    return;
+                }
+
+                if (!selfieSegmentationInstance) {
+                    selfieSegmentationInstance = new window.SelfieSegmentation({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+                    });
+                    selfieSegmentationInstance.setOptions({
+                        modelSelection: 1,
+                    });
+                }
+
+                selfieSegmentationInstance.onResults((results) => {
+                    tCtx.clearRect(0, 0, w, h);
+                    tCtx.drawImage(results.segmentationMask, 0, 0, w, h);
+                    
+                    tCtx.globalCompositeOperation = 'source-in';
+                    tCtx.drawImage(imageElement, 0, 0, w, h);
+
+                    const cleanImg = new Image();
+                    cleanImg.onload = () => resolve(cleanImg);
+                    cleanImg.src = tempCanvas.toDataURL('image/png');
+                });
+
+                selfieSegmentationInstance.send({ image: imageElement });
+            } catch (err) {
+                console.error('MediaPipe error:', err);
+                processHumanSegmentation(imageElement).then(resolve);
+            }
+        });
+    }
+
+    async function processRemoveBgApi(imageElement, apiKey) {
+        try {
+            showToast('⚡ កំពុងផ្ញើទៅ Remove.bg HD AI...');
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = imageElement.naturalWidth || imageElement.width;
+            tempCanvas.height = imageElement.naturalHeight || imageElement.height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(imageElement, 0, 0);
+
+            const blob = await new Promise(r => tempCanvas.toBlob(r, 'image/png'));
+            const formData = new FormData();
+            formData.append('image_file', blob, 'speaker.png');
+            formData.append('size', 'auto');
+
+            const res = await fetch('https://api.remove.bg/v1.0/removebg', {
+                method: 'POST',
+                headers: { 'X-Api-Key': apiKey },
+                body: formData
+            });
+
+            if (!res.ok) {
+                throw new Error(`API Error ${res.status}`);
+            }
+
+            const resBlob = await res.blob();
+            const cleanImg = new Image();
+            return new Promise((resolve) => {
+                cleanImg.onload = () => resolve(cleanImg);
+                cleanImg.src = URL.createObjectURL(resBlob);
+            });
+        } catch (err) {
+            console.error(err);
+            showToast('❌ API Key មិនត្រឹមត្រូវ ឬអស់ Credit! សូមពិនិត្យឡើងវិញ។');
+            return imageElement;
+        }
+    }
+
     function setupCanvasMouseEvents() {
         const canvas = elements.posterCanvas;
 
@@ -752,6 +879,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 img.src = URL.createObjectURL(e.target.files[0]);
             }
         });
+
+        if (elements.mediaPipeAiBtn) {
+            elements.mediaPipeAiBtn.addEventListener('click', async () => {
+                if (!state.rawSpeakerImg) {
+                    showToast('⚠️ សូម Upload រូប Speaker ជាមុនសិន!');
+                    return;
+                }
+                showToast('🧠 កំពុងកាត់រូបមនុស្សតាមបែប Google MediaPipe AI (100% ស្អាត)...');
+                const cleanImg = await processMediaPipeSelfieCutout(state.rawSpeakerImg);
+                initSpeakerCanvas(cleanImg);
+                state.speakerGlowSize = 12;
+                if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
+                if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
+                showToast('✅ Google MediaPipe AI កាត់រូបមនុស្សបាន 100% ស្អាត!');
+            });
+        }
+
+        if (elements.removeBgApiBtn) {
+            elements.removeBgApiBtn.addEventListener('click', () => {
+                const isHidden = elements.removeBgApiGroup.style.display === 'none';
+                elements.removeBgApiGroup.style.display = isHidden ? 'block' : 'none';
+            });
+        }
+
+        if (elements.runRemoveBgApiBtn) {
+            elements.runRemoveBgApiBtn.addEventListener('click', async () => {
+                if (!state.rawSpeakerImg) {
+                    showToast('⚠️ សូម Upload រូប Speaker ជាមុនសិន!');
+                    return;
+                }
+                const key = elements.removeBgApiKeyInput.value.trim();
+                if (!key) {
+                    showToast('⚠️ សូមបញ្ចូល API Key របស់ Remove.bg!');
+                    return;
+                }
+                const cleanImg = await processRemoveBgApi(state.rawSpeakerImg, key);
+                initSpeakerCanvas(cleanImg);
+                showToast('✅ Remove.bg HD AI កាត់ Background បាន 100% រួចរាល់!');
+            });
+        }
+
+        if (elements.lassoToolBtn) {
+            elements.lassoToolBtn.addEventListener('click', () => {
+                if (state.activeTool === 'lasso') {
+                    state.activeTool = 'select';
+                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'grab';
+                    showToast('បានបិទ ឧបករណ៍ Lasso');
+                } else {
+                    state.activeTool = 'lasso';
+                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'crosshair';
+                    showToast('✂️ ឧបករណ៍ Lasso ត្រូវបានបើក៖ ប្រើ Mouse គូសរង្វង់ជុំវិញតំបន់ចង់លុប!');
+                }
+            });
+        }
 
         if (elements.resetSpeakerImgBtn) {
             elements.resetSpeakerImgBtn.addEventListener('click', () => {
@@ -1112,6 +1293,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const spY = (height - spHeight) + state.speakerY;
                 ctx.strokeRect(spX, spY, spWidth, spHeight);
             }
+            ctx.restore();
+        }
+
+        // Draw live Lasso Tool polygon line preview
+        if (state.activeTool === 'lasso' && state.lassoPoints && state.lassoPoints.length > 0) {
+            ctx.save();
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            state.lassoPoints.forEach((pt, i) => {
+                if (i === 0) ctx.moveTo(pt.x, pt.y);
+                else ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.stroke();
             ctx.restore();
         }
     }
