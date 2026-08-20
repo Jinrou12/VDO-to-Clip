@@ -903,14 +903,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Control Inputs & Listeners ---
     function setupControlEvents() {
         // Speaker Upload & Actions
-        elements.speakerPhotoInput.addEventListener('change', async (e) => {
-            if (e.target.files[0]) {
-                const img = new Image();
-                img.onload = async () => {
-                    initSpeakerCanvas(img);
-                    showToast('បាន Upload រូប Speaker រួចរាល់!');
+        elements.speakerPhotoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        initSpeakerCanvas(img);
+                        showToast('បាន Upload រូប Speaker រួចរាល់!');
+                    };
+                    img.src = event.target.result;
                 };
-                img.src = URL.createObjectURL(e.target.files[0]);
+                reader.readAsDataURL(file);
             }
         });
 
@@ -1154,10 +1159,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Background Upload & Actions
         elements.bgPhotoInput.addEventListener('change', (e) => {
-            if (e.target.files[0]) {
-                const img = new Image();
-                img.onload = () => { state.bgImg = img; };
-                img.src = URL.createObjectURL(e.target.files[0]);
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => { state.bgImg = img; };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
             }
         });
 
