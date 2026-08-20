@@ -120,9 +120,35 @@
                                 </div>
                             </div>
                             <div class="form-row" style="margin-top:6px;">
+                                <button class="btn btn-secondary btn-sm" id="cropToolBtn" style="flex:1;">✂️ Crop រូប Speaker</button>
                                 <button class="btn btn-secondary btn-sm" id="eraserToolBtn" style="flex:1;">🧹 ជក់លុប BG</button>
                                 <button class="btn btn-secondary btn-sm" id="lassoToolBtn" style="flex:1;">✂️ Lasso គូសលុប</button>
-                                <button class="btn btn-secondary btn-sm" id="pickColorKeyBtn" style="flex:1;">🎯 ចុចរើសពណ៌លុប</button>
+                                <button class="btn btn-secondary btn-sm" id="pickColorKeyBtn" style="flex:1;">🎯 ចុចរើសពណ៌</button>
+                            </div>
+                            <!-- Speaker Crop Panel -->
+                            <div class="form-group" id="cropPanelGroup" style="display:none; margin-top:8px; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px;">
+                                <div class="form-label" style="font-weight:bold; color:#fbbf24; margin-bottom:6px;">✂️ កាត់តម្រឹមរូប (Speaker Crop):</div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">កាត់លើ (Top): <span id="cropTopVal">0%</span></label>
+                                        <input type="range" id="cropTopInput" min="0" max="50" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">កាត់ក្រោម (Bottom): <span id="cropBottomVal">0%</span></label>
+                                        <input type="range" id="cropBottomInput" min="0" max="50" value="0">
+                                    </div>
+                                </div>
+                                <div class="form-row" style="margin-top:4px;">
+                                    <div class="form-group">
+                                        <label class="form-label">កាត់ឆ្វេង (Left): <span id="cropLeftVal">0%</span></label>
+                                        <input type="range" id="cropLeftInput" min="0" max="50" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">កាត់ស្តាំ (Right): <span id="cropRightVal">0%</span></label>
+                                        <input type="range" id="cropRightInput" min="0" max="50" value="0">
+                                    </div>
+                                </div>
+                                <button class="btn btn-secondary btn-sm" id="resetCropBtn" style="width:100%; margin-top:6px;">🔄 ស្តារ Crop ដើម</button>
                             </div>
                             <div class="form-group" id="eraserSizeGroup" style="display:none; margin-top:6px;">
                                 <label class="form-label">ទំហំជក់លុប (Brush Size): <span id="eraserSizeVal">30px</span></label>
@@ -132,14 +158,25 @@
                                 <label class="form-label">កម្រិតលុប BG (Tolerance): <span id="bgToleranceVal">30</span></label>
                                 <input type="range" id="bgToleranceInput" min="5" max="80" value="30">
                             </div>
-                            <div class="form-group" style="margin-top:6px;">
-                                <label class="form-label">🖼️ ស៊ុមរាងរូប Speaker (Frame Mask Shape):</label>
-                                <select id="speakerMaskShapeSelect" class="form-control">
-                                    <option value="none">រាងដើម (Full Rectangle)</option>
-                                    <option value="arch">🏛️ ស៊ុមរោង (Arch Portal Frame)</option>
-                                    <option value="circle">⭕ រង្វង់មូល (Circle / Oval)</option>
-                                    <option value="feather">☁️ គែមទន់ (Soft Gradient Feather Edge)</option>
-                                </select>
+                            <div class="form-row" style="margin-top:6px;">
+                                <div class="form-group">
+                                    <label class="form-label">🖼️ ស៊ុមរាង (Frame Shape):</label>
+                                    <select id="speakerMaskShapeSelect" class="form-control">
+                                        <option value="none">រាងដើម (Full Rectangle)</option>
+                                        <option value="arch">🏛️ ស៊ុមរោង (Arch Portal Frame)</option>
+                                        <option value="circle">⭕ រង្វង់មូល (Circle / Oval)</option>
+                                        <option value="feather">☁️ គែមទន់ (Soft Gradient Feather Edge)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">📐 ទ្រង់ទ្រាយរូប (Aspect Ratio):</label>
+                                    <select id="speakerAspectSelect" class="form-control">
+                                        <option value="auto">🔒 រក្សាទ្រង់ទ្រាយដើម (Auto Natural)</option>
+                                        <option value="1:1">1:1 Square (រាងការ៉េ)</option>
+                                        <option value="3:4">3:4 Portrait (រាងឈរ)</option>
+                                        <option value="4:3">4:3 Landscape (រាងផ្តេក)</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="form-row" style="margin-top:8px;">
                                 <div class="form-group">

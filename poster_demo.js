@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
         speakerGlowSize: 0,
         speakerShadow: 15,
         speakerMaskShape: 'none',
+        speakerAspect: 'auto',
+        cropTop: 0,
+        cropBottom: 0,
+        cropLeft: 0,
+        cropRight: 0,
 
         // Tools
         activeTool: 'select', // 'select' | 'eraser' | 'colorKey' | 'lasso'
@@ -102,15 +107,18 @@ document.addEventListener('DOMContentLoaded', () => {
         removeBgApiKeyInput: document.getElementById('removeBgApiKeyInput'),
         runRemoveBgApiBtn: document.getElementById('runRemoveBgApiBtn'),
         humanSegBtn: document.getElementById('humanSegBtn'),
-        eraserToolBtn: document.getElementById('eraserToolBtn'),
-        lassoToolBtn: document.getElementById('lassoToolBtn'),
-        pickColorKeyBtn: document.getElementById('pickColorKeyBtn'),
-        eraserSizeGroup: document.getElementById('eraserSizeGroup'),
-        eraserSizeInput: document.getElementById('eraserSizeInput'),
-        eraserSizeVal: document.getElementById('eraserSizeVal'),
-        bgToleranceGroup: document.getElementById('bgToleranceGroup'),
-        bgToleranceInput: document.getElementById('bgToleranceInput'),
-        bgToleranceVal: document.getElementById('bgToleranceVal'),
+        cropToolBtn: document.getElementById('cropToolBtn'),
+        cropPanelGroup: document.getElementById('cropPanelGroup'),
+        cropTopInput: document.getElementById('cropTopInput'),
+        cropTopVal: document.getElementById('cropTopVal'),
+        cropBottomInput: document.getElementById('cropBottomInput'),
+        cropBottomVal: document.getElementById('cropBottomVal'),
+        cropLeftInput: document.getElementById('cropLeftInput'),
+        cropLeftVal: document.getElementById('cropLeftVal'),
+        cropRightInput: document.getElementById('cropRightInput'),
+        cropRightVal: document.getElementById('cropRightVal'),
+        resetCropBtn: document.getElementById('resetCropBtn'),
+        speakerAspectSelect: document.getElementById('speakerAspectSelect'),
         speakerMaskShapeSelect: document.getElementById('speakerMaskShapeSelect'),
 
         speakerGlowColorInput: document.getElementById('speakerGlowColorInput'),
@@ -977,6 +985,61 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        if (elements.cropToolBtn) {
+            elements.cropToolBtn.addEventListener('click', () => {
+                const isHidden = elements.cropPanelGroup.style.display === 'none';
+                elements.cropPanelGroup.style.display = isHidden ? 'block' : 'none';
+            });
+        }
+
+        if (elements.cropTopInput) {
+            elements.cropTopInput.addEventListener('input', (e) => {
+                state.cropTop = parseInt(e.target.value);
+                if (elements.cropTopVal) elements.cropTopVal.textContent = state.cropTop + '%';
+            });
+        }
+        if (elements.cropBottomInput) {
+            elements.cropBottomInput.addEventListener('input', (e) => {
+                state.cropBottom = parseInt(e.target.value);
+                if (elements.cropBottomVal) elements.cropBottomVal.textContent = state.cropBottom + '%';
+            });
+        }
+        if (elements.cropLeftInput) {
+            elements.cropLeftInput.addEventListener('input', (e) => {
+                state.cropLeft = parseInt(e.target.value);
+                if (elements.cropLeftVal) elements.cropLeftVal.textContent = state.cropLeft + '%';
+            });
+        }
+        if (elements.cropRightInput) {
+            elements.cropRightInput.addEventListener('input', (e) => {
+                state.cropRight = parseInt(e.target.value);
+                if (elements.cropRightVal) elements.cropRightVal.textContent = state.cropRight + '%';
+            });
+        }
+        if (elements.resetCropBtn) {
+            elements.resetCropBtn.addEventListener('click', () => {
+                state.cropTop = 0;
+                state.cropBottom = 0;
+                state.cropLeft = 0;
+                state.cropRight = 0;
+                if (elements.cropTopInput) elements.cropTopInput.value = 0;
+                if (elements.cropBottomInput) elements.cropBottomInput.value = 0;
+                if (elements.cropLeftInput) elements.cropLeftInput.value = 0;
+                if (elements.cropRightInput) elements.cropRightInput.value = 0;
+                if (elements.cropTopVal) elements.cropTopVal.textContent = '0%';
+                if (elements.cropBottomVal) elements.cropBottomVal.textContent = '0%';
+                if (elements.cropLeftVal) elements.cropLeftVal.textContent = '0%';
+                if (elements.cropRightVal) elements.cropRightVal.textContent = '0%';
+                showToast('🔄 បានស្តារ Crop ដើមវិញ!');
+            });
+        }
+        if (elements.speakerAspectSelect) {
+            elements.speakerAspectSelect.addEventListener('change', (e) => {
+                state.speakerAspect = e.target.value;
+                showToast(`បានកំណត់ទ្រង់ទ្រាយរូប៖ ${e.target.options[e.target.selectedIndex].text}`);
+            });
+        }
+
         if (elements.speakerMaskShapeSelect) {
             elements.speakerMaskShapeSelect.addEventListener('change', (e) => {
                 state.speakerMaskShape = e.target.value;
@@ -1150,11 +1213,30 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillRect(0, 0, width, height);
         }
 
-        // 2. Draw Speaker Photo Cutout (Left Side) with Human Segmentation Effects
+        // 2. Draw Speaker Photo Cutout (Left Side) with Natural Aspect Ratio & Crop
         if (state.speakerImg) {
             const scale = state.speakerScale / 100;
-            const spWidth = (width * 0.45) * scale;
-            const spHeight = (height * 0.9) * scale;
+            const naturalW = state.speakerImg.naturalWidth || state.speakerImg.width || 400;
+            const naturalH = state.speakerImg.naturalHeight || state.speakerImg.height || 600;
+
+            // Compute Crop Parameters
+            const cropL = (state.cropLeft / 100) * naturalW;
+            const cropR = (state.cropRight / 100) * naturalW;
+            const cropT = (state.cropTop / 100) * naturalH;
+            const cropB = (state.cropBottom / 100) * naturalH;
+
+            const srcW = Math.max(1, naturalW - cropL - cropR);
+            const srcH = Math.max(1, naturalH - cropT - cropB);
+
+            // Natural Aspect Ratio Calculation (Prevents image stretching!)
+            let imgRatio = srcW / srcH;
+            if (state.speakerAspect === '1:1') imgRatio = 1;
+            else if (state.speakerAspect === '3:4') imgRatio = 3 / 4;
+            else if (state.speakerAspect === '4:3') imgRatio = 4 / 3;
+
+            const spHeight = (height * 0.88) * scale;
+            const spWidth = spHeight * imgRatio;
+
             const spX = 30 + state.speakerX;
             const spY = (height - spHeight) + state.speakerY;
 
@@ -1172,10 +1254,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         ctx.save();
                         ctx.translate((spX + dx) + spWidth / 2, (spY + dy) + spHeight / 2);
                         ctx.scale(-1, 1);
-                        ctx.drawImage(state.speakerImg, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
+                        ctx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
                         ctx.restore();
                     } else {
-                        ctx.drawImage(state.speakerImg, spX + dx, spY + dy, spWidth, spHeight);
+                        ctx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, spX + dx, spY + dy, spWidth, spHeight);
                     }
                 }
                 ctx.restore();
@@ -1209,9 +1291,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (state.speakerFlipH) {
                 ctx.translate(spX + spWidth / 2, spY + spHeight / 2);
                 ctx.scale(-1, 1);
-                ctx.drawImage(state.speakerImg, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
+                ctx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
             } else {
-                ctx.drawImage(state.speakerImg, spX, spY, spWidth, spHeight);
+                ctx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, spX, spY, spWidth, spHeight);
             }
 
             ctx.restore();
@@ -1287,8 +1369,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.strokeRect(titleX - 200, subY - state.titleFontSize * 0.45, 400, state.titleFontSize * 0.7);
             } else if (state.dragTarget === 'speaker' && state.speakerImg) {
                 const scale = state.speakerScale / 100;
-                const spWidth = (width * 0.45) * scale;
-                const spHeight = (height * 0.9) * scale;
+                const naturalW = state.speakerImg.naturalWidth || state.speakerImg.width || 400;
+                const naturalH = state.speakerImg.naturalHeight || state.speakerImg.height || 600;
+                const cropL = (state.cropLeft / 100) * naturalW;
+                const cropR = (state.cropRight / 100) * naturalW;
+                const cropT = (state.cropTop / 100) * naturalH;
+                const cropB = (state.cropBottom / 100) * naturalH;
+                const srcW = Math.max(1, naturalW - cropL - cropR);
+                const srcH = Math.max(1, naturalH - cropT - cropB);
+
+                let imgRatio = srcW / srcH;
+                if (state.speakerAspect === '1:1') imgRatio = 1;
+                else if (state.speakerAspect === '3:4') imgRatio = 3 / 4;
+                else if (state.speakerAspect === '4:3') imgRatio = 4 / 3;
+
+                const spHeight = (height * 0.88) * scale;
+                const spWidth = spHeight * imgRatio;
                 const spX = 30 + state.speakerX;
                 const spY = (height - spHeight) + state.speakerY;
                 ctx.strokeRect(spX, spY, spWidth, spHeight);
