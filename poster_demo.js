@@ -515,14 +515,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Post-process: Clean up ragged/noisy alpha edges & remove isolated specks ---
+    // --- Post-process: Anti-aliased Edge Refinement & Isolated Speckle Removal ---
     function refineEdges(imageElement, options = {}) {
         const {
-            erodeRadius = 1,      // shrink mask to remove fringe
-            featherRadius = 2,    // soften edge
-            hardThreshold = 55,   // alpha < this → fully transparent
-            softThreshold = 200,  // alpha > this → fully opaque
-            despeckleMinSize = 400 // remove isolated pixel clusters smaller than this
+            lowAlphaCutoff = 35,   // Erase background noise/haze
+            highAlphaCap = 225,    // Solidify subject silhouette
+            despeckleMinSize = 300 // Erase isolated pixel clusters smaller than this
         } = options;
 
         return new Promise(resolve => {
@@ -536,14 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = imgData.data;
             const totalPixels = w * h;
 
-            // Step 1: Hard thresholding to kill low-alpha noise/haze
-            for (let i = 0; i < d.length; i += 4) {
-                const a = d[i + 3];
-                if (a < hardThreshold) d[i + 3] = 0;
-                else if (a > softThreshold) d[i + 3] = 255;
-            }
-
-            // Step 2: Despeckle - Connected Component Labeling to remove isolated specks/dots
+            // Step 1: Despeckle - Remove isolated floating pixel clusters (dots/specks)
             const visited = new Uint8Array(totalPixels);
             const islandSizes = [];
             const islandPixels = [];
@@ -551,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let y = 0; y < h; y += 2) {
                 for (let x = 0; x < w; x += 2) {
                     const idx = y * w + x;
-                    if (visited[idx] || d[idx * 4 + 3] === 0) continue;
+                    if (visited[idx] || d[idx * 4 + 3] < lowAlphaCutoff) continue;
 
                     const queue = [idx];
                     visited[idx] = 1;
@@ -571,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ];
 
                         for (const n of neighbors) {
-                            if (n !== -1 && !visited[n] && d[n * 4 + 3] > 0) {
+                            if (n !== -1 && !visited[n] && d[n * 4 + 3] >= lowAlphaCutoff) {
                                 visited[n] = 1;
                                 queue.push(n);
                                 component.push(n);
@@ -584,21 +575,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Find the main body (largest island)
+            // Find main body (largest component)
             let maxIslandSize = 0;
             for (const sz of islandSizes) {
                 if (sz > maxIslandSize) maxIslandSize = sz;
             }
 
             // Erase small isolated specks disconnected from main body
-            const minKeepSize = Math.max(despeckleMinSize, Math.floor(maxIslandSize * 0.03));
+            const minKeepSize = Math.max(despeckleMinSize, Math.floor(maxIslandSize * 0.02));
             for (let i = 0; i < islandPixels.length; i++) {
                 if (islandSizes[i] < minKeepSize) {
                     const pts = islandPixels[i];
                     for (let p = 0; p < pts.length; p++) {
                         const pixelIdx = pts[p];
                         d[pixelIdx * 4 + 3] = 0;
-                        // Clear 2x2 neighborhood for safety
                         if (pixelIdx + 1 < totalPixels) d[(pixelIdx + 1) * 4 + 3] = 0;
                         if (pixelIdx + w < totalPixels) d[(pixelIdx + w) * 4 + 3] = 0;
                         if (pixelIdx + w + 1 < totalPixels) d[(pixelIdx + w + 1) * 4 + 3] = 0;
@@ -606,50 +596,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Step 3: Erode alpha (remove 1-pixel fringes at edge)
-            const eroded = new Uint8ClampedArray(d.length);
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    const idx = (y * w + x) * 4;
-                    let minA = d[idx + 3];
-                    if (minA > 0) {
-                        for (let dy = -erodeRadius; dy <= erodeRadius; dy++) {
-                            for (let dx = -erodeRadius; dx <= erodeRadius; dx++) {
-                                const nx = x + dx, ny = y + dy;
-                                if (nx < 0 || ny < 0 || nx >= w || ny >= h) { minA = 0; break; }
-                                const nidx = (ny * w + nx) * 4;
-                                if (d[nidx + 3] < minA) minA = d[nidx + 3];
-                            }
-                            if (minA === 0) break;
-                        }
-                    }
-                    eroded[idx] = d[idx]; eroded[idx+1] = d[idx+1]; eroded[idx+2] = d[idx+2]; eroded[idx+3] = minA;
+            // Step 2: Smoothstep Hermite Interpolation (Smooth anti-aliased edge curve)
+            // Eliminates staircase pixelation & ragged edge dots
+            const tMin = lowAlphaCutoff / 255;
+            const tMax = highAlphaCap / 255;
+            for (let i = 0; i < d.length; i += 4) {
+                const a = d[i + 3] / 255;
+                if (a <= tMin) {
+                    d[i + 3] = 0;
+                } else if (a >= tMax) {
+                    d[i + 3] = 255;
+                } else {
+                    const x = (a - tMin) / (tMax - tMin);
+                    const smoothA = x * x * (3 - 2 * x); // Hermite curve
+                    d[i + 3] = Math.round(smoothA * 255);
                 }
             }
 
-            // Step 4: Feather — box blur the alpha channel only
-            const feathered = new Uint8ClampedArray(eroded.length);
-            const r = featherRadius;
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    let sumA = 0, cnt = 0;
-                    for (let dy = -r; dy <= r; dy++) {
-                        for (let dx = -r; dx <= r; dx++) {
-                            const nx = x + dx, ny = y + dy;
-                            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-                            sumA += eroded[(ny * w + nx) * 4 + 3]; cnt++;
-                        }
-                    }
-                    const idx = (y * w + x) * 4;
-                    feathered[idx] = eroded[idx]; feathered[idx+1] = eroded[idx+1]; feathered[idx+2] = eroded[idx+2];
-                    feathered[idx+3] = Math.round(sumA / cnt);
-                }
-            }
-
-            // Write back
-            const outData = ctx.createImageData(w, h);
-            for (let i = 0; i < feathered.length; i++) outData.data[i] = feathered[i];
-            ctx.putImageData(outData, 0, 0);
+            ctx.putImageData(imgData, 0, 0);
 
             const result = new Image();
             result.onload = () => resolve(result);
@@ -1230,11 +1194,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Refine edges: remove fringe, despeckle isolated dots, erode 1px, feather 2px
                     elements.mediaPipeAiBtn.textContent = '✨ Despeckling & Refining...';
                     const refinedImg = await refineEdges(cleanImg, {
-                        erodeRadius: 1,
-                        featherRadius: 2,
-                        hardThreshold: 60,
-                        softThreshold: 200,
-                        despeckleMinSize: 500
+                        lowAlphaCutoff: 40,
+                        highAlphaCap: 220,
+                        despeckleMinSize: 400
                     });
 
                     initSpeakerCanvas(refinedImg);
