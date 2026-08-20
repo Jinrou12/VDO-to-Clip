@@ -104,9 +104,32 @@
                                 <button class="btn btn-secondary btn-sm" id="flipSpeakerBtn" style="flex:1;">🔄 ត្រឡប់រូប (Flip ⇄)</button>
                                 <button class="btn btn-primary btn-sm" id="removeBgBtn" style="flex:1;">✨ លុប BG Auto</button>
                             </div>
+                            <div class="form-group" style="margin-top:6px;">
+                                <button class="btn btn-green btn-sm" id="humanSegBtn" style="width:100%;">🧠 Human Segmentation AI (កាត់រូបមនុស្ស)</button>
+                            </div>
                             <div class="form-group" id="bgToleranceGroup" style="display:none; margin-top:6px;">
                                 <label class="form-label">កម្រិតលុប BG (Tolerance): <span id="bgToleranceVal">30</span></label>
                                 <input type="range" id="bgToleranceInput" min="5" max="80" value="30">
+                            </div>
+                            <div class="form-row" style="margin-top:8px;">
+                                <div class="form-group">
+                                    <label class="form-label">ពណ៌គែម Stroke Glow:</label>
+                                    <input type="color" id="speakerGlowColorInput" value="#FFFFFF" class="form-control" style="height:36px;">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">ទំហំគែម (Glow/Outline): <span id="speakerGlowSizeVal">0px</span></label>
+                                    <input type="range" id="speakerGlowSizeInput" min="0" max="40" value="0">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">ស្រមោល (Drop Shadow): <span id="speakerShadowVal">15px</span></label>
+                                    <input type="range" id="speakerShadowInput" min="0" max="50" value="15">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">កោងគែម (Border Radius):</label>
+                                    <input type="range" id="speakerRadiusInput" min="0" max="100" value="0">
+                                </div>
                             </div>
                             <div class="form-row" style="margin-top:6px;">
                                 <div class="form-group">
@@ -118,15 +141,9 @@
                                     <input type="range" id="speakerXInput" min="-400" max="800" value="0">
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">ទីតាំង Y: <span id="speakerYVal">0px</span></label>
-                                    <input type="range" id="speakerYInput" min="-400" max="400" value="0">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">កោងគែម (Border Radius):</label>
-                                    <input type="range" id="speakerRadiusInput" min="0" max="100" value="0">
-                                </div>
+                            <div class="form-group">
+                                <label class="form-label">ទីតាំង Y: <span id="speakerYVal">0px</span></label>
+                                <input type="range" id="speakerYInput" min="-400" max="400" value="0">
                             </div>
                         </div>
                     </div>

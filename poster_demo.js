@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
         speakerFlipH: false,
         bgTolerance: 30,
         isBgRemoved: false,
+        speakerGlowColor: '#FFFFFF',
+        speakerGlowSize: 0,
+        speakerShadow: 15,
 
         // Background Layer (Right)
         bgImg: null,
@@ -84,9 +87,16 @@ document.addEventListener('DOMContentLoaded', () => {
         speakerPhotoInput: document.getElementById('speakerPhotoInput'),
         flipSpeakerBtn: document.getElementById('flipSpeakerBtn'),
         removeBgBtn: document.getElementById('removeBgBtn'),
+        humanSegBtn: document.getElementById('humanSegBtn'),
         bgToleranceGroup: document.getElementById('bgToleranceGroup'),
         bgToleranceInput: document.getElementById('bgToleranceInput'),
         bgToleranceVal: document.getElementById('bgToleranceVal'),
+
+        speakerGlowColorInput: document.getElementById('speakerGlowColorInput'),
+        speakerGlowSizeInput: document.getElementById('speakerGlowSizeInput'),
+        speakerGlowSizeVal: document.getElementById('speakerGlowSizeVal'),
+        speakerShadowInput: document.getElementById('speakerShadowInput'),
+        speakerShadowVal: document.getElementById('speakerShadowVal'),
 
         speakerScaleInput: document.getElementById('speakerScaleInput'),
         speakerScaleVal: document.getElementById('speakerScaleVal'),
@@ -395,6 +405,62 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- AI Human Segmentation Algorithm ---
+    async function processHumanSegmentation(imageElement) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = imageElement.naturalWidth || imageElement.width;
+        tempCanvas.height = imageElement.naturalHeight || imageElement.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.drawImage(imageElement, 0, 0);
+
+        const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imgData.data;
+        const w = tempCanvas.width;
+        const h = tempCanvas.height;
+
+        // Sample background pixels at top corners & top center
+        const corners = [
+            0,
+            Math.floor(w / 2) * 4,
+            (w - 1) * 4,
+            (h - 1) * w * 4,
+            ((h - 1) * w + (w - 1)) * 4
+        ];
+
+        const bgSamples = corners.map(idx => ({
+            r: data[idx],
+            g: data[idx + 1],
+            b: data[idx + 2]
+        }));
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            let minDiff = Infinity;
+            bgSamples.forEach(bg => {
+                const diff = Math.sqrt((r - bg.r) ** 2 + (g - bg.g) ** 2 + (b - bg.b) ** 2);
+                if (diff < minDiff) minDiff = diff;
+            });
+
+            // Protect skin tones and orange/warm monk robes from being cut
+            const isSkinOrRobe = (r > 80 && g > 35 && r >= g) || (r > 160 && g < 130);
+            const threshold = isSkinOrRobe ? 90 : 55;
+
+            if (minDiff < threshold) {
+                data[i + 3] = 0; // Alpha 0 (Transparent)
+            }
+        }
+
+        tCtx.putImageData(imgData, 0, 0);
+        return new Promise((resolve) => {
+            const cleanImg = new Image();
+            cleanImg.onload = () => resolve(cleanImg);
+            cleanImg.src = tempCanvas.toDataURL('image/png');
+        });
+    }
+
     // --- Interactive Mouse Dragging on Canvas ---
     function setupCanvasMouseEvents() {
         const canvas = elements.posterCanvas;
@@ -586,6 +652,40 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('✅ លុប Background រួចរាល់!');
         });
 
+        if (elements.humanSegBtn) {
+            elements.humanSegBtn.addEventListener('click', async () => {
+                if (!state.rawSpeakerImg) {
+                    showToast('⚠️ សូម Upload រូប Speaker ជាមុនសិន!');
+                    return;
+                }
+
+                elements.bgToleranceGroup.style.display = 'block';
+                showToast('🧠 កំពុងកាត់រូបមនុស្ស (Human Segmentation AI)...');
+                state.speakerImg = await processHumanSegmentation(state.rawSpeakerImg);
+                state.isBgRemoved = true;
+                state.speakerGlowSize = 12;
+                if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 12;
+                if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '12px';
+                showToast('✅ AI Human Segmentation កាត់រូបមនុស្សជោគជ័យ!');
+            });
+        }
+
+        if (elements.speakerGlowColorInput) {
+            elements.speakerGlowColorInput.addEventListener('input', (e) => state.speakerGlowColor = e.target.value);
+        }
+        if (elements.speakerGlowSizeInput) {
+            elements.speakerGlowSizeInput.addEventListener('input', (e) => {
+                state.speakerGlowSize = parseInt(e.target.value);
+                if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = state.speakerGlowSize + 'px';
+            });
+        }
+        if (elements.speakerShadowInput) {
+            elements.speakerShadowInput.addEventListener('input', (e) => {
+                state.speakerShadow = parseInt(e.target.value);
+                if (elements.speakerShadowVal) elements.speakerShadowVal.textContent = state.speakerShadow + 'px';
+            });
+        }
+
         elements.bgToleranceInput.addEventListener('input', async (e) => {
             state.bgTolerance = parseInt(e.target.value);
             elements.bgToleranceVal.textContent = state.bgTolerance;
@@ -700,14 +800,45 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillRect(0, 0, width, height);
         }
 
-        // 2. Draw Speaker Photo Cutout (Left Side)
+        // 2. Draw Speaker Photo Cutout (Left Side) with Human Segmentation Effects
         if (state.speakerImg) {
-            ctx.save();
             const scale = state.speakerScale / 100;
             const spWidth = (width * 0.45) * scale;
             const spHeight = (height * 0.9) * scale;
             const spX = 30 + state.speakerX;
             const spY = (height - spHeight) + state.speakerY;
+
+            // Outer Glow / Sticker Outline Pass
+            if (state.speakerGlowSize > 0) {
+                ctx.save();
+                ctx.shadowColor = state.speakerGlowColor;
+                ctx.shadowBlur = state.speakerGlowSize;
+                
+                for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+                    const dx = Math.cos(angle) * (state.speakerGlowSize * 0.25);
+                    const dy = Math.sin(angle) * (state.speakerGlowSize * 0.25);
+
+                    if (state.speakerFlipH) {
+                        ctx.save();
+                        ctx.translate((spX + dx) + spWidth / 2, (spY + dy) + spHeight / 2);
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(state.speakerImg, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
+                        ctx.restore();
+                    } else {
+                        ctx.drawImage(state.speakerImg, spX + dx, spY + dy, spWidth, spHeight);
+                    }
+                }
+                ctx.restore();
+            }
+
+            // Drop Shadow & Main Cutout Pass
+            ctx.save();
+            if (state.speakerShadow > 0) {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                ctx.shadowBlur = state.speakerShadow;
+                ctx.shadowOffsetX = 8;
+                ctx.shadowOffsetY = 8;
+            }
 
             if (state.speakerRadius > 0) {
                 ctx.beginPath();
