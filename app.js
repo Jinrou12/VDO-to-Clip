@@ -1775,7 +1775,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Canvas Render Loop (Screen 2 Studio) ---
     function renderLoop() {
-        if (state.currentScreen === 2) {
+        if (state.currentScreen === 2 || state.isExporting) {
             renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
         }
         requestAnimationFrame(renderLoop);
@@ -2154,14 +2154,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function processSingleClipExport(clip, onProgress, autoDownload = true) {
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
             selectClipForEditing(clip.id, false);
 
             const video = elements.hiddenVideo;
             const canvas = elements.mainCanvas;
 
             const origTime = video.currentTime;
+            
+            // 1. Seek video to clip start time and wait for seek to finish
             video.currentTime = clip.startTime;
+            await new Promise((res) => {
+                let resolved = false;
+                const done = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        video.removeEventListener('seeked', done);
+                        res();
+                    }
+                };
+                if (video.readyState >= 2 && Math.abs(video.currentTime - clip.startTime) < 0.2) {
+                    done();
+                } else {
+                    video.addEventListener('seeked', done, { once: true });
+                    setTimeout(done, 500);
+                }
+            });
+
+            // 2. Force immediate frame render onto canvas
+            renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
 
             const stream = canvas.captureStream(30);
 
@@ -2173,6 +2194,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.audioDest = window.audioCtx.createMediaStreamDestination();
                     window.audioSrc.connect(window.audioDest);
                     window.audioSrc.connect(window.audioCtx.destination);
+                }
+                if (window.audioCtx.state === 'suspended') {
+                    await window.audioCtx.resume();
                 }
                 audioTrack = window.audioDest.stream.getAudioTracks()[0];
                 if (audioTrack) stream.addTrack(audioTrack);
@@ -2236,6 +2260,9 @@ document.addEventListener('DOMContentLoaded', () => {
             video.play();
 
             const checkInterval = setInterval(() => {
+                // Ensure canvas renders video frame even if tab/screen state changes during export
+                renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
+
                 const elapsed = video.currentTime - clip.startTime;
                 const progress = Math.min(100, (elapsed / clip.duration) * 100);
                 onProgress(progress);
@@ -2244,7 +2271,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     clearInterval(checkInterval);
                     if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
                 }
-            }, 100);
+            }, 50);
         });
     }
 
