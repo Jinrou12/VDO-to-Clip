@@ -2079,6 +2079,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.clips.length > 0) exportClipsQueue(state.clips);
     }
 
+    function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            if (a.parentNode) {
+                document.body.removeChild(a);
+            }
+            URL.revokeObjectURL(url);
+        }, 60000); // 60s timeout to allow Chrome download manager to finish reading blob stream
+    }
+
     async function exportClipsQueue(queue) {
         if (state.isExporting) return;
         state.isExporting = true;
@@ -2125,30 +2141,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     elements.exportPercentText.textContent = `${zipPct}%`;
                 });
 
-                const url = URL.createObjectURL(zipBlob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `Khmer_Clips_All.zip`;
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }, 100);
+                triggerDownload(zipBlob, `Khmer_Clips_All.zip`);
             } else {
                 exportedFiles.forEach(file => {
-                    const url = URL.createObjectURL(file.blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = `${file.safeName}.${file.ext}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 100);
+                    triggerDownload(file.blob, `${file.safeName}.${file.ext}`);
                 });
             }
         }
@@ -2221,25 +2217,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Clean filename while preserving Khmer Unicode text
                     let safeName = (clip.name || 'Clip')
-                        .replace(/[\\/:*?"<>|]/g, '_') // Replace illegal Windows filename chars only
+                        .replace(/[\\/:*?"<>|#%&{}\$\+!:@=]/g, '_') // Replace illegal Windows & URL fragment/special chars
                         .replace(/\s+/g, '_')
+                        .replace(/_+/g, '_')
                         .trim();
-                    if (!safeName) safeName = 'Clip';
+                    if (!safeName || safeName === '_') safeName = 'Clip';
 
                     result = { blob, safeName, ext };
 
                     if (autoDownload) {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = `${safeName}.${ext}`;
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(() => {
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        }, 100);
+                        triggerDownload(blob, `${safeName}.${ext}`);
                     }
                 }
                 resolve(result);
