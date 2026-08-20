@@ -109,6 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
         humanSegBtn: document.getElementById('humanSegBtn'),
         cropToolBtn: document.getElementById('cropToolBtn'),
         cropPanelGroup: document.getElementById('cropPanelGroup'),
+        bgToleranceInput: document.getElementById('bgToleranceInput'),
+        bgToleranceVal: document.getElementById('bgToleranceVal'),
         cropTopInput: document.getElementById('cropTopInput'),
         cropTopVal: document.getElementById('cropTopVal'),
         cropBottomInput: document.getElementById('cropBottomInput'),
@@ -1130,13 +1132,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        elements.bgToleranceInput.addEventListener('input', async (e) => {
-            state.bgTolerance = parseInt(e.target.value);
-            elements.bgToleranceVal.textContent = state.bgTolerance;
-            if (state.rawSpeakerImg && state.isBgRemoved) {
-                state.speakerImg = await processAutoRemoveBg(state.rawSpeakerImg, state.bgTolerance);
-            }
-        });
+        if (elements.bgToleranceInput) {
+            elements.bgToleranceInput.addEventListener('input', async (e) => {
+                state.bgTolerance = parseInt(e.target.value);
+                if (elements.bgToleranceVal) elements.bgToleranceVal.textContent = state.bgTolerance;
+                if (state.rawSpeakerImg && state.isBgRemoved) {
+                    state.speakerImg = await processAutoRemoveBg(state.rawSpeakerImg, state.bgTolerance);
+                }
+            });
+        }
 
         elements.speakerScaleInput.addEventListener('input', (e) => {
             state.speakerScale = parseInt(e.target.value);
