@@ -826,10 +826,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Check Speaker hit
             const scale = state.speakerScale / 100;
-            const spWidth = (state.canvasWidth * 0.45) * scale;
-            const spHeight = (state.canvasHeight * 0.9) * scale;
+            const naturalW = (state.speakerImg && (state.speakerImg.naturalWidth || state.speakerImg.width)) || 400;
+            const naturalH = (state.speakerImg && (state.speakerImg.naturalHeight || state.speakerImg.height)) || 600;
+            const srcW = Math.max(1, naturalW * (1 - (state.cropLeft + state.cropRight) / 100));
+            const srcH = Math.max(1, naturalH * (1 - (state.cropTop + state.cropBottom) / 100));
+            let spImgRatio = srcW / srcH;
+            if (state.speakerAspect === '1:1') spImgRatio = 1;
+            else if (state.speakerAspect === '3:4') spImgRatio = 3 / 4;
+            else if (state.speakerAspect === '4:3') spImgRatio = 4 / 3;
+            const spHeight = (state.canvasHeight * 0.88) * scale;
+            const spWidth = spHeight * spImgRatio;
             const spX = 30 + state.speakerX;
             const spY = (state.canvasHeight - spHeight) + state.speakerY;
+
+            // In crop mode: check crop handle hits first
+            if (state.activeTool === 'crop' && state.speakerImg) {
+                const hSize = 14;
+                // Crop edge handles (T, B, L, R)
+                const cropHandles = [
+                    { id: 'crop-top',    x: spX + spWidth / 2, y: spY },
+                    { id: 'crop-bottom', x: spX + spWidth / 2, y: spY + spHeight },
+                    { id: 'crop-left',   x: spX,               y: spY + spHeight / 2 },
+                    { id: 'crop-right',  x: spX + spWidth,     y: spY + spHeight / 2 },
+                ];
+                for (const h of cropHandles) {
+                    if (Math.abs(pos.x - h.x) < hSize && Math.abs(pos.y - h.y) < hSize) {
+                        state.dragTarget = h.id;
+                        state.dragStartX = pos.x;
+                        state.dragStartY = pos.y;
+                        state._cropDragStart = { top: state.cropTop, bottom: state.cropBottom, left: state.cropLeft, right: state.cropRight };
+                        state._spBounds = { x: spX, y: spY, w: spWidth, h: spHeight };
+                        canvas.style.cursor = 'crosshair';
+                        return;
+                    }
+                }
+            }
 
             if (pos.x >= spX && pos.x <= spX + spWidth && pos.y >= spY && pos.y <= spY + spHeight) {
                 state.dragTarget = 'speaker';
@@ -845,6 +876,16 @@ document.addEventListener('DOMContentLoaded', () => {
             state.dragStartY = pos.y - state.bgY;
             canvas.style.cursor = 'grabbing';
         });
+
+        // Mouse Wheel → Zoom Speaker
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (!state.speakerImg) return;
+            const delta = e.deltaY < 0 ? 3 : -3;
+            state.speakerScale = Math.min(300, Math.max(10, state.speakerScale + delta));
+            if (elements.speakerScaleInput) elements.speakerScaleInput.value = state.speakerScale;
+            if (elements.speakerScaleVal) elements.speakerScaleVal.textContent = state.speakerScale + '%';
+        }, { passive: false });
 
         canvas.addEventListener('mousemove', (e) => {
             const pos = getMousePos(e);
@@ -878,6 +919,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (elements.bgYInput) elements.bgYInput.value = state.bgY;
                 if (elements.bgXVal) elements.bgXVal.textContent = Math.round(state.bgX) + 'px';
                 if (elements.bgYVal) elements.bgYVal.textContent = Math.round(state.bgY) + 'px';
+            } else if (state.dragTarget && state.dragTarget.startsWith('crop-') && state._spBounds) {
+                // Interactive crop handle drag
+                const dx = pos.x - state.dragStartX;
+                const dy = pos.y - state.dragStartY;
+                const bounds = state._spBounds;
+                const start = state._cropDragStart;
+                const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
+
+                if (state.dragTarget === 'crop-top') {
+                    const pct = clamp(start.top + (dy / bounds.h) * 100, 0, 45);
+                    state.cropTop = Math.round(pct);
+                    if (elements.cropTopInput) elements.cropTopInput.value = state.cropTop;
+                    if (elements.cropTopVal) elements.cropTopVal.textContent = state.cropTop + '%';
+                } else if (state.dragTarget === 'crop-bottom') {
+                    const pct = clamp(start.bottom - (dy / bounds.h) * 100, 0, 45);
+                    state.cropBottom = Math.round(pct);
+                    if (elements.cropBottomInput) elements.cropBottomInput.value = state.cropBottom;
+                    if (elements.cropBottomVal) elements.cropBottomVal.textContent = state.cropBottom + '%';
+                } else if (state.dragTarget === 'crop-left') {
+                    const pct = clamp(start.left + (dx / bounds.w) * 100, 0, 45);
+                    state.cropLeft = Math.round(pct);
+                    if (elements.cropLeftInput) elements.cropLeftInput.value = state.cropLeft;
+                    if (elements.cropLeftVal) elements.cropLeftVal.textContent = state.cropLeft + '%';
+                } else if (state.dragTarget === 'crop-right') {
+                    const pct = clamp(start.right - (dx / bounds.w) * 100, 0, 45);
+                    state.cropRight = Math.round(pct);
+                    if (elements.cropRightInput) elements.cropRightInput.value = state.cropRight;
+                    if (elements.cropRightVal) elements.cropRightVal.textContent = state.cropRight + '%';
+                }
             }
         });
 
@@ -1061,6 +1131,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (elements.eraserSizeGroup) elements.eraserSizeGroup.style.display = 'block';
                     if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'crosshair';
                     showToast('🧹 ជក់លុប BG ត្រូវបានបើក៖ ប្រើ Mouse អូសលើរូបដើម្បីលុប!');
+                }
+            });
+        }
+
+        if (elements.cropToolBtn) {
+            elements.cropToolBtn.addEventListener('click', () => {
+                if (state.activeTool === 'crop') {
+                    // Toggle off
+                    state.activeTool = 'select';
+                    if (elements.cropPanelGroup) elements.cropPanelGroup.style.display = 'none';
+                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'grab';
+                    elements.cropToolBtn.classList.remove('active');
+                    showToast('✅ បានបិទ Crop Mode');
+                } else {
+                    // Toggle on
+                    state.activeTool = 'crop';
+                    if (elements.cropPanelGroup) elements.cropPanelGroup.style.display = 'block';
+                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'crosshair';
+                    elements.cropToolBtn.classList.add('active');
+                    showToast('✂️ Crop Mode: អូស Handle លើ Canvas ដើម្បី Crop! Scroll = Zoom!');
                 }
             });
         }
@@ -1510,6 +1600,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 else ctx.lineTo(pt.x, pt.y);
             });
             ctx.stroke();
+            ctx.restore();
+        }
+
+        // Draw Crop Mode Overlay with interactive handles
+        if (state.activeTool === 'crop' && state.speakerImg) {
+            const scale = state.speakerScale / 100;
+            const natW = state.speakerImg.naturalWidth || state.speakerImg.width || 400;
+            const natH = state.speakerImg.naturalHeight || state.speakerImg.height || 600;
+            const srcW2 = Math.max(1, natW * (1 - (state.cropLeft + state.cropRight) / 100));
+            const srcH2 = Math.max(1, natH * (1 - (state.cropTop + state.cropBottom) / 100));
+            let ratio2 = srcW2 / srcH2;
+            if (state.speakerAspect === '1:1') ratio2 = 1;
+            else if (state.speakerAspect === '3:4') ratio2 = 3 / 4;
+            else if (state.speakerAspect === '4:3') ratio2 = 4 / 3;
+            const ch = (height * 0.88) * scale;
+            const cw = ch * ratio2;
+            const cx = 30 + state.speakerX;
+            const cy = (height - ch) + state.speakerY;
+
+            ctx.save();
+
+            // Semi-transparent overlay outside crop area
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.fillRect(cx, cy, cw, ch);
+
+            // Crop boundary box
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([8, 4]);
+            ctx.strokeRect(cx, cy, cw, ch);
+
+            // Rule-of-thirds grid
+            ctx.strokeStyle = 'rgba(251,191,36,0.35)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            for (let g = 1; g < 3; g++) {
+                ctx.beginPath(); ctx.moveTo(cx + cw * g / 3, cy); ctx.lineTo(cx + cw * g / 3, cy + ch); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx, cy + ch * g / 3); ctx.lineTo(cx + cw, cy + ch * g / 3); ctx.stroke();
+            }
+
+            // Draw 4 edge handles
+            ctx.setLineDash([]);
+            const handles = [
+                { x: cx + cw / 2, y: cy,          cursor: 'ns-resize',   label: '↕' },
+                { x: cx + cw / 2, y: cy + ch,      cursor: 'ns-resize',   label: '↕' },
+                { x: cx,          y: cy + ch / 2,  cursor: 'ew-resize',   label: '↔' },
+                { x: cx + cw,     y: cy + ch / 2,  cursor: 'ew-resize',   label: '↔' },
+            ];
+            handles.forEach(h => {
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = '#fbbf24';
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Wheel zoom hint label
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(cx + 4, cy + 4, 220, 22);
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('🖱 Scroll = Zoom  •  Drag edge = Crop', cx + 8, cy + 19);
+
             ctx.restore();
         }
     }
