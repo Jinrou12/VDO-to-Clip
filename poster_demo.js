@@ -515,6 +515,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Post-process: Clean up ragged/noisy alpha edges ---
+    function refineEdges(imageElement, options = {}) {
+        const {
+            erodeRadius = 1,      // shrink mask to remove fringe
+            featherRadius = 2,    // soften edge
+            hardThreshold = 30,   // alpha < this → fully transparent
+            softThreshold = 180   // alpha > this → fully opaque
+        } = options;
+
+        return new Promise(resolve => {
+            const w = imageElement.naturalWidth || imageElement.width;
+            const h = imageElement.naturalHeight || imageElement.height;
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            const ctx = c.getContext('2d');
+            ctx.drawImage(imageElement, 0, 0);
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const d = imgData.data;
+
+            // Step 1: Hard threshold + erode — remove near-transparent fringe
+            for (let i = 0; i < d.length; i += 4) {
+                const a = d[i + 3];
+                if (a < hardThreshold) d[i + 3] = 0;
+                else if (a > softThreshold) d[i + 3] = 255;
+            }
+
+            // Step 2: Erode alpha (remove 1-pixel fringes at edge)
+            const eroded = new Uint8ClampedArray(d.length);
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = (y * w + x) * 4;
+                    let minA = d[idx + 3];
+                    for (let dy = -erodeRadius; dy <= erodeRadius; dy++) {
+                        for (let dx = -erodeRadius; dx <= erodeRadius; dx++) {
+                            const nx = x + dx, ny = y + dy;
+                            if (nx < 0 || ny < 0 || nx >= w || ny >= h) { minA = 0; continue; }
+                            const nidx = (ny * w + nx) * 4;
+                            if (d[nidx + 3] < minA) minA = d[nidx + 3];
+                        }
+                    }
+                    eroded[idx] = d[idx]; eroded[idx+1] = d[idx+1]; eroded[idx+2] = d[idx+2]; eroded[idx+3] = minA;
+                }
+            }
+
+            // Step 3: Feather — box blur the alpha channel only
+            const feathered = new Uint8ClampedArray(eroded.length);
+            const r = featherRadius;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    let sumA = 0, cnt = 0;
+                    for (let dy = -r; dy <= r; dy++) {
+                        for (let dx = -r; dx <= r; dx++) {
+                            const nx = x + dx, ny = y + dy;
+                            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+                            sumA += eroded[(ny * w + nx) * 4 + 3]; cnt++;
+                        }
+                    }
+                    const idx = (y * w + x) * 4;
+                    feathered[idx] = eroded[idx]; feathered[idx+1] = eroded[idx+1]; feathered[idx+2] = eroded[idx+2];
+                    feathered[idx+3] = Math.round(sumA / cnt);
+                }
+            }
+
+            // Write back
+            const outData = ctx.createImageData(w, h);
+            for (let i = 0; i < feathered.length; i++) outData.data[i] = feathered[i];
+            ctx.putImageData(outData, 0, 0);
+
+            const result = new Image();
+            result.onload = () => resolve(result);
+            result.src = c.toDataURL('image/png');
+        });
+    }
+
     function eraseSpeakerAt(canvasPosX, canvasPosY) {
         if (!state.speakerCanvas || !state.speakerCtx) return;
         const scale = state.speakerScale / 100;
@@ -1085,11 +1159,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         img.src = dataURL;
                     });
 
-                    initSpeakerCanvas(cleanImg);
+                    // Refine edges: remove fringe, erode 1px, feather 2px
+                    elements.mediaPipeAiBtn.textContent = '✨ Edge Refinement...';
+                    const refinedImg = await refineEdges(cleanImg, {
+                        erodeRadius: 1,
+                        featherRadius: 2,
+                        hardThreshold: 25,
+                        softThreshold: 200
+                    });
+
+                    initSpeakerCanvas(refinedImg);
                     state.speakerGlowSize = 10;
                     if (elements.speakerGlowSizeInput) elements.speakerGlowSizeInput.value = 10;
                     if (elements.speakerGlowSizeVal) elements.speakerGlowSizeVal.textContent = '10px';
-                    showToast('✅ RMBG-1.4 AI: BG Removed ស្អាត 100%!');
+                    showToast('✅ RMBG-1.4 AI: BG Removed + Edge ស្អាត 100%!');
 
                 } catch (err) {
                     console.error('RMBG AI error:', err);
@@ -1097,12 +1180,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         showToast('⚡ Fallback: MediaPipe Segmentation...');
                         const cleanImg2 = await processMediaPipeSelfieCutout(state.rawSpeakerImg);
-                        initSpeakerCanvas(cleanImg2);
+                        const refined2 = await refineEdges(cleanImg2, { erodeRadius: 1, featherRadius: 2 });
+                        initSpeakerCanvas(refined2);
                         showToast('✅ MediaPipe Remove BG done!');
                     } catch (err2) {
                         showToast('⚠️ Error. ប្រើ Adaptive AI...');
                         const fallback = await processHumanSegmentation(state.rawSpeakerImg);
-                        initSpeakerCanvas(fallback);
+                        const refined3 = await refineEdges(fallback, { erodeRadius: 1, featherRadius: 1 });
+                        initSpeakerCanvas(refined3);
                     }
                 } finally {
                     elements.mediaPipeAiBtn.disabled = false;
