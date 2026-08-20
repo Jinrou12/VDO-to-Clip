@@ -515,11 +515,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Post-process: Anti-aliased Edge Refinement & Isolated Speckle Removal ---
+    // --- Post-process: De-fringing, Color De-spill, Mask Erosion & Anti-aliased Matting ---
     function refineEdges(imageElement, options = {}) {
         const {
-            lowAlphaCutoff = 35,   // Erase background noise/haze
-            highAlphaCap = 225,    // Solidify subject silhouette
+            erodePixels = 2,       // Shave 2px off outer edge to destroy white background border
+            lowAlphaCutoff = 50,   // Erase ambient noise/haze
+            highAlphaCap = 220,    // Solidify subject silhouette
             despeckleMinSize = 300 // Erase isolated pixel clusters smaller than this
         } = options;
 
@@ -596,8 +597,66 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Step 2: Smoothstep Hermite Interpolation (Smooth anti-aliased edge curve)
-            // Eliminates staircase pixelation & ragged edge dots
+            // Step 2: Mask Erosion (Choke 2px inward to cut off white background boundary)
+            if (erodePixels > 0) {
+                const erodedAlpha = new Uint8ClampedArray(totalPixels);
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const idx = y * w + x;
+                        let minA = d[idx * 4 + 3];
+                        if (minA > 0) {
+                            for (let dy = -erodePixels; dy <= erodePixels; dy++) {
+                                for (let dx = -erodePixels; dx <= erodePixels; dx++) {
+                                    const nx = x + dx, ny = y + dy;
+                                    if (nx < 0 || ny < 0 || nx >= w || ny >= h) { minA = 0; break; }
+                                    const nA = d[(ny * w + nx) * 4 + 3];
+                                    if (nA < minA) minA = nA;
+                                }
+                                if (minA === 0) break;
+                            }
+                        }
+                        erodedAlpha[idx] = minA;
+                    }
+                }
+                for (let i = 0; i < totalPixels; i++) {
+                    d[i * 4 + 3] = erodedAlpha[i];
+                }
+            }
+
+            // Step 3: Color De-spill (Replace near-white boundary RGB with solid inner pixel RGB)
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = (y * w + x) * 4;
+                    const a = d[idx + 3];
+                    if (a > 0 && a < 240) {
+                        let foundR = d[idx], foundG = d[idx + 1], foundB = d[idx + 2];
+                        let found = false;
+                        for (let r = 1; r <= 3 && !found; r++) {
+                            for (let dy = -r; dy <= r && !found; dy++) {
+                                for (let dx = -r; dx <= r && !found; dx++) {
+                                    const nx = x + dx, ny = y + dy;
+                                    if (nx >= 0 && ny >= 0 && nx < w && ny < h) {
+                                        const nidx = (ny * w + nx) * 4;
+                                        if (d[nidx + 3] >= 240) {
+                                            foundR = d[nidx];
+                                            foundG = d[nidx + 1];
+                                            foundB = d[nidx + 2];
+                                            found = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (found) {
+                            d[idx] = foundR;
+                            d[idx + 1] = foundG;
+                            d[idx + 2] = foundB;
+                        }
+                    }
+                }
+            }
+
+            // Step 4: Smoothstep Hermite Interpolation (Smooth anti-aliased edge curve)
             const tMin = lowAlphaCutoff / 255;
             const tMax = highAlphaCap / 255;
             for (let i = 0; i < d.length; i += 4) {
