@@ -492,18 +492,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Interactive Mouse Dragging & Manual Eraser on Canvas ---
     function initSpeakerCanvas(img) {
+        if (!img) return;
         state.rawSpeakerImg = img;
-        const c = document.createElement('canvas');
-        c.width = img.naturalWidth || img.width || 400;
-        c.height = img.naturalHeight || img.height || 600;
-        const sCtx = c.getContext('2d');
-        sCtx.drawImage(img, 0, 0);
-        state.speakerCanvas = c;
-        state.speakerCtx = sCtx;
+        state.speakerImg = img;
 
-        const editedImg = new Image();
-        editedImg.onload = () => { state.speakerImg = editedImg; };
-        editedImg.src = c.toDataURL('image/png');
+        const setupCanvas = () => {
+            const c = document.createElement('canvas');
+            c.width = img.naturalWidth || img.width || 400;
+            c.height = img.naturalHeight || img.height || 600;
+            const sCtx = c.getContext('2d');
+            sCtx.drawImage(img, 0, 0);
+            state.speakerCanvas = c;
+            state.speakerCtx = sCtx;
+        };
+
+        if (img.complete && img.naturalWidth > 0) {
+            setupCanvas();
+        } else {
+            img.onload = setupCanvas;
+        }
     }
 
     function eraseSpeakerAt(canvasPosX, canvasPosY) {
@@ -1215,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.clearRect(0, 0, width, height);
 
         // 1. Draw Custom Background Layer (Right Side / Full Canvas)
-        if (state.bgImg) {
+        if (state.bgImg && state.bgImg.complete && state.bgImg.naturalWidth > 0) {
             ctx.save();
             ctx.filter = `blur(${state.bgBlur}px) brightness(${state.bgBright}%)`;
             const bgScale = state.bgScale / 100;
@@ -1237,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. Draw Speaker Photo Cutout (Left Side) with Natural Aspect Ratio & Crop
-        if (state.speakerImg) {
+        if (state.speakerImg && (state.speakerImg.complete || state.speakerImg.width > 0) && (state.speakerImg.naturalWidth || state.speakerImg.width) > 0) {
             const scale = state.speakerScale / 100;
             const naturalW = state.speakerImg.naturalWidth || state.speakerImg.width || 400;
             const naturalH = state.speakerImg.naturalHeight || state.speakerImg.height || 600;
