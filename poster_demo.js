@@ -1,0 +1,712 @@
+/* Khmer Audio & Video Poster Studio Demo JavaScript */
+document.addEventListener('DOMContentLoaded', () => {
+    // --- State Management ---
+    const state = {
+        mediaFiles: [],
+        activeAudioId: null,
+        activeTab: 'tab-upload',
+        aspectRatio: '16:9',
+        canvasWidth: 1280,
+        canvasHeight: 720,
+        
+        // Speaker Layer (Left)
+        speakerImg: null,
+        speakerScale: 100,
+        speakerX: 0,
+        speakerY: 0,
+        speakerRadius: 0,
+
+        // Background Layer (Right)
+        bgImg: null,
+        bgBlur: 0,
+        bgBright: 100,
+
+        // Khmer Typography
+        mainTitle: 'មនុស្សអត់ប្រយោជន៍',
+        titleFont: 'Moul',
+        titleFontSize: 65,
+        titleColor1: '#FFE600',
+        titleColor2: '#FF9900',
+        subTitle: 'លោកគ្រូសាន ភិរម្យ ធម្មទានកាត់ខ្លី',
+
+        // Waveform Visualizer
+        waveColor: '#FFFFFF',
+        waveHeight: 80,
+        waveY: 62,
+
+        // Audio & Visualizer State
+        audioCtx: null,
+        analyser: null,
+        audioSource: null,
+        freqData: null,
+        isPlaying: false
+    };
+
+    // --- DOM Elements ---
+    const elements = {
+        tabs: document.querySelectorAll('.tab-btn'),
+        panes: document.querySelectorAll('.tab-pane'),
+        dropZone: document.getElementById('dropZone'),
+        mediaFileInput: document.getElementById('mediaFileInput'),
+        mediaGrid: document.getElementById('mediaGrid'),
+        mediaCount: document.getElementById('mediaCount'),
+        clearAllMediaBtn: document.getElementById('clearAllMediaBtn'),
+        converterList: document.getElementById('converterList'),
+        convertAllVideosBtn: document.getElementById('convertAllVideosBtn'),
+        
+        // Studio Elements
+        posterCanvas: document.getElementById('posterCanvas'),
+        ctx: document.getElementById('posterCanvas').getContext('2d'),
+        aspectBtns: document.querySelectorAll('.aspect-btn'),
+        activeAudioSelect: document.getElementById('activeAudioSelect'),
+        audioPlayer: document.getElementById('audioPlayer'),
+        playAudioBtn: document.getElementById('playAudioBtn'),
+        audioScrubber: document.getElementById('audioScrubber'),
+        audioTimeDisplay: document.getElementById('audioTimeDisplay'),
+
+        // Control Inputs
+        speakerPhotoInput: document.getElementById('speakerPhotoInput'),
+        speakerScaleInput: document.getElementById('speakerScaleInput'),
+        speakerScaleVal: document.getElementById('speakerScaleVal'),
+        speakerXInput: document.getElementById('speakerXInput'),
+        speakerXVal: document.getElementById('speakerXVal'),
+        speakerYInput: document.getElementById('speakerYInput'),
+        speakerYVal: document.getElementById('speakerYVal'),
+        speakerRadiusInput: document.getElementById('speakerRadiusInput'),
+
+        bgPhotoInput: document.getElementById('bgPhotoInput'),
+        bgBlurInput: document.getElementById('bgBlurInput'),
+        bgBlurVal: document.getElementById('bgBlurVal'),
+        bgBrightInput: document.getElementById('bgBrightInput'),
+        bgBrightVal: document.getElementById('bgBrightVal'),
+
+        mainTitleInput: document.getElementById('mainTitleInput'),
+        titleFontSelect: document.getElementById('titleFontSelect'),
+        titleFontSizeInput: document.getElementById('titleFontSizeInput'),
+        titleColor1Input: document.getElementById('titleColor1Input'),
+        titleColor2Input: document.getElementById('titleColor2Input'),
+        subTitleInput: document.getElementById('subTitleInput'),
+
+        waveColorInput: document.getElementById('waveColorInput'),
+        waveHeightInput: document.getElementById('waveHeightInput'),
+        waveYInput: document.getElementById('waveYInput'),
+
+        exportPosterImgBtn: document.getElementById('exportPosterImgBtn'),
+        exportPosterVideoBtn: document.getElementById('exportPosterVideoBtn'),
+        toastContainer: document.getElementById('toastContainer')
+    };
+
+    // --- Init Default Canvas & Demo Content ---
+    function init() {
+        setupTabEvents();
+        setupFileUploadEvents();
+        setupControlEvents();
+        setupAudioVisualizer();
+        createDemoImages();
+        startCanvasLoop();
+    }
+
+    // --- Tab Navigation ---
+    function setupTabEvents() {
+        elements.tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                elements.tabs.forEach(t => t.classList.remove('active'));
+                elements.panes.forEach(p => p.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+                state.activeTab = targetTab;
+            });
+        });
+
+        elements.aspectBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.aspectBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.aspectRatio = btn.dataset.ratio;
+                updateCanvasDimensions();
+            });
+        });
+    }
+
+    function updateCanvasDimensions() {
+        if (state.aspectRatio === '16:9') {
+            state.canvasWidth = 1280;
+            state.canvasHeight = 720;
+        } else if (state.aspectRatio === '1:1') {
+            state.canvasWidth = 1080;
+            state.canvasHeight = 1080;
+        } else if (state.aspectRatio === '9:16') {
+            state.canvasWidth = 720;
+            state.canvasHeight = 1280;
+        }
+        elements.posterCanvas.width = state.canvasWidth;
+        elements.posterCanvas.height = state.canvasHeight;
+    }
+
+    // --- File Upload & Queue Manager ---
+    function setupFileUploadEvents() {
+        elements.dropZone.addEventListener('click', () => elements.mediaFileInput.click());
+
+        elements.dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            elements.dropZone.classList.add('dragover');
+        });
+
+        elements.dropZone.addEventListener('dragleave', () => elements.dropZone.classList.remove('dragover'));
+
+        elements.dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            elements.dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        elements.mediaFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+        });
+
+        elements.clearAllMediaBtn.addEventListener('click', () => {
+            state.mediaFiles = [];
+            renderMediaLibrary();
+            renderConverterList();
+            updateAudioSelectOptions();
+            showToast('បានលុប File ទាំងអស់!');
+        });
+    }
+
+    function handleFiles(files) {
+        Array.from(files).forEach(file => {
+            const isVideo = file.type.startsWith('video');
+            const isAudio = file.type.startsWith('audio');
+            if (!isVideo && !isAudio) return;
+
+            const mediaItem = {
+                id: Date.now() + Math.random(),
+                file: file,
+                name: file.name,
+                type: isVideo ? 'video' : 'audio',
+                url: URL.createObjectURL(file),
+                duration: 0
+            };
+
+            // Get media duration
+            const tempMedia = document.createElement(isVideo ? 'video' : 'audio');
+            tempMedia.src = mediaItem.url;
+            tempMedia.onloadedmetadata = () => {
+                mediaItem.duration = tempMedia.duration || 0;
+                renderMediaLibrary();
+                renderConverterList();
+                updateAudioSelectOptions();
+            };
+
+            state.mediaFiles.push(mediaItem);
+        });
+
+        showToast(`បាន Upload ${files.length} File ជោគជ័យ!`);
+        renderMediaLibrary();
+        renderConverterList();
+        updateAudioSelectOptions();
+    }
+
+    function renderMediaLibrary() {
+        elements.mediaCount.textContent = state.mediaFiles.length;
+        if (state.mediaFiles.length === 0) {
+            elements.mediaGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-muted);">មិនទាន់មាន File Upload នៅឡើយទេ</div>`;
+            return;
+        }
+
+        elements.mediaGrid.innerHTML = state.mediaFiles.map(m => `
+            <div class="media-card">
+                <div class="media-card-header">
+                    <span class="media-badge ${m.type === 'video' ? 'badge-video' : 'badge-audio'}">${m.type}</span>
+                    <span class="media-meta">⏱️ ${formatTime(m.duration)}</span>
+                </div>
+                <div class="media-name" title="${m.name}">${m.name}</div>
+                <div class="media-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="selectForStudio(${m.id})" style="flex:1;">🎨 Open Studio</button>
+                    ${m.type === 'video' ? `<button class="btn btn-primary btn-sm" onclick="convertSingleVideo(${m.id})">🎵 Convert</button>` : ''}
+                    <button class="btn btn-danger btn-sm" onclick="deleteMedia(${m.id})">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderConverterList() {
+        const videoFiles = state.mediaFiles.filter(m => m.type === 'video');
+        if (videoFiles.length === 0) {
+            elements.converterList.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">គ្មាន File Video សម្រាប់បំប្លែងទេ (សូម Upload Video ក្នុង Tab ទី 1)</div>`;
+            return;
+        }
+
+        elements.converterList.innerHTML = videoFiles.map(v => `
+            <div class="converter-item">
+                <div class="converter-info">
+                    <div class="converter-icon">🎬</div>
+                    <div>
+                        <div style="font-weight:700; color:var(--text-bright);">${v.name}</div>
+                        <div style="font-size:0.82rem; color:var(--text-muted);">Duration: ${formatTime(v.duration)}</div>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="convertSingleVideo(${v.id})">⚡ Convert to Audio (.WAV)</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateAudioSelectOptions() {
+        elements.activeAudioSelect.innerHTML = `<option value="">-- ជ្រើសរើស Audio/Video Track --</option>` +
+            state.mediaFiles.map(m => `<option value="${m.id}">${m.type === 'video' ? '🎥' : '🎵'} ${m.name}</option>`).join('');
+        
+        if (state.mediaFiles.length > 0 && !state.activeAudioId) {
+            state.activeAudioId = state.mediaFiles[0].id;
+            elements.activeAudioSelect.value = state.activeAudioId;
+            setAudioSource(state.mediaFiles[0]);
+        }
+    }
+
+    window.selectForStudio = function(id) {
+        const item = state.mediaFiles.find(m => m.id === id);
+        if (!item) return;
+        state.activeAudioId = id;
+        elements.activeAudioSelect.value = id;
+        setAudioSource(item);
+        
+        // Switch to Studio Tab
+        document.querySelector('[data-tab="tab-studio"]').click();
+        showToast(`បានបើក "${item.name}" ក្នុង Studio`);
+    };
+
+    window.deleteMedia = function(id) {
+        state.mediaFiles = state.mediaFiles.filter(m => m.id !== id);
+        renderMediaLibrary();
+        renderConverterList();
+        updateAudioSelectOptions();
+    };
+
+    // --- Video to Audio Conversion ---
+    window.convertSingleVideo = async function(id) {
+        const item = state.mediaFiles.find(m => m.id === id);
+        if (!item || item.type !== 'video') return;
+
+        showToast(`⚡ កំពុងបំប្លែង "${item.name}" ទៅជា Audio...`);
+
+        try {
+            const response = await fetch(item.url);
+            const arrayBuffer = await response.arrayBuffer();
+            
+            const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
+            
+            const wavBlob = audioBufferToWav(audioBuffer);
+            const convertedName = item.name.replace(/\.[^/.]+$/, "") + "_audio.wav";
+            const convertedFile = new File([wavBlob], convertedName, { type: 'audio/wav' });
+
+            const audioItem = {
+                id: Date.now() + Math.random(),
+                file: convertedFile,
+                name: convertedName,
+                type: 'audio',
+                url: URL.createObjectURL(convertedFile),
+                duration: audioBuffer.duration
+            };
+
+            state.mediaFiles.push(audioItem);
+            renderMediaLibrary();
+            updateAudioSelectOptions();
+            showToast(`✅ បំប្លែងបានជោគជ័យ: ${convertedName}`);
+        } catch (err) {
+            console.error(err);
+            showToast(`❌ បរាជ័យក្នុងការបំប្លែង Video!`);
+        }
+    };
+
+    elements.convertAllVideosBtn.addEventListener('click', async () => {
+        const videoFiles = state.mediaFiles.filter(m => m.type === 'video');
+        for (const v of videoFiles) {
+            await convertSingleVideo(v.id);
+        }
+    });
+
+    // --- Web Audio API & Visualizer Setup ---
+    function setupAudioVisualizer() {
+        elements.activeAudioSelect.addEventListener('change', (e) => {
+            const id = parseFloat(e.target.value);
+            const item = state.mediaFiles.find(m => m.id === id);
+            if (item) {
+                state.activeAudioId = id;
+                setAudioSource(item);
+            }
+        });
+
+        elements.playAudioBtn.addEventListener('click', () => {
+            if (!state.audioCtx) {
+                initWebAudio();
+            }
+            if (state.isPlaying) {
+                elements.audioPlayer.pause();
+                state.isPlaying = false;
+                elements.playAudioBtn.textContent = '▶️ Play Audio';
+            } else {
+                elements.audioPlayer.play();
+                state.isPlaying = true;
+                elements.playAudioBtn.textContent = '⏸️ Pause';
+            }
+        });
+
+        elements.audioPlayer.addEventListener('timeupdate', () => {
+            if (elements.audioPlayer.duration) {
+                const pct = (elements.audioPlayer.currentTime / elements.audioPlayer.duration) * 100;
+                elements.audioScrubber.value = pct;
+                elements.audioTimeDisplay.textContent = `${formatTime(elements.audioPlayer.currentTime)} / ${formatTime(elements.audioPlayer.duration)}`;
+            }
+        });
+
+        elements.audioScrubber.addEventListener('input', (e) => {
+            if (elements.audioPlayer.duration) {
+                elements.audioPlayer.currentTime = (e.target.value / 100) * elements.audioPlayer.duration;
+            }
+        });
+    }
+
+    function initWebAudio() {
+        try {
+            state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            state.analyser = state.audioCtx.createAnalyser();
+            state.analyser.fftSize = 128;
+            state.freqData = new Uint8Array(state.analyser.frequencyBinCount);
+
+            state.audioSource = state.audioCtx.createMediaElementSource(elements.audioPlayer);
+            state.audioSource.connect(state.analyser);
+            state.analyser.connect(state.audioCtx.destination);
+        } catch (err) {
+            console.warn('WebAudio setup:', err);
+        }
+    }
+
+    function setAudioSource(item) {
+        elements.audioPlayer.src = item.url;
+        state.isPlaying = false;
+        elements.playAudioBtn.textContent = '▶️ Play Audio';
+    }
+
+    // --- Control Inputs & Listeners ---
+    function setupControlEvents() {
+        elements.speakerPhotoInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                const img = new Image();
+                img.onload = () => { state.speakerImg = img; };
+                img.src = URL.createObjectURL(e.target.files[0]);
+            }
+        });
+
+        elements.speakerScaleInput.addEventListener('input', (e) => {
+            state.speakerScale = parseInt(e.target.value);
+            elements.speakerScaleVal.textContent = state.speakerScale + '%';
+        });
+
+        elements.speakerXInput.addEventListener('input', (e) => {
+            state.speakerX = parseInt(e.target.value);
+            elements.speakerXVal.textContent = state.speakerX + 'px';
+        });
+
+        elements.speakerYInput.addEventListener('input', (e) => {
+            state.speakerY = parseInt(e.target.value);
+            elements.speakerYVal.textContent = state.speakerY + 'px';
+        });
+
+        elements.speakerRadiusInput.addEventListener('input', (e) => {
+            state.speakerRadius = parseInt(e.target.value);
+        });
+
+        elements.bgPhotoInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                const img = new Image();
+                img.onload = () => { state.bgImg = img; };
+                img.src = URL.createObjectURL(e.target.files[0]);
+            }
+        });
+
+        elements.bgBlurInput.addEventListener('input', (e) => {
+            state.bgBlur = parseInt(e.target.value);
+            elements.bgBlurVal.textContent = state.bgBlur + 'px';
+        });
+
+        elements.bgBrightInput.addEventListener('input', (e) => {
+            state.bgBright = parseInt(e.target.value);
+            elements.bgBrightVal.textContent = state.bgBright + '%';
+        });
+
+        elements.mainTitleInput.addEventListener('input', (e) => state.mainTitle = e.target.value);
+        elements.titleFontSelect.addEventListener('change', (e) => state.titleFont = e.target.value);
+        elements.titleFontSizeInput.addEventListener('input', (e) => state.titleFontSize = parseInt(e.target.value));
+        elements.titleColor1Input.addEventListener('input', (e) => state.titleColor1 = e.target.value);
+        elements.titleColor2Input.addEventListener('input', (e) => state.titleColor2 = e.target.value);
+        elements.subTitleInput.addEventListener('input', (e) => state.subTitle = e.target.value);
+
+        elements.waveColorInput.addEventListener('input', (e) => state.waveColor = e.target.value);
+        elements.waveHeightInput.addEventListener('input', (e) => state.waveHeight = parseInt(e.target.value));
+        elements.waveYInput.addEventListener('input', (e) => state.waveY = parseInt(e.target.value));
+
+        elements.exportPosterImgBtn.addEventListener('click', exportPosterImage);
+        elements.exportPosterVideoBtn.addEventListener('click', exportPosterVideo);
+    }
+
+    // --- Canvas Drawing & Animation Loop ---
+    function startCanvasLoop() {
+        function loop() {
+            renderPosterCanvas();
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+    }
+
+    function renderPosterCanvas() {
+        const ctx = elements.ctx;
+        const width = state.canvasWidth;
+        const height = state.canvasHeight;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // 1. Draw Background Layer (Right Side / Full Canvas)
+        if (state.bgImg) {
+            ctx.save();
+            ctx.filter = `blur(${state.bgBlur}px) brightness(${state.bgBright}%)`;
+            ctx.drawImage(state.bgImg, 0, 0, width, height);
+            ctx.restore();
+        } else {
+            // Default Landscape Gradient Background
+            const grad = ctx.createLinearGradient(0, 0, width, height);
+            grad.addColorStop(0, '#1e293b');
+            grad.addColorStop(0.5, '#0f172a');
+            grad.addColorStop(1, '#020617');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // 2. Draw Speaker Photo Cutout (Left Side)
+        if (state.speakerImg) {
+            ctx.save();
+            const scale = state.speakerScale / 100;
+            const spWidth = (width * 0.45) * scale;
+            const spHeight = (height * 0.9) * scale;
+            const spX = 30 + state.speakerX;
+            const spY = (height - spHeight) + state.speakerY;
+
+            if (state.speakerRadius > 0) {
+                ctx.beginPath();
+                ctx.roundRect(spX, spY, spWidth, spHeight, state.speakerRadius);
+                ctx.clip();
+            }
+
+            ctx.drawImage(state.speakerImg, spX, spY, spWidth, spHeight);
+            ctx.restore();
+        }
+
+        // 3. Draw Audio Spectrum Waveform Equalizer
+        if (state.analyser && state.isPlaying) {
+            state.analyser.getByteFrequencyData(state.freqData);
+        }
+
+        ctx.save();
+        const wavePosY = (height * (state.waveY / 100));
+        const numBars = 32;
+        const barWidth = (width * 0.45) / numBars;
+        const startX = width * 0.48;
+
+        for (let i = 0; i < numBars; i++) {
+            let val = state.freqData ? state.freqData[i] : (Math.sin(Date.now() * 0.005 + i) * 50 + 60);
+            let barH = (val / 255) * state.waveHeight;
+
+            ctx.fillStyle = state.waveColor;
+            ctx.shadowColor = state.waveColor;
+            ctx.shadowBlur = 8;
+            ctx.fillRect(startX + (i * barWidth), wavePosY - (barH / 2), barWidth - 4, barH);
+        }
+        ctx.restore();
+
+        // 4. Draw Khmer Typography (Main Title & Subtitle)
+        ctx.save();
+        const titleX = width * 0.72;
+        const titleY = height * 0.52;
+
+        ctx.textAlign = 'center';
+        ctx.font = `bold ${state.titleFontSize}px "${state.titleFont}", sans-serif`;
+
+        // Gradient Fill
+        const textGrad = ctx.createLinearGradient(titleX - 150, 0, titleX + 150, 0);
+        textGrad.addColorStop(0, state.titleColor1);
+        textGrad.addColorStop(1, state.titleColor2);
+
+        // Stroke & Shadow
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = Math.max(6, state.titleFontSize * 0.15);
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 15;
+        
+        ctx.strokeText(state.mainTitle, titleX, titleY);
+        ctx.fillStyle = textGrad;
+        ctx.fillText(state.mainTitle, titleX, titleY);
+
+        // Subtitle
+        if (state.subTitle) {
+            ctx.font = `600 ${Math.round(state.titleFontSize * 0.45)}px "Kantumruy Pro", sans-serif`;
+            ctx.lineWidth = 4;
+            ctx.strokeText(state.subTitle, titleX, titleY + state.titleFontSize * 0.8);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(state.subTitle, titleX, titleY + state.titleFontSize * 0.8);
+        }
+        ctx.restore();
+    }
+
+    // --- Generate Default Demo Images ---
+    function createDemoImages() {
+        // Create canvas demo speaker image (Orange Robe Monk cutout representation)
+        const spCanvas = document.createElement('canvas');
+        spCanvas.width = 400;
+        spCanvas.height = 600;
+        const sCtx = spCanvas.getContext('2d');
+        
+        const grad = sCtx.createLinearGradient(0, 0, 0, 600);
+        grad.addColorStop(0, '#f97316');
+        grad.addColorStop(1, '#ea580c');
+        sCtx.fillStyle = grad;
+        sCtx.fillRect(50, 150, 300, 450);
+
+        // Head
+        sCtx.fillStyle = '#fde047';
+        sCtx.beginPath();
+        sCtx.arc(200, 120, 70, 0, Math.PI * 2);
+        sCtx.fill();
+
+        const demoSpImg = new Image();
+        demoSpImg.onload = () => { state.speakerImg = demoSpImg; };
+        demoSpImg.src = spCanvas.toDataURL();
+    }
+
+    // --- Export Functions ---
+    function exportPosterImage() {
+        renderPosterCanvas();
+        const dataUrl = elements.posterCanvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.download = `Khmer_Poster_${Date.now()}.png`;
+        a.href = dataUrl;
+        a.click();
+        showToast('📸 បាន Export រូបភាព HD Poster រួចរាល់!');
+    }
+
+    async function exportPosterVideo() {
+        if (!elements.audioPlayer.src) {
+            showToast('⚠️ សូមជ្រើសរើស Audio/Video មុននឹង Export វីដេអូ!');
+            return;
+        }
+
+        showToast('🎥 កំពុងបង្កើត Video ជាមួយចលនា Waveform...');
+
+        const stream = elements.posterCanvas.captureStream(30);
+        
+        let mimeType = 'video/mp4;codecs=avc1,mp4a';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '';
+        }
+
+        const options = mimeType ? { mimeType, videoBitsPerSecond: 3500000 } : { videoBitsPerSecond: 3500000 };
+        const recorder = new MediaRecorder(stream, options);
+        const chunks = [];
+
+        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+        recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: recorder.mimeType || 'video/mp4' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.download = `Khmer_Poster_Video_${Date.now()}.${mimeType.includes('webm') ? 'webm' : 'mp4'}`;
+            a.href = url;
+            a.click();
+            showToast('✅ ទទួលបាន Video ជោគជ័យ!');
+        };
+
+        elements.audioPlayer.currentTime = 0;
+        elements.audioPlayer.play();
+        state.isPlaying = true;
+        recorder.start();
+
+        elements.audioPlayer.onended = () => {
+            recorder.stop();
+            state.isPlaying = false;
+            elements.playAudioBtn.textContent = '▶️ Play Audio';
+        };
+    }
+
+    // --- Helper Functions ---
+    function formatTime(seconds) {
+        if (!seconds || isNaN(seconds)) return '00:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = msg;
+        elements.toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+    }
+
+    // --- AudioBuffer to WAV Helper ---
+    function audioBufferToWav(buffer) {
+        const numChannels = buffer.numberOfChannels;
+        const sampleRate = buffer.sampleRate;
+        const format = 1; // PCM
+        const bitDepth = 16;
+        
+        const bytesPerSample = bitDepth / 8;
+        const blockAlign = numChannels * bytesPerSample;
+        
+        const data = buffer.getChannelData(0);
+        const dataSize = data.length * bytesPerSample;
+        const headerSize = 44;
+        const totalSize = headerSize + dataSize;
+        
+        const arrayBuffer = new ArrayBuffer(totalSize);
+        const view = new DataView(arrayBuffer);
+
+        function writeString(offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        writeString(0, 'RIFF');
+        view.setUint32(4, totalSize - 8, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, format, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * blockAlign, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitDepth, true);
+        writeString(36, 'data');
+        view.setUint32(40, dataSize, true);
+
+        let offset = 44;
+        for (let i = 0; i < data.length; i++) {
+            const sample = Math.max(-1, Math.min(1, data[i]));
+            view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+            offset += 2;
+        }
+
+        return new Blob([arrayBuffer], { type: 'audio/wav' });
+    }
+
+    // Launch
+    init();
+});
