@@ -102,14 +102,32 @@
                             </div>
                             <div class="form-row">
                                 <button class="btn btn-secondary btn-sm" id="flipSpeakerBtn" style="flex:1;">🔄 ត្រឡប់រូប (Flip ⇄)</button>
-                                <button class="btn btn-primary btn-sm" id="removeBgBtn" style="flex:1;">✨ លុប BG Auto</button>
+                                <button class="btn btn-secondary btn-sm" id="resetSpeakerImgBtn" style="flex:1;">🔄 ស្តាររូបដើម</button>
                             </div>
-                            <div class="form-group" style="margin-top:6px;">
-                                <button class="btn btn-green btn-sm" id="humanSegBtn" style="width:100%;">🧠 Human Segmentation AI (កាត់រូបមនុស្ស)</button>
+                            <div class="form-row" style="margin-top:6px;">
+                                <button class="btn btn-primary btn-sm" id="removeBgBtn" style="flex:1;">✨ លុប BG Auto</button>
+                                <button class="btn btn-green btn-sm" id="humanSegBtn" style="flex:1;">🧠 AI Cutout</button>
+                            </div>
+                            <div class="form-row" style="margin-top:6px;">
+                                <button class="btn btn-secondary btn-sm" id="eraserToolBtn" style="flex:1;">🧹 ជក់លុប BG (Eraser)</button>
+                                <button class="btn btn-secondary btn-sm" id="pickColorKeyBtn" style="flex:1;">🎯 ចុចរើសពណ៌លុប</button>
+                            </div>
+                            <div class="form-group" id="eraserSizeGroup" style="display:none; margin-top:6px;">
+                                <label class="form-label">ទំហំជក់លុប (Brush Size): <span id="eraserSizeVal">30px</span></label>
+                                <input type="range" id="eraserSizeInput" min="5" max="100" value="30">
                             </div>
                             <div class="form-group" id="bgToleranceGroup" style="display:none; margin-top:6px;">
                                 <label class="form-label">កម្រិតលុប BG (Tolerance): <span id="bgToleranceVal">30</span></label>
                                 <input type="range" id="bgToleranceInput" min="5" max="80" value="30">
+                            </div>
+                            <div class="form-group" style="margin-top:6px;">
+                                <label class="form-label">🖼️ ស៊ុមរាងរូប Speaker (Frame Mask Shape):</label>
+                                <select id="speakerMaskShapeSelect" class="form-control">
+                                    <option value="none">រាងដើម (Full Rectangle)</option>
+                                    <option value="arch">🏛️ ស៊ុមរោង (Arch Portal Frame)</option>
+                                    <option value="circle">⭕ រង្វង់មូល (Circle / Oval)</option>
+                                    <option value="feather">☁️ គែមទន់ (Soft Gradient Feather Edge)</option>
+                                </select>
                             </div>
                             <div class="form-row" style="margin-top:8px;">
                                 <div class="form-group">

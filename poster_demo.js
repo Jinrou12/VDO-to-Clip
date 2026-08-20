@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Speaker Layer (Left)
         speakerImg: null,
         rawSpeakerImg: null,
+        speakerCanvas: null,
+        speakerCtx: null,
         speakerScale: 100,
         speakerX: 0,
         speakerY: 0,
@@ -22,6 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
         speakerGlowColor: '#FFFFFF',
         speakerGlowSize: 0,
         speakerShadow: 15,
+        speakerMaskShape: 'none',
+
+        // Tools
+        activeTool: 'select', // 'select' | 'eraser' | 'colorKey'
+        eraserSize: 30,
 
         // Background Layer (Right)
         bgImg: null,
@@ -86,11 +93,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Control Inputs
         speakerPhotoInput: document.getElementById('speakerPhotoInput'),
         flipSpeakerBtn: document.getElementById('flipSpeakerBtn'),
+        resetSpeakerImgBtn: document.getElementById('resetSpeakerImgBtn'),
         removeBgBtn: document.getElementById('removeBgBtn'),
         humanSegBtn: document.getElementById('humanSegBtn'),
+        eraserToolBtn: document.getElementById('eraserToolBtn'),
+        pickColorKeyBtn: document.getElementById('pickColorKeyBtn'),
+        eraserSizeGroup: document.getElementById('eraserSizeGroup'),
+        eraserSizeInput: document.getElementById('eraserSizeInput'),
+        eraserSizeVal: document.getElementById('eraserSizeVal'),
         bgToleranceGroup: document.getElementById('bgToleranceGroup'),
         bgToleranceInput: document.getElementById('bgToleranceInput'),
         bgToleranceVal: document.getElementById('bgToleranceVal'),
+        speakerMaskShapeSelect: document.getElementById('speakerMaskShapeSelect'),
 
         speakerGlowColorInput: document.getElementById('speakerGlowColorInput'),
         speakerGlowSizeInput: document.getElementById('speakerGlowSizeInput'),
@@ -461,7 +475,95 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Interactive Mouse Dragging on Canvas ---
+    // --- Interactive Mouse Dragging & Manual Eraser on Canvas ---
+    function initSpeakerCanvas(img) {
+        state.rawSpeakerImg = img;
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth || img.width || 400;
+        c.height = img.naturalHeight || img.height || 600;
+        const sCtx = c.getContext('2d');
+        sCtx.drawImage(img, 0, 0);
+        state.speakerCanvas = c;
+        state.speakerCtx = sCtx;
+
+        const editedImg = new Image();
+        editedImg.onload = () => { state.speakerImg = editedImg; };
+        editedImg.src = c.toDataURL('image/png');
+    }
+
+    function eraseSpeakerAt(canvasPosX, canvasPosY) {
+        if (!state.speakerCanvas || !state.speakerCtx) return;
+        const scale = state.speakerScale / 100;
+        const spWidth = (state.canvasWidth * 0.45) * scale;
+        const spHeight = (state.canvasHeight * 0.9) * scale;
+        const spX = 30 + state.speakerX;
+        const spY = (state.canvasHeight - spHeight) + state.speakerY;
+
+        let relX = (canvasPosX - spX) / spWidth;
+        let relY = (canvasPosY - spY) / spHeight;
+
+        if (state.speakerFlipH) relX = 1 - relX;
+
+        if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return;
+
+        const imgX = relX * state.speakerCanvas.width;
+        const imgY = relY * state.speakerCanvas.height;
+        const brushR = (state.eraserSize / spWidth) * state.speakerCanvas.width;
+
+        const sCtx = state.speakerCtx;
+        sCtx.save();
+        sCtx.globalCompositeOperation = 'destination-out';
+        sCtx.beginPath();
+        sCtx.arc(imgX, imgY, brushR, 0, Math.PI * 2);
+        sCtx.fill();
+        sCtx.restore();
+
+        const editedImg = new Image();
+        editedImg.onload = () => { state.speakerImg = editedImg; };
+        editedImg.src = state.speakerCanvas.toDataURL('image/png');
+    }
+
+    function pickAndRemoveColorAt(canvasPosX, canvasPosY) {
+        if (!state.speakerCanvas || !state.speakerCtx) return;
+        const scale = state.speakerScale / 100;
+        const spWidth = (state.canvasWidth * 0.45) * scale;
+        const spHeight = (state.canvasHeight * 0.9) * scale;
+        const spX = 30 + state.speakerX;
+        const spY = (state.canvasHeight - spHeight) + state.speakerY;
+
+        let relX = (canvasPosX - spX) / spWidth;
+        let relY = (canvasPosY - spY) / spHeight;
+
+        if (state.speakerFlipH) relX = 1 - relX;
+
+        if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return;
+
+        const imgX = Math.floor(relX * state.speakerCanvas.width);
+        const imgY = Math.floor(relY * state.speakerCanvas.height);
+
+        const sCtx = state.speakerCtx;
+        const pixel = sCtx.getImageData(imgX, imgY, 1, 1).data;
+        const targetR = pixel[0];
+        const targetG = pixel[1];
+        const targetB = pixel[2];
+
+        const imgData = sCtx.getImageData(0, 0, state.speakerCanvas.width, state.speakerCanvas.height);
+        const data = imgData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const diff = Math.sqrt((data[i] - targetR) ** 2 + (data[i + 1] - targetG) ** 2 + (data[i + 2] - targetB) ** 2);
+            if (diff < state.bgTolerance * 2.5) {
+                data[i + 3] = 0;
+            }
+        }
+
+        sCtx.putImageData(imgData, 0, 0);
+        const editedImg = new Image();
+        editedImg.onload = () => { state.speakerImg = editedImg; };
+        editedImg.src = state.speakerCanvas.toDataURL('image/png');
+        showToast('🎯 បានលុបពណ៌ដែលបានរើសរួចរាល់!');
+    }
+
     function setupCanvasMouseEvents() {
         const canvas = elements.posterCanvas;
 
@@ -478,6 +580,19 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.addEventListener('mousedown', (e) => {
             const pos = getMousePos(e);
             
+            if (state.activeTool === 'eraser') {
+                state.dragTarget = 'erasing';
+                eraseSpeakerAt(pos.x, pos.y);
+                return;
+            }
+
+            if (state.activeTool === 'colorKey') {
+                pickAndRemoveColorAt(pos.x, pos.y);
+                state.activeTool = 'select';
+                canvas.style.cursor = 'grab';
+                return;
+            }
+
             // Check Main Title hit
             const titleX = (state.canvasWidth * 0.72) + state.titleOffsetX;
             const titleY = (state.canvasHeight * 0.52) + state.titleOffsetY;
@@ -524,8 +639,13 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.addEventListener('mousemove', (e) => {
             const pos = getMousePos(e);
 
+            if (state.activeTool === 'eraser' && state.dragTarget === 'erasing') {
+                eraseSpeakerAt(pos.x, pos.y);
+                return;
+            }
+
             if (!state.dragTarget) {
-                canvas.style.cursor = 'grab';
+                canvas.style.cursor = state.activeTool === 'eraser' ? 'crosshair' : (state.activeTool === 'colorKey' ? 'cell' : 'grab');
                 return;
             }
 
@@ -553,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addEventListener('mouseup', () => {
             state.dragTarget = null;
-            if (canvas) canvas.style.cursor = 'grab';
+            if (canvas) canvas.style.cursor = state.activeTool === 'eraser' ? 'crosshair' : (state.activeTool === 'colorKey' ? 'cell' : 'grab');
         });
     }
 
@@ -626,13 +746,62 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.files[0]) {
                 const img = new Image();
                 img.onload = async () => {
-                    state.rawSpeakerImg = img;
-                    state.speakerImg = img;
+                    initSpeakerCanvas(img);
                     showToast('បាន Upload រូប Speaker រួចរាល់!');
                 };
                 img.src = URL.createObjectURL(e.target.files[0]);
             }
         });
+
+        if (elements.resetSpeakerImgBtn) {
+            elements.resetSpeakerImgBtn.addEventListener('click', () => {
+                if (state.rawSpeakerImg) {
+                    initSpeakerCanvas(state.rawSpeakerImg);
+                    state.activeTool = 'select';
+                    if (elements.eraserSizeGroup) elements.eraserSizeGroup.style.display = 'none';
+                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'grab';
+                    showToast('🔄 បានស្តាររូប Speaker ដើមវិញ!');
+                }
+            });
+        }
+
+        if (elements.eraserToolBtn) {
+            elements.eraserToolBtn.addEventListener('click', () => {
+                if (state.activeTool === 'eraser') {
+                    state.activeTool = 'select';
+                    if (elements.eraserSizeGroup) elements.eraserSizeGroup.style.display = 'none';
+                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'grab';
+                    showToast('បានបិទ ជក់លុប BG (Normal Mode)');
+                } else {
+                    state.activeTool = 'eraser';
+                    if (elements.eraserSizeGroup) elements.eraserSizeGroup.style.display = 'block';
+                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'crosshair';
+                    showToast('🧹 ជក់លុប BG ត្រូវបានបើក៖ ប្រើ Mouse អូសលើរូបដើម្បីលុប!');
+                }
+            });
+        }
+
+        if (elements.pickColorKeyBtn) {
+            elements.pickColorKeyBtn.addEventListener('click', () => {
+                state.activeTool = 'colorKey';
+                if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'cell';
+                showToast('🎯 ជ្រើសរើសពណ៌លុប៖ សូម ចុចលើពណ៌ background លើរូបភាព!');
+            });
+        }
+
+        if (elements.eraserSizeInput) {
+            elements.eraserSizeInput.addEventListener('input', (e) => {
+                state.eraserSize = parseInt(e.target.value);
+                if (elements.eraserSizeVal) elements.eraserSizeVal.textContent = state.eraserSize + 'px';
+            });
+        }
+
+        if (elements.speakerMaskShapeSelect) {
+            elements.speakerMaskShapeSelect.addEventListener('change', (e) => {
+                state.speakerMaskShape = e.target.value;
+                showToast(`បានប្តូរស៊ុមរាងរូបទៅជា៖ ${e.target.options[e.target.selectedIndex].text}`);
+            });
+        }
 
         elements.flipSpeakerBtn.addEventListener('click', () => {
             state.speakerFlipH = !state.speakerFlipH;
@@ -840,7 +1009,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.shadowOffsetY = 8;
             }
 
-            if (state.speakerRadius > 0) {
+            if (state.speakerMaskShape === 'arch') {
+                ctx.beginPath();
+                const r = spWidth / 2;
+                ctx.arc(spX + r, spY + r, r, Math.PI, 0, false);
+                ctx.rect(spX, spY + r, spWidth, spHeight - r);
+                ctx.clip();
+            } else if (state.speakerMaskShape === 'circle') {
+                ctx.beginPath();
+                ctx.ellipse(spX + spWidth / 2, spY + spHeight / 2, spWidth / 2, spHeight / 2, 0, 0, Math.PI * 2);
+                ctx.clip();
+            } else if (state.speakerRadius > 0) {
                 ctx.beginPath();
                 ctx.roundRect(spX, spY, spWidth, spHeight, state.speakerRadius);
                 ctx.clip();
@@ -957,8 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const demoSpImg = new Image();
         demoSpImg.onload = () => {
-            state.rawSpeakerImg = demoSpImg;
-            state.speakerImg = demoSpImg;
+            initSpeakerCanvas(demoSpImg);
         };
         demoSpImg.src = spCanvas.toDataURL();
     }
