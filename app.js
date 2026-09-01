@@ -734,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (importAllCount) importAllCount.textContent = String(aiState.recommendedClips.length);
         if (importAllBtn) importAllBtn.classList.remove('hidden');
 
-        aiState.recommendedClips.forEach(clip => {
+        aiState.recommendedClips.forEach((clip, idx) => {
             const card = document.createElement('div');
             card.className = 'ai-clip-card';
             card.innerHTML = `
@@ -743,11 +743,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="ai-viral-badge">🔥 ${clip.viralScore}</span>
                         <span class="ai-clip-duration">${formatTime(clip.startTime, false)} - ${formatTime(clip.endTime, false)} (${Math.round(clip.duration)}s)</span>
                     </div>
-                    <h5 class="ai-clip-title">${clip.title}</h5>
-                    <div class="ai-clip-tags">
-                        ${clip.tags.map(t => `<span class="ai-tag">${t}</span>`).join('')}
+                    <div style="margin: 6px 0 4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                        <span style="font-size:0.72rem; background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.35); border-radius:4px; padding:2px 7px; white-space:nowrap;">✏️ ចំណងជើងគំរូ — ចុចដើម្បីកែ</span>
                     </div>
-                    <div class="ai-transcript-snippet">${clip.transcript}</div>
+                    <input
+                        class="ai-clip-title-input"
+                        type="text"
+                        value="${clip.title.replace(/"/g, '&quot;')}"
+                        style="width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(167,139,250,0.4); border-radius:6px; color:#e2e8f0; font-size:0.88rem; font-weight:700; padding:5px 8px; margin-bottom:5px; outline:none; font-family:inherit;"
+                        placeholder="វាយចំណងជើង Clip..."
+                    >
+                    <div class="ai-clip-tags">
+                        ${(clip.tags||[]).map(t => `<span class="ai-tag">${t}</span>`).join('')}
+                    </div>
+                    <div class="ai-transcript-snippet">${clip.transcript||''}</div>
                 </div>
                 <div class="ai-clip-actions">
                     <button class="btn btn-secondary btn-sm ai-preview-btn">▶️ មើល Clip</button>
@@ -755,12 +764,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
+            // Sync title edits back into aiState immediately
+            const titleInput = card.querySelector('.ai-clip-title-input');
+            titleInput?.addEventListener('input', () => {
+                aiState.recommendedClips[idx].title = titleInput.value;
+            });
+
             card.querySelector('.ai-preview-btn')?.addEventListener('click', () => {
                 previewAiClip(clip);
             });
 
             card.querySelector('.ai-add-btn')?.addEventListener('click', () => {
-                addSingleAiClip(clip);
+                // Always use the latest (potentially edited) clip from aiState
+                addSingleAiClip(aiState.recommendedClips[idx]);
             });
 
             clipsGrid.appendChild(card);
