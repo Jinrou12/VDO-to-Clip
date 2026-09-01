@@ -381,66 +381,121 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generateKhmerAiClips(videoDuration, fileName) {
-        const templates = [
+        const durationSelect = document.getElementById('aiDurationModeSelect');
+        const categorySelect = document.getElementById('aiCategorySelect');
+        
+        const isLongMode = durationSelect ? durationSelect.value === 'long' : true;
+        const category = categorySelect ? categorySelect.value : 'dhamma';
+
+        // Authentic Dhamma Sermon & Wisdom templates
+        const dhammaTemplates = [
             {
-                type: '💥 ចំណុចសំខាន់',
-                viralScore: '98% Viral',
-                title: 'ឈុតសំខាន់ និងរំភើបបំផុត',
-                top1: 'ចំណុចសំខាន់', top2: 'មិនអាចរំលងបាន',
-                bot1: 'មេរៀនជីវិត', bot2: 'មានតម្លៃស្តាប់',
-                tags: ['#viral', '#khmer', '#highlight'],
-                transcript: '“ នេះជាចំណុចពិសេស និងសំខាន់បំផុតក្នុងវីដេអូ ដែលផ្ដល់ជាគំនិត និងសារអប់រំដ៏មានន័យ... ”'
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '99% ធម៌អប់រំ',
+                title: 'សេចក្ដីស្លាប់ និងការត្រៀមខ្លួន',
+                top1: 'សេចក្ដីស្លាប់', top2: 'និងការត្រៀមខ្លួន',
+                bot1: 'ការពិចារណា', bot2: 'មរណស្សតិ',
+                tags: ['#ធម្មទេសនា', '#សេចក្តីស្លាប់', '#មរណស្សតិ'],
+                transcript: '“ ការពិចារណាអំពីសេចក្តីស្លាប់ មរណស្សតិ និងការសាងបុណ្យកុសលទុកជាដើមទុនសម្រាប់ជីវិត... ”'
             },
             {
-                type: '🗣️ សុន្ទរកថាទាក់ទាញ',
-                viralScore: '96% High Energy',
-                title: 'ការរៀបរាប់ និងការចែករំលែកទាក់ទាញ',
-                top1: 'សុន្ទរកថា', top2: 'ទាក់ទាញចិត្ត',
-                bot1: 'ការចែករំលែក', bot2: 'ដ៏អស្ចារ្យ',
-                tags: ['#speech', '#inspiration', '#khmerclip'],
-                transcript: '“ ការនិយាយយ៉ាងក្បោះក្បាយ ងាយស្រួលស្ដាប់ មានភាពទាក់ទាញខ្លាំង និងបំផុសគំនិត... ”'
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '98% ធម៌អប់រំ',
+                title: 'កំណើតសត្វមាន ៤ ប្រភេទ',
+                top1: 'កំណើតសត្វ', top2: 'មាន៤ប្រភេទ',
+                bot1: 'អណ្ដជៈ ជលាពុជៈ', bot2: 'សំសេទជៈ ឱបបាតិកៈ',
+                tags: ['#ធម្មទេសនា', '#កំណើតសត្វ៤', '#ព្រះពុទ្ធសាសនា'],
+                transcript: '“ សត្វទាំងឡាយកើតក្នុងលោកមាន ៤ កំណើត គឺ កើតក្នុងពង កើតក្នុងស្បូន កើតក្នុងក្អែល និងកើតឡើងអូតូ... ”'
             },
             {
-                type: '💡 គំនិតល្អៗ & សម្រង់ពាក្យ',
-                viralScore: '94% Inspiring',
-                title: 'ទស្សនៈ និងគំនិតជោគជ័យ',
-                top1: 'ទស្សនៈជីវិត', top2: 'ជោគជ័យ',
-                bot1: 'សម្រង់ពាក្យ', bot2: 'ល្អៗខ្លាំង',
-                tags: ['#motivation', '#lifequote', '#success'],
-                transcript: '“ សម្រង់ពាក្យអប់រំ និងទស្សនៈជីវិតដែលធ្វើឲ្យអ្នកទស្សនាចាប់អារម្មណ៍ខ្លាំង... ”'
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '97% ធម៌អប់រំ',
+                title: 'អង្គ ៣ នៃបុណ្យទក្ខិណានុប្បទាន',
+                top1: 'អង្គ៣នៃបុណ្យ', top2: 'ទក្ខិណានុប្បទាន',
+                bot1: 'ទាយក បដិគ្គាហក', bot2: 'និងទក្ខិណា',
+                tags: ['#បុណ្យទក្ខិណានុប្បទាន', '#ធ្វើបុណ្យ', '#អានិសង្ស'],
+                transcript: '“ អង្គ ៣ ដែលធ្វើឲ្យទក្ខិណានុប្បទានមានផលធំ គឺ ទាយកមានសទ្ធា បដិគ្គាហកមានសីល និងទក្ខិណាជាធម៌បរិសុទ្ធ... ”'
             },
             {
-                type: '😂 ឈុតរីករាយ & កំប្លែង',
-                viralScore: '92% Entertaining',
-                title: 'ឈុតសើចសប្បាយ និងរំជួលចិត្ត',
-                top1: 'ឈុតសើច', top2: 'សប្បាយ',
-                bot1: 'អារម្មណ៍ល្អ', bot2: 'ស្រស់ស្រាយ',
-                tags: ['#funny', '#khmercomedy', '#reels'],
-                transcript: '“ ឈុតឆាករីករាយ និងសំណើចដែលបង្កើតបរិយាកាសទាក់ទាញសម្រាប់ Short Video... ”'
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '96% ធម៌អប់រំ',
+                title: 'ការសាងបុណ្យកុសល ក្នុងជីវិត',
+                top1: 'ការសាងបុណ្យ', top2: 'បង្កើតកុសល',
+                bot1: 'ទាន សីល ភាវនា', bot2: 'នាំមកនូវសេចក្តីសុខ',
+                tags: ['#ការសាងបុណ្យ', '#ទានសីលភាវនា', '#សេចក្តីសុខ'],
+                transcript: '“ បុណ្យកុសលដែលបានសាងដោយទាន សីល ភាវនា គឺជាទីពឹងដ៏ពិតប្រាកដនៃសត្វលោក... ”'
             },
             {
-                type: '⭐ ការចែករំលែកបទពិសោធន៍',
-                viralScore: '90% Insightful',
-                title: 'បទពិសោធន៍ពិតប្រាកដ',
-                top1: 'បទពិសោធន៍', top2: 'ពិតប្រាកដ',
-                bot1: 'ចំណេះដឹង', bot2: 'ថ្មីៗ',
-                tags: ['#knowledge', '#experience', '#khmershorts'],
-                transcript: '“ ការចែករំលែកបទពិសោធន៍ផ្ទាល់ខ្លួន ដែលផ្ដល់ជាចំណេះដឹង និងដំណោះស្រាយល្អៗ... ”'
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '95% ធម៌អប់រំ',
+                title: 'ធម្មទាន ឈ្នះអស់ទានទាំងពួង',
+                top1: 'ធម្មទាន', top2: 'ឈ្នះអស់ទាន',
+                bot1: 'សព្វទានំ ធម្មទានំ', bot2: 'ជិនាតិ',
+                tags: ['#ធម្មទាន', '#ឈ្នះអស់ទាន', '#ពុទ្ធឱវាទ'],
+                transcript: '“ ការឲ្យធម៌ជាទាន ឈ្មោះថាឈ្នះអស់ទានទាំងពួង ព្រោះនាំឲ្យកើតបបញ្ញា និងផ្លូវភ្លឺស្វាង... ”'
+            },
+            {
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '94% ធម៌អប់រំ',
+                title: 'អានិសង្សនៃការចេះអត់ធ្មត់ (ខន្តី)',
+                top1: 'អានិសង្ស', top2: 'នៃខន្តីធម៌',
+                bot1: 'ខន្តី បរមំ', bot2: 'តបោ តីតិក្ខា',
+                tags: ['#ខន្តីធម៌', '#អត់ធ្មត់', '#អានិសង្ស'],
+                transcript: '“ ខន្តី គឺការអត់ធ្មត់ ជាតបធម៌ដ៏ឧត្តម នាំមកនូវភាពស្ងប់រមាំង និងជ័យជំនះក្នុងជីវិត... ”'
             }
         ];
 
-        let count = 4;
-        if (videoDuration < 60) count = 2;
-        else if (videoDuration > 300) count = 5;
+        const generalTemplates = [
+            {
+                type: '💡 គំនិតល្អៗ',
+                viralScore: '98% High Value',
+                title: 'ទស្សនៈជីវិត និងការតស៊ូ',
+                top1: 'ទស្សនៈជីវិត', top2: 'និងការតស៊ូ',
+                bot1: 'គំនិតជោគជ័យ', bot2: 'រៀបចំអនាគត',
+                tags: ['#គំនិតជោគជ័យ', '#ទស្សនៈជីវិត', '#មេរៀន'],
+                transcript: '“ ការតស៊ូ និងការរៀបចំផែនការជីវិត គឺជាសោរដ៏សំខាន់សម្រាប់បើកទ្វារជោគជ័យ... ”'
+            },
+            {
+                type: '⭐ បទពិសោធន៍',
+                viralScore: '95% Insightful',
+                title: 'បទពិសោធន៍ពិតប្រាកដក្នុងជីវិត',
+                top1: 'បទពិសោធន៍', top2: 'ពិតប្រាកដ',
+                bot1: 'ចំណេះដឹងថ្មីៗ', bot2: 'ការរៀនសូត្រ',
+                tags: ['#បទពិសោធន៍', '#ចំណេះដឹង', '#ជីវិត'],
+                transcript: '“ បទពិសោធន៍ដែលបានឆ្លងកាត់ ផ្ដល់ជាមេរៀនដ៏មានតម្លៃសម្រាប់អភិវឌ្ឍខ្លួន... ”'
+            }
+        ];
 
-        const interval = videoDuration / (count + 1);
+        const templates = (category === 'general') ? [...generalTemplates, ...dhammaTemplates] : dhammaTemplates;
+
+        // Determine clip count
+        let count = 4;
+        if (videoDuration < 300) count = 2;
+        else if (videoDuration >= 1200) count = 6;
+
+        // Determine target duration per clip
+        // If isLongMode: 2 mins (120s) to 5 mins (300s)
+        // If shortMode: 30s to 60s
+        let targetClipLen = isLongMode ? 180 : 45; // default 3 mins (180s) for long mode
+        
+        if (isLongMode) {
+            targetClipLen = Math.max(120, Math.min(300, Math.round(videoDuration / (count + 0.5))));
+            if (videoDuration < 240) {
+                targetClipLen = Math.max(60, Math.round(videoDuration / 2));
+            }
+        } else {
+            targetClipLen = Math.min(60, Math.max(30, Math.round(videoDuration * 0.15)));
+        }
+
+        const interval = (videoDuration - targetClipLen) / Math.max(1, count - 1 || 1);
         const clips = [];
 
         for (let i = 0; i < count; i++) {
             const tmpl = templates[i % templates.length];
-            const clipLen = Math.min(45, Math.max(15, Math.round(videoDuration * 0.15)));
-            const startTime = Math.max(0, Math.round(interval * (i + 1) - clipLen / 2));
-            const endTime = Math.min(videoDuration, startTime + clipLen);
+            let startTime = Math.max(0, Math.round(i * interval));
+            let endTime = Math.min(videoDuration, startTime + targetClipLen);
+
+            if (endTime <= startTime) continue;
 
             clips.push({
                 id: 'ai_' + Date.now() + '_' + i,

@@ -507,6 +507,24 @@
                         </button>
                     </div>
 
+                    <div class="ai-config-bar-inline" style="display:flex; gap:16px; margin-bottom:16px; background:rgba(15,23,42,0.6); padding:12px 16px; border-radius:8px; border:1px solid var(--border-color); flex-wrap:wrap; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <label style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">⏱️ រយៈពេល Clip:</label>
+                            <select id="aiDurationModeSelect" class="form-control" style="width:auto; padding:4px 10px; font-size:0.85rem;">
+                                <option value="long" selected>📜 ២ នាទី - ៥ នាទី (ទេសនា / មេរៀនវែង)</option>
+                                <option value="short">⚡ ៣០ វិនាទី - ១ នាទី (Shorts / Reels)</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <label style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">🪷 ប្រភេទវីដេអូ:</label>
+                            <select id="aiCategorySelect" class="form-control" style="width:auto; padding:4px 10px; font-size:0.85rem;">
+                                <option value="dhamma" selected>🪷 ធម្មទេសនា &amp; ធម៌អប់រំចិត្ត</option>
+                                <option value="education">💡 ចំណេះដឹង &amp; បទពិសោធន៍ជីវិត</option>
+                                <option value="general">🔥 Highlight &amp; ឈុតសំខាន់ៗ</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <!-- Scanning / Processing Visualizer -->
                     <div id="aiScanProgressBox" class="ai-progress-box hidden">
                         <div class="waveform-visualizer-container">
