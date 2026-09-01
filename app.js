@@ -440,17 +440,28 @@ Generate ${clipCount} high-retention highlight clips formatted as a JSON array w
 
 Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.`;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-        const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
+        const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+        let resp = null;
+        let lastErr = null;
 
-        if (!resp.ok) {
-            throw new Error(`Gemini API Error: ${resp.status}`);
+        for (const modelName of modelsToTry) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+                if (resp.ok) break;
+            } catch (e) {
+                lastErr = e;
+            }
+        }
+
+        if (!resp || !resp.ok) {
+            throw new Error(`Gemini API Error: ${resp ? resp.status : lastErr}`);
         }
 
         const data = await resp.json();
