@@ -496,28 +496,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        const durationVal = durationSelect ? durationSelect.value : 'dynamic';
+        const isShortMode = (durationVal === 'short');
+
+        // Dynamic clip length pattern (2mn = 120s, 2.5mn = 150s, 3.5mn = 210s, 3mn = 180s, 4mn = 240s...)
+        const dynamicLengths = [150, 210, 120, 240, 180, 270];
+
         let count = 5;
         if (effectiveDuration < 300) count = 2;
         else if (effectiveDuration >= 1800) count = 6;
 
-        let targetClipLen = isLongMode ? 180 : 45; // default 3 mins (180s)
-        if (isLongMode) {
-            targetClipLen = Math.max(120, Math.min(300, Math.round(effectiveDuration / count)));
-            if (videoDuration < 300) {
-                targetClipLen = Math.max(90, Math.round(effectiveDuration / Math.max(1, count)));
-            }
-        } else {
-            targetClipLen = Math.min(60, Math.max(30, Math.round(effectiveDuration * 0.15)));
-        }
-
-        const stepInterval = (effectiveDuration - targetClipLen) / Math.max(1, count - 1 || 1);
         const clips = [];
+        let currentPos = startOffset;
 
         for (let i = 0; i < count; i++) {
-            let startTime = Math.max(startOffset, Math.round(startOffset + (i * stepInterval)));
-            let endTime = Math.min(videoDuration, startTime + targetClipLen);
+            let clipLen = 180;
+            if (isShortMode) {
+                clipLen = Math.min(60, Math.max(30, Math.round(effectiveDuration * 0.12)));
+            } else if (!isNaN(parseInt(durationVal, 10))) {
+                clipLen = parseInt(durationVal, 10);
+            } else {
+                // Dynamic sermon flow (varies naturally per clip: 2.5mn, 3.5mn, 2mn, 4mn, 3mn...)
+                clipLen = dynamicLengths[i % dynamicLengths.length];
+            }
 
-            if (endTime <= startTime) continue;
+            let startTime = Math.round(currentPos);
+            let endTime = Math.min(videoDuration, startTime + clipLen);
+
+            if (endTime <= startTime || startTime >= videoDuration) break;
 
             clips.push({
                 id: 'ai_' + Date.now() + '_' + i,
@@ -534,6 +540,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 tags: activeTemplate.tags,
                 transcript: activeTemplate.transcript
             });
+
+            // Advance timeline position for next clip with natural spacing
+            currentPos = endTime + Math.min(30, Math.round((videoDuration - endTime) / (count - i)));
         }
         return clips;
     }
