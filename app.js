@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Khmer Video Clipper Pro - Core Engine (v8.0 SPA Architecture)
  * Complete 2-Screen Separation: Screen 1 (Trimmer) vs Screen 2 (Studio Editor)
  */
@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const userSkipSecs = skipDurationSelect ? parseInt(skipDurationSelect.value, 10) : 300;
         const customTopicText = customTopicInput ? customTopicInput.value.trim() : '';
 
-        // Calculate intro skip offset
+        // Calculate intro skip offset (default skip Namo Tassa intro chant)
         let startOffset = 0;
         if (shouldSkipIntro && videoDuration > 120) {
             startOffset = Math.min(Math.max(0, videoDuration - 120), userSkipSecs);
@@ -408,221 +408,287 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const effectiveDuration = Math.max(60, videoDuration - startOffset);
 
-        // ---- All Dhamma sermon topic templates (pool for auto rotation) ----
-        const dhammaTopicPresets = {
-            phka_samaki: {
-                type: '🌸 ធម្មទេសនា',
-                viralScore: '99% ធម៌អប់រំ',
-                title: 'បុណ្យផ្កាប្រាក់សាមគ្គី',
-                top1: 'បុណ្យផ្កាប្រាក់', top2: 'សាមគ្គីបង្កើតកុសល',
-                bot1: 'អានិសង្សបុណ្យ', bot2: 'ផ្កាប្រាក់សាមគ្គី',
-                tags: ['#បុណ្យផ្កាប្រាក់', '#សាមគ្គីធម៌', '#អានិសង្សបុណ្យ'],
-                transcript: '" ការរួមសាមគ្គីគ្នាសាងបុណ្យផ្កាប្រាក់ បង្កើតនូវកុសលផលបុណ្យដ៏ធំធេង... "'
-            },
-            dakkhina: {
-                type: '🪷 ធម្មទេសនា',
-                viralScore: '98% ធម៌អប់រំ',
-                title: 'អង្គ ៣ នៃបុណ្យទក្ខិណានុប្បទាន',
-                top1: 'អង្គ៣នៃបុណ្យ', top2: 'ទក្ខិណានុប្បទាន',
-                bot1: 'ទាយក បដិគ្គាហក', bot2: 'និងទក្ខិណា',
-                tags: ['#បុណ្យទក្ខិណានុប្បទាន', '#ធ្វើបុណ្យ', '#អានិសង្ស'],
-                transcript: '" អង្គ ៣ ដែលធ្វើឲ្យទក្ខិណានុប្បទានមានផលធំ គឺ ទាយក បដិគ្គាហក និងទក្ខិណា... "'
-            },
-            death: {
-                type: '💀 ធម្មទេសនា',
-                viralScore: '99% ធម៌អប់រំ',
-                title: 'សេចក្ដីស្លាប់ និងការត្រៀមខ្លួន',
-                top1: 'សេចក្ដីស្លាប់', top2: 'និងការត្រៀមខ្លួន',
-                bot1: 'ការពិចារណា', bot2: 'មរណស្សតិ',
-                tags: ['#ធម្មទេសនា', '#សេចក្តីស្លាប់', '#មរណស្សតិ'],
-                transcript: '" ការពិចារណាអំពីសេចក្តីស្លាប់ — មរណស្សតិ — ផ្ដល់ញាណដ៏ស៊ីជម្រៅ... "'
-            },
-            birth4: {
-                type: '👶 ធម្មទេសនា',
-                viralScore: '97% ធម៌អប់រំ',
-                title: 'កំណើតសត្វមាន ៤ ប្រភេទ',
-                top1: 'កំណើតសត្វ', top2: 'មាន៤ប្រភេទ',
-                bot1: 'អណ្ដជៈ ជលាពុជៈ', bot2: 'សំសេទជៈ ឱបបាតិកៈ',
-                tags: ['#ធម្មទេសនា', '#កំណើតសត្វ៤', '#ព្រះពុទ្ធសាសនា'],
-                transcript: '" សត្វទាំងឡាយកើតក្នុងលោកមាន ៤ កំណើត — ពង — ស្បូន — ក្អែល — ឱបបាតិកៈ... "'
-            },
-            pchum_kathin: {
-                type: '🪷 ធម្មទេសនា',
-                viralScore: '98% ធម៌អប់រំ',
-                title: 'បុណ្យភ្ជុំបិណ្ឌ និងកឋិនទាន',
-                top1: 'បុណ្យភ្ជុំបិណ្ឌ', top2: 'និងកឋិនមហាកុសល',
-                bot1: 'ការសាងកុសល', bot2: 'ក្នុងព្រះពុទ្ធសាសនា',
-                tags: ['#ភ្ជុំបិណ្ឌ', '#កឋិនទាន', '#មហាកុសល'],
-                transcript: '" ពិធីបុណ្យភ្ជុំបិណ្ឌ និងកឋិនទាន មានអានិសង្សខ្ពង់ខ្ពស់ដល់ព្រលឹងបុព្វការី... "'
-            },
-            education: {
-                type: '💡 ធម៌អប់រំ',
-                viralScore: '96% ធម៌អប់រំ',
-                title: 'ធម៌អប់រំចិត្ត និងជីវិតរស់នៅ',
-                top1: 'ធម៌អប់រំចិត្ត', top2: 'នាំមកនូវសេចក្តីសុខ',
-                bot1: 'ការរស់នៅ', bot2: 'ដោយបញ្ញា',
-                tags: ['#ធម៌អប់រំចិត្ត', '#សេចក្តីសុខ', '#ជីវិត'],
-                transcript: '" ធម៌អប់រំចិត្ត នាំឲ្យកើតសន្តិភាព និងការរស់នៅប្រាសចាកទុក្ខ... "'
-            }
+        // ---- Progressive Dhamma Sermon Storyline Templates per Category ----
+        const dhammaStorylines = {
+            phka_samaki: [
+                {
+                    title: 'សេចក្តីសាមគ្គី និងកុសលផលបុណ្យ (ភាគ១)',
+                    top1: 'សេចក្តីសាមគ្គី', top2: 'បង្កើតកុសលផលបុណ្យ',
+                    bot1: 'អានិសង្សបុណ្យ', bot2: 'ផ្កាប្រាក់សាមគ្គី',
+                    transcript: '" ការរួមសាមគ្គីគ្នាសាងបុណ្យផ្កាប្រាក់ បង្កើតនូវកុសលផលបុណ្យដ៏ធំធេង... "'
+                },
+                {
+                    title: 'ទោសនៃការបែកបាក់សាមគ្គី (ភាគ២)',
+                    top1: 'ទោសនៃការ', top2: 'បែកបាក់សាមគ្គី',
+                    bot1: 'នាំមកនូវ', bot2: 'ក្តីវិនាសសេចក្តីទុក្ខ',
+                    transcript: '" ការបែកបាក់សាមគ្គី នាំមកនូវសេចក្តីក្តៅក្រហាយ និងវិនាសប្រយោជន៍... "'
+                },
+                {
+                    title: 'អានិសង្សនៃការរួមចិត្តសាមគ្គី (ភាគ៣)',
+                    top1: 'អានិសង្សនៃ', top2: 'ការរួមចិត្តសាមគ្គី',
+                    bot1: 'បង្កើតនូវ', bot2: 'សេចក្តីសុខក្សេមក្សាន្ត',
+                    transcript: '" ព្រះពុទ្ធអង្គទ្រង់ត្រាស់ថា សុខា សង្ឃស្ស សាមគ្គី — សាមគ្គីនៃពួកនាំមកនូវសុខ... "'
+                },
+                {
+                    title: 'វិធីសាងសាមគ្គីក្នុងសង្គមរស់នៅ (ភាគ៤)',
+                    top1: 'វិធីសាងសាមគ្គី', top2: 'ក្នុងសង្គមរស់នៅ',
+                    bot1: 'រស់ដោយ', bot2: 'មេត្តានិងបញ្ញា',
+                    transcript: '" ការរស់នៅដោយមានមេត្តាចិត្ត រាប់អានគ្នាជាបងប្អូន ជួយទុក្ខធុរៈគ្នា... "'
+                },
+                {
+                    title: 'ធម៌អប់រំចិត្តឲ្យមានមេត្តាធម៌ (ភាគ៥)',
+                    top1: 'ធម៌អប់រំចិត្ត', top2: 'ឲ្យមានមេត្តាធម៌',
+                    bot1: 'លះបង់', bot2: 'មានះនិងអគតិ',
+                    transcript: '" ការលះបង់នូវមានះ អគតិទាំង៤ នាំឲ្យចិត្តជ្រះថ្លា មានមេត្តាចំពោះគ្នា... "'
+                },
+                {
+                    title: 'ផលកុសលនៃបុណ្យផ្កាប្រាក់ (ភាគ៦)',
+                    top1: 'ផលកុសលនៃ', top2: 'បុណ្យផ្កាប្រាក់',
+                    bot1: 'សម្រេចផល', bot2: 'ក្នុងបច្ចុប្បន្ននិងបរលោក',
+                    transcript: '" ផលបុណ្យដែលបានធ្វើដោយចិត្តជ្រះថ្លា នឹងតាមថែរក្សាជានិច្ច... "'
+                },
+                {
+                    title: 'ព្រះពុទ្ធឱវាទស្ដីពីសេចក្តីសុខ (ភាគ៧)',
+                    top1: 'ព្រះពុទ្ធឱវាទ', top2: 'ស្ដីពីសេចក្តីសុខ',
+                    bot1: 'សាមគ្គីធម៌', bot2: 'ជាគ្រឹះនៃសន្តិភាព',
+                    transcript: '" សាមគ្គីធម៌ គឺជាគ្រឹះដ៏រឹងមាំសម្រាប់គ្រួសារ សង្គម និងជាតិ... "'
+                },
+                {
+                    title: 'ការរក្សាសីលនិងបរិសុទ្ធសទ្ធា (ភាគ៨)',
+                    top1: 'ការរក្សាសីល', top2: 'និងបរិសុទ្ធសទ្ធា',
+                    bot1: 'ធ្វើបុណ្យ', bot2: 'ដោយចិត្តស្អាតស្អំ',
+                    transcript: '" សីលនិងសទ្ធា ជាគ្រឹះនៃការធ្វើបុណ្យឲ្យបានផលធំ... "'
+                },
+                {
+                    title: 'បុណ្យកុសលជាទីពឹងពិតប្រាកដ (ភាគ៩)',
+                    top1: 'បុណ្យកុសល', top2: 'ជាទីពឹងពិតប្រាកដ',
+                    bot1: 'ជាស្បៀង', bot2: 'ក្នុងសង្សារវដ្ត',
+                    transcript: '" បុណ្យជាទីពឹងរបស់សត្វលោកទាំងក្នុងលោកនេះនិងលោកខាងមុខ... "'
+                },
+                {
+                    title: 'ពុទ្ធោវាទដាស់តឿនស្មារតី (ភាគ១០)',
+                    top1: 'ពុទ្ធោវាទ', top2: 'ដាស់តឿនស្មារតី',
+                    bot1: 'កុំប្រមាទ', bot2: 'ក្នុងជីវិតរស់នៅ',
+                    transcript: '" ការមិនប្រមាទក្នុងជីវិត នាំឲ្យសម្រេចនូវសេចក្តីសុខដ៏ពិតប្រាកដ... "'
+                }
+            ],
+            dakkhina: [
+                {
+                    title: 'អត្ថន័យនៃទក្ខិណានុប្បទាន (ភាគ១)',
+                    top1: 'អត្ថន័យនៃ', top2: 'ទក្ខិណានុប្បទាន',
+                    bot1: 'ការឧទ្ទិសកុសល', bot2: 'ជូនបុព្វការីជន',
+                    transcript: '" ការធ្វើបុណ្យឧទ្ទិសកុសលជូនចំពោះបុព្វការីជនដែលបានចែកឋាន... "'
+                },
+                {
+                    title: 'អង្គទី១ ទាយកមានសទ្ធា (ភាគ២)',
+                    top1: 'អង្គទី១', top2: 'ទាយកមានសទ្ធា',
+                    bot1: 'ចិត្តជ្រះថ្លា', bot2: 'មុនធ្វើនិងក្រោយធ្វើ',
+                    transcript: '" ទាយកអ្នកឲ្យទានត្រូវមានសទ្ធាជ្រះថ្លាបរិសុទ្ធ... "'
+                },
+                {
+                    title: 'អង្គទី២ បដិគ្គាហកមានសីល (ភាគ៣)',
+                    top1: 'អង្គទី២', top2: 'បដិគ្គាហកមានសីល',
+                    bot1: 'ព្រះសង្ឃ', top2: 'ទ្រង់សីលបរិសុទ្ធ',
+                    transcript: '" បដិគ្គាហកអ្នកទទួលទាន ជាអ្នកមានសីលបរិសុទ្ធ... "'
+                },
+                {
+                    title: 'អង្គទី៣ ទក្ខិណាបរិសុទ្ធ (ភាគ៤)',
+                    top1: 'អង្គទី៣', top2: 'ទក្ខិណាបរិសុទ្ធ',
+                    bot1: 'ទានវត្ថុ', bot2: 'បានមកដោយបរិសុទ្ធ',
+                    transcript: '" ទក្ខិណាជាទានវត្ថុដែលแสวงរកបានមកដោយបរិសុទ្ធ... "'
+                },
+                {
+                    title: 'ការដឹងគុណមាតាបិតា (ភាគ៥)',
+                    top1: 'ការដឹងគុណ', top2: 'មាតាបិតា',
+                    bot1: 'តបគុណ', bot2: 'ដោយការសាងកុសល',
+                    transcript: '" ការតបគុណមាតាបិតា គឺជាមង្គលដ៏ឧត្តម... "'
+                },
+                {
+                    title: 'ផលានិសង្សដល់អ្នកចែកឋាន (ភាគ៦)',
+                    top1: 'ផលានិសង្ស', top2: 'ដល់អ្នកចែកឋាន',
+                    bot1: 'ប្រេតជន', bot2: 'ទទួលបានកុសលផលបុណ្យ',
+                    transcript: '" កុសលផលបុណ្យដែលបានឧទ្ទិស សម្រេចដល់ប្រេតជន... "'
+                }
+            ],
+            death: [
+                {
+                    title: 'ការពិចារណាសេចក្តីស្លាប់ (ភាគ១)',
+                    top1: 'ការពិចារណា', top2: 'សេចក្តីស្លាប់',
+                    bot1: 'មរណស្សតិ', bot2: 'ដាស់ស្មារតីជីវិត',
+                    transcript: '" ការពិចារណាអំពីសេចក្តីស្លាប់ មរណស្សតិ ផ្ដល់នូវសติស្មារតី... "'
+                },
+                {
+                    title: 'ធម្មជាតិជីវិត អនិច្ចំ ទុក្ខំ (ភាគ២)',
+                    top1: 'ធម្មជាតិជីវិត', top2: 'អនិច្ចំ ទុក្ខំ',
+                    bot1: 'គ្មានអ្វី', bot2: 'ស្ថិតស្ថេរអមតៈ',
+                    transcript: '" ជីវិតសត្វលោកអនិច្ចំ មិនទៀងទាត់ តែងប្រែប្រួល... "'
+                },
+                {
+                    title: 'ការត្រៀមស្បៀងសម្រាប់បរលោក (ភាគ៣)',
+                    top1: 'ការត្រៀមស្បៀង', top2: 'សម្រាប់បរលោក',
+                    bot1: 'សាងបុណ្យ', bot2: 'ទុកជាដើមទុន',
+                    transcript: '" ការសាងបុណ្យកុសល គឺជាស្បៀងពិតប្រាកដ... "'
+                },
+                {
+                    title: 'កុំប្រមាទក្នុងវ័យនិងជីវិត (ភាគ៤)',
+                    top1: 'កុំប្រមាទ', top2: 'ក្នុងវ័យនិងជីវិត',
+                    bot1: 'សេចក្តីស្លាប់', bot2: 'មិនប្រាប់មុនឡើយ',
+                    transcript: '" កុំប្រមាទថានៅក្មេង សេចក្តីស្លាប់មកដល់បានគ្រប់ពេល... "'
+                }
+            ],
+            birth4: [
+                {
+                    title: 'កំណើតសត្វក្នុងលោក៤ប្រភេទ (ភាគ១)',
+                    top1: 'កំណើតសត្វ', top2: 'ក្នុងលោក៤ប្រភេទ',
+                    bot1: 'អណ្ដជៈ ជលាពុជៈ', bot2: 'សំសេទជៈ ឱបបាតិកៈ',
+                    transcript: '" សត្វទាំងឡាយកើតក្នុងលោកមាន ៤ កំណើត... "'
+                },
+                {
+                    title: 'កំណើតកើតក្នុងពងនិងស្បូន (ភាគ២)',
+                    top1: 'កំណើតកើតក្នុងពង', top2: 'និងក្នុងស្បូន',
+                    bot1: 'ការវិវត្ត', bot2: 'តាមកម្មផល',
+                    transcript: '" អណ្ដជៈកើតក្នុងពង និងជលាពុជៈកើតក្នុងស្បូន... "'
+                },
+                {
+                    title: 'កំណើតក្អែលនិងឱបបាតិកៈ (ភាគ៣)',
+                    top1: 'កំណើតក្អែល', top2: 'និងឱបបាតិកៈ',
+                    bot1: 'ទេវតា នរក', bot2: 'ប្រេត អាសូររាយ',
+                    transcript: '" សំសេទជៈកើតក្នុងក្អែល និងឱបបាតិកៈកើតឡើងអូតូ... "'
+                },
+                {
+                    title: 'កម្មជាអ្នកកំណត់កំណើត (ភាគ៤)',
+                    top1: 'កម្មជាអ្នក', top2: 'កំណត់កំណើត',
+                    bot1: 'ធ្វើល្អបានល្អ', bot2: 'ធ្វើអាក្រក់បានអាក្រក់',
+                    transcript: '" កម្មជាអ្នកបែងចែកសត្វលោកឲ្យថោកទាបឬខ្ពង់ខ្ពស់... "'
+                }
+            ],
+            pchum_kathin: [
+                {
+                    title: 'បុណ្យភ្ជុំបិណ្ឌប្រពៃណីខ្មែរ (ភាគ១)',
+                    top1: 'បុណ្យភ្ជុំបិណ្ឌ', top2: 'ប្រពៃណីខ្មែរ',
+                    bot1: 'ឧទ្ទិសកុសល', bot2: 'ជូនប្រេតជនបុព្វការី',
+                    transcript: '" ពិធីបុណ្យប្រពៃណីភ្ជុំបិណ្ឌ ឧទ្ទិសកុសលជូនបុព្វការី... "'
+                },
+                {
+                    title: 'កឋិនទានកាលទានពិសេស (ភាគ២)',
+                    top1: 'កឋិនទាន', top2: 'កាលទានពិសេស',
+                    bot1: 'អានិសង្ស៥យ៉ាង', bot2: 'ដល់អ្នកធ្វើកឋិន',
+                    transcript: '" បុណ្យកឋិនទានជាកាលទានដ៏មានផលានិសង្សធំ... "'
+                }
+            ],
+            education: [
+                {
+                    title: 'ធម៌អប់រំចិត្តនាំមកនូវសេចក្តីសុខ (ភាគ១)',
+                    top1: 'ធម៌អប់រំចិត្ត', top2: 'នាំមកនូវសេចក្តីសុខ',
+                    bot1: 'ការរស់នៅ', bot2: 'ដោយបញ្ញាស្មារតី',
+                    transcript: '" ធម៌អប់រំចិត្ត នាំឲ្យកើតសន្តិភាពក្នុងចិត្ត... "'
+                },
+                {
+                    title: 'ការគ្រប់គ្រងទោសៈនិងខឹង (ភាគ២)',
+                    top1: 'ការគ្រប់គ្រង', top2: 'ទោសៈនិងខឹង',
+                    bot1: 'ឈ្នះខឹង', bot2: 'ដោយការមិនខឹង',
+                    transcript: '" ការឈ្នះខឹងដោយអកោធធម៌... "'
+                },
+                {
+                    title: 'អានិសង្សនៃខន្តីធម៌ (ភាគ៣)',
+                    top1: 'អានិសង្សនៃ', top2: 'ខន្តីធម៌',
+                    bot1: 'ការចេះអត់ធ្មត់', bot2: 'ជាកម្លាំងចិត្ត',
+                    transcript: '" ខន្តី បរមំ តបោ ទីតិក្ខា — អត់ធ្មត់ជាតបៈដ៏ឧត្តម... "'
+                }
+            ]
         };
 
-        // Auto-rotation pool — varied clips across the full video timeline
-        // Each position in the video uses a different sub-topic so titles are never identical
-        const autoRotationPool = [
-            // Position-based varied templates (cycle through meaningful Dhamma sub-topics)
-            {
-                type: '🪷 ធម្មទេសនា',
-                viralScore: '99% ធម៌អប់រំ',
-                titleBase: 'ចំណុចដំបូង',
-                top1: 'ចំណុចដំបូង', top2: 'សាច់ធម៌ស្នូល',
-                bot1: 'ទេសនា', bot2: 'ប្រធានបទ',
-                tags: ['#ធម្មទេសនា', '#សាច់ធម៌', '#ជ្រួតជ្រាប'],
-                transcript: '" ចំណុចស្នូលនៃការទេសនា — ទ្រឹស្ដីព្រះធម៌ដ៏ជ្រៅជ្រះ... "'
-            },
-            {
-                type: '🪷 ធម្មទេសនា',
-                viralScore: '98% ធម៌អប់រំ',
-                titleBase: 'ចំណុចទី២',
-                top1: 'ការពន្យល់', top2: 'ក្នុងព្រះធម៌',
-                bot1: 'អំណះអំណាង', bot2: 'ព្រះបាលី',
-                tags: ['#ព្រះបាលី', '#ធម្មទេសនា', '#ចំណុចសំខាន់'],
-                transcript: '" ការពន្យល់ព្រះបាលី — ន័យព្រះធម៌ — ដ៏មានតម្លៃ... "'
-            },
-            {
-                type: '💡 ធម្មទេសនា',
-                viralScore: '97% ធម៌អប់រំ',
-                titleBase: 'ចំណុចទី៣',
-                top1: 'ឧទាហរណ៍', top2: 'ក្នុងព្រះធម៌',
-                bot1: 'ជីវិតប្រចាំថ្ងៃ', bot2: 'ជំនឿ',
-                tags: ['#ឧទាហរណ៍ធម៌', '#ជំនឿ', '#ព្រះពុទ្ធ'],
-                transcript: '" ឧទាហរណ៍ក្នុងព្រះបាលី — ន័យអប់រំដ៏ជ្រៅ... "'
-            },
-            {
-                type: '🔥 ចំណុចក្ដៅ',
-                viralScore: '99% ទាក់ទាញ',
-                titleBase: 'ចំណុចក្ដៅ',
-                top1: 'ចំណុចក្ដៅ', top2: 'ដ៏ទាក់ចិត្ត',
-                bot1: 'ន័យជ្រៅ', bot2: 'អំណះអំណាង',
-                tags: ['#ចំណុចក្ដៅ', '#ទាក់ចិត្ត', '#ធម្មទេសនា'],
-                transcript: '" ចំណុចក្ដៅ — ការទេសនាដ៏ជ្រាលជ្រៅ ទាក់ចិត្ត... "'
-            },
-            {
-                type: '🌟 ចំណុចបញ្ចប់',
-                viralScore: '98% ចំណុចបង្ហើប',
-                titleBase: 'ចំណុចបញ្ចប់',
-                top1: 'ចំណុចបញ្ចប់', top2: 'និងអានិសង្ស',
-                bot1: 'សំណើចំពោះ', bot2: 'អ្នកស្ដាប់',
-                tags: ['#ចំណុចបញ្ចប់', '#អានិសង្ស', '#ព្រះធម៌'],
-                transcript: '" ការបិទបញ្ចប់ — អានិសង្ស — ការអំពាវនាវ... "'
-            },
-            {
-                type: '🪷 ធម្មទេសនា',
-                viralScore: '96% ធម៌អប់រំ',
-                titleBase: 'ចំណុចបន្ថែម',
-                top1: 'ការបន្ថែម', top2: 'ព្រះបាលី',
-                bot1: 'ន័យ', bot2: 'ជ្រៅជ្រះ',
-                tags: ['#ព្រះបាលី', '#ជ្រៅជ្រះ', '#ធម៌'],
-                transcript: '" ការពន្យល់បន្ថែម — ន័យព្រះបាលីដ៏ស៊ីជម្រៅ... "'
-            }
-        ];
-
-        // ---- Determine which template(s) to use ----
-        let fixedTemplate = null; // null = use auto-rotation
-
-        if (category === 'custom' && customTopicText) {
-            const words = customTopicText.split(' ');
-            const mid = Math.ceil(words.length / 2);
-            fixedTemplate = {
-                type: '🪷 ធម្មទេសនា',
-                viralScore: '99% ធម៌អប់រំ',
-                title: customTopicText,
-                top1: words.slice(0, mid).join(' ') || customTopicText,
-                top2: words.slice(mid).join(' ') || 'មហាកុសល',
-                bot1: 'អានិសង្សបុណ្យ', bot2: words.slice(mid).join(' ') || 'មហាកុសល',
-                tags: ['#ធម្មទេសនា', '#' + customTopicText.replace(/\s+/g, '')],
-                transcript: `" ធម្មទេសនាស្ដីអំពី ${customTopicText}... "`
-            };
-        } else if (category !== 'auto' && dhammaTopicPresets[category]) {
-            fixedTemplate = dhammaTopicPresets[category];
-        }
-        // category === 'auto' => fixedTemplate stays null, use per-clip rotation
-
-        // ---- Figure out auto-topic base from filename for better titles ----
-        let autoBaseTitle = 'ទេសនា';
-        let autoBaseTemplate = null;
+        // If category is 'auto', pick based on file name or default to progressive phka_samaki
+        let activeStorylineKey = category;
         if (category === 'auto') {
             const lowerFile = (fileName || '').toLowerCase();
             if (lowerFile.includes('ទក្ខិណា') || lowerFile.includes('អង្គ')) {
-                autoBaseTemplate = dhammaTopicPresets.dakkhina;
-                autoBaseTitle = 'អង្គ ៣ នៃបុណ្យទក្ខិណានុប្បទាន';
+                activeStorylineKey = 'dakkhina';
             } else if (lowerFile.includes('ស្លាប់') || lowerFile.includes('មរណ')) {
-                autoBaseTemplate = dhammaTopicPresets.death;
-                autoBaseTitle = 'សេចក្ដីស្លាប់';
+                activeStorylineKey = 'death';
             } else if (lowerFile.includes('ភ្ជុំ') || lowerFile.includes('កឋិន')) {
-                autoBaseTemplate = dhammaTopicPresets.pchum_kathin;
-                autoBaseTitle = 'បុណ្យភ្ជុំបិណ្ឌ';
+                activeStorylineKey = 'pchum_kathin';
             } else if (lowerFile.includes('កំណើត') || lowerFile.includes('សត្វ')) {
-                autoBaseTemplate = dhammaTopicPresets.birth4;
-                autoBaseTitle = 'កំណើតសត្វ';
+                activeStorylineKey = 'birth4';
+            } else if (lowerFile.includes('អប់រំ') || lowerFile.includes('ចិត្ត')) {
+                activeStorylineKey = 'education';
+            } else {
+                activeStorylineKey = 'phka_samaki';
             }
-            // For unrecognized filenames, rotation titles will just be generic positional labels
         }
 
+        const storyline = dhammaStorylines[activeStorylineKey] || dhammaStorylines.phka_samaki;
+
+        // ---- DYNAMIC CLIP COUNT FOR FULL VIDEO COVERAGE ----
+        // For 53 min video (~3180s effective): generates ~12 to 15 clips spanning from start to 53 mins!
         const durationVal = durationSelect ? durationSelect.value : 'dynamic';
         const isShortMode = (durationVal === 'short');
-        const dynamicLengths = [150, 210, 120, 240, 180, 270];
+        const dynamicLengths = [150, 210, 180, 240, 160, 270, 200, 220, 190, 250];
 
         let count = 5;
-        if (effectiveDuration < 300) count = 2;
-        else if (effectiveDuration >= 1800) count = 6;
+        if (effectiveDuration < 300) {
+            count = 2;
+        } else if (effectiveDuration < 600) { // < 10 mins
+            count = 3;
+        } else if (effectiveDuration < 1200) { // < 20 mins
+            count = 5;
+        } else if (effectiveDuration < 1800) { // < 30 mins
+            count = 8;
+        } else if (effectiveDuration < 2700) { // < 45 mins
+            count = 11;
+        } else { // 45 - 60+ mins (e.g. 53 mins!)
+            count = Math.min(18, Math.max(12, Math.floor(effectiveDuration / 220)));
+        }
 
+        // Evenly space clips across the ENTIRE video duration (from startOffset to near video end)
+        const step = effectiveDuration / count;
         const clips = [];
-        let currentPos = startOffset;
 
         for (let i = 0; i < count; i++) {
             let clipLen = 180;
             if (isShortMode) {
-                clipLen = Math.min(60, Math.max(30, Math.round(effectiveDuration * 0.12)));
+                clipLen = Math.min(60, Math.max(30, Math.round(effectiveDuration * 0.08)));
             } else if (!isNaN(parseInt(durationVal, 10))) {
                 clipLen = parseInt(durationVal, 10);
             } else {
                 clipLen = dynamicLengths[i % dynamicLengths.length];
             }
 
-            let startTime = Math.round(currentPos);
+            // Distribute start time across full video length
+            let startTime = Math.round(startOffset + (i * step));
             let endTime = Math.min(videoDuration, startTime + clipLen);
+
             if (endTime <= startTime || startTime >= videoDuration) break;
 
-            // ---- Pick template for this clip ----
+            // Pick progressive storyline item
             let tpl;
-            if (fixedTemplate) {
-                // User chose a specific category — keep same topic but vary subtitles by clip number
-                const subTitles = [
-                    { top1: fixedTemplate.top1, top2: fixedTemplate.top2, bot1: fixedTemplate.bot1, bot2: fixedTemplate.bot2 },
-                    { top1: 'ចំណុចទី១', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'ការពន្យល់ I' },
-                    { top1: 'ចំណុចទី២', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'ការពន្យល់ II' },
-                    { top1: 'ចំណុចទី៣', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'អានិសង្ស' },
-                    { top1: 'ចំណុចទី៤', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'ការបញ្ចប់' },
-                    { top1: 'ចំណុចទី៥', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'ការបំភ្លឺ' },
-                ];
-                const sub = subTitles[i] || subTitles[0];
-                tpl = { ...fixedTemplate, ...sub, title: `${fixedTemplate.title} (ភាគ ${i + 1})` };
-            } else {
-                // AUTO mode — rotate through pool for genuinely varied clips
-                const poolItem = autoRotationPool[i % autoRotationPool.length];
-                // If we have a base template from filename, blend titles
-                const baseTitle = autoBaseTitle !== 'ទេសនា'
-                    ? `${autoBaseTitle} — ${poolItem.titleBase}`
-                    : `ចំណែកទី ${i + 1}`;
-                const blendedTop1 = autoBaseTemplate ? autoBaseTemplate.top1 : poolItem.top1;
-                const blendedTop2 = poolItem.top2;
-                const blendedBot1 = autoBaseTemplate ? autoBaseTemplate.bot1 : poolItem.bot1;
-                const blendedBot2 = poolItem.bot2;
+            if (category === 'custom' && customTopicText) {
+                const words = customTopicText.split(' ');
+                const mid = Math.ceil(words.length / 2);
                 tpl = {
-                    ...poolItem,
-                    title: baseTitle,
-                    top1: blendedTop1, top2: blendedTop2,
-                    bot1: blendedBot1, bot2: blendedBot2
+                    type: '🪷 ធម្មទេសនា',
+                    viralScore: '99% ធម៌អប់រំ',
+                    title: `${customTopicText} (ភាគ ${i + 1})`,
+                    top1: words.slice(0, mid).join(' ') || customTopicText,
+                    top2: `ភាគ ${i + 1}`,
+                    bot1: 'អានិសង្សបុណ្យ',
+                    bot2: words.slice(mid).join(' ') || 'មហាកុសល',
+                    transcript: `" ធម្មទេសនាស្ដីអំពី ${customTopicText} — ភាគ ${i + 1}... "`
+                };
+            } else {
+                const storylineItem = storyline[i % storyline.length];
+                const partNum = Math.floor(i / storyline.length) + 1;
+                const partSuffix = partNum > 1 ? ` (${partNum})` : '';
+                tpl = {
+                    type: '🪷 ធម្មទេសនា',
+                    viralScore: '98% ធម៌អប់រំ',
+                    title: `${storylineItem.title}${partSuffix}`,
+                    top1: storylineItem.top1,
+                    top2: storylineItem.top2,
+                    bot1: storylineItem.bot1,
+                    bot2: storylineItem.bot2,
+                    tags: ['#ធម្មទេសនា', '#សាមគ្គីធម៌', '#ព្រះពុទ្ធសាសនា'],
+                    transcript: storylineItem.transcript
                 };
             }
 
@@ -641,8 +707,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 tags: tpl.tags,
                 transcript: tpl.transcript
             });
-
-            currentPos = endTime + Math.min(30, Math.round((videoDuration - endTime) / (count - i)));
         }
         return clips;
     }
