@@ -1,0 +1,7 @@
+dist/
+build/
+*.spec
+*.wav
+*.mp4
+*.log
+__pycache__/
