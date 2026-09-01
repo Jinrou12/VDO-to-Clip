@@ -22,11 +22,18 @@ import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import List, Dict, Any
 
-# Ensure optional libraries notice
+# Fix Windows cp1252 console encoding so emoji in print() doesn't crash
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
+# Use the new google-genai SDK (google.generativeai is deprecated)
 try:
-    import google.generativeai as genai
+    from google import genai as google_genai
 except ImportError:
-    genai = None
+    google_genai = None
 
 try:
     import whisper
@@ -118,12 +125,11 @@ def analyze_highlights_with_gemini(transcript_segments: List[Dict[str, Any]], ap
         print("⚠️ Gemini API Key not provided. Using automated rule-based fallback highlights.")
         return generate_fallback_clips(transcript_segments, min_duration)
 
-    if genai is None:
-        print("⚠️ 'google-generativeai' library not installed (pip install google-generativeai).")
+    if google_genai is None:
+        print("[WARN] 'google-genai' library not installed (pip install google-genai).")
         return generate_fallback_clips(transcript_segments, min_duration)
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = google_genai.Client(api_key=api_key)
 
     transcript_text = "\n".join([
         f"[{seg['start']}s - {seg['end']}s]: {seg['text']}"
@@ -174,18 +180,21 @@ Timestamped Transcript:
 """
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
         text = response.text.strip()
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
                 text = text[4:]
-        
+
         clips = json.loads(text.strip())
-        print(f"✨ Gemini identified {len(clips)} high-quality Khmer clips!")
+        print(f"[OK] Gemini identified {len(clips)} high-quality Khmer clips!")
         return clips
     except Exception as e:
-        print(f"⚠️ Gemini API error: {e}. Falling back to rule-based clip selection.")
+        print(f"[WARN] Gemini API error: {e}. Falling back to rule-based clip selection.")
         return generate_fallback_clips(transcript_segments, min_duration)
 
 
@@ -338,7 +347,7 @@ class AutoClipServerHandler(BaseHTTPRequestHandler):
             "status": "online",
             "service": "Khmer Auto-Clip Engine Server",
             "whisper_available": whisper is not None,
-            "gemini_available": genai is not None
+            "gemini_available": google_genai is not None
         }
         self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
 
@@ -383,11 +392,12 @@ class AutoClipServerHandler(BaseHTTPRequestHandler):
 def run_server(port: int = 5000):
     server_address = ('', port)
     httpd = HTTPServer(server_address, AutoClipServerHandler)
-    print(f"🚀 Khmer Auto-Clip Server listening on http://localhost:{port}...")
+    print(f"[SERVER] Khmer Auto-Clip Server listening on http://localhost:{port}")
+    print("[SERVER] Press Ctrl+C to stop.")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n🛑 Server stopped.")
+        print("\n[SERVER] Stopped.")
 
 
 def main():
