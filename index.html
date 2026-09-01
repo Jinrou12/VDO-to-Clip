@@ -507,21 +507,40 @@
                         </button>
                     </div>
 
-                    <div class="ai-config-bar-inline" style="display:flex; gap:16px; margin-bottom:16px; background:rgba(15,23,42,0.6); padding:12px 16px; border-radius:8px; border:1px solid var(--border-color); flex-wrap:wrap; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <label style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">⏱️ រយៈពេល Clip:</label>
-                            <select id="aiDurationModeSelect" class="form-control" style="width:auto; padding:4px 10px; font-size:0.85rem;">
-                                <option value="long" selected>📜 ២ នាទី - ៥ នាទី (ទេសនា / មេរៀនវែង)</option>
-                                <option value="short">⚡ ៣០ វិនាទី - ១ នាទី (Shorts / Reels)</option>
-                            </select>
+                    <div class="ai-config-bar-inline" style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px; background:rgba(15,23,42,0.7); padding:14px 16px; border-radius:10px; border:1px solid rgba(139, 92, 246, 0.3);">
+                        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">⏱️ រយៈពេល Clip:</label>
+                                <select id="aiDurationModeSelect" class="form-control" style="width:auto; padding:5px 10px; font-size:0.85rem;">
+                                    <option value="long" selected>📜 ២ នាទី - ៥ នាទី (ទេសនា / មេរៀនវែង)</option>
+                                    <option value="short">⚡ ៣០ វិនាទី - ១ នាទី (Shorts / Reels)</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">🪷 ប្រធានបទទេសនា:</label>
+                                <select id="aiCategorySelect" class="form-control" style="width:auto; padding:5px 10px; font-size:0.85rem;">
+                                    <option value="auto" selected>✨ AI វិភាគតាមសាច់ធម៌អូតូ (Auto Match)</option>
+                                    <option value="phka_samaki">🌸 បុណ្យផ្កាប្រាក់សាមគ្គី &amp; បុណ្យភូមិ</option>
+                                    <option value="dakkhina">🪷 បុណ្យទក្ខិណានុប្បទាន (អង្គ ៣ នៃបុណ្យ)</option>
+                                    <option value="death">💀 សេចក្ដីស្លាប់ &amp; មរណស្សតិ</option>
+                                    <option value="birth4">👶 កំណើតសត្វមាន ៤ ប្រភេទ</option>
+                                    <option value="pchum_kathin">🪷 បុណ្យភ្ជុំបិណ្ឌ &amp; កឋិនទាន</option>
+                                    <option value="education">💡 ធម៌អប់រំចិត្ត &amp; ទស្សនៈជីវិត</option>
+                                    <option value="custom">✍️ វាយប្រធានបទផ្ទាល់ខ្លួន (Custom)...</option>
+                                </select>
+                            </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <label style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">🪷 ប្រភេទវីដេអូ:</label>
-                            <select id="aiCategorySelect" class="form-control" style="width:auto; padding:4px 10px; font-size:0.85rem;">
-                                <option value="dhamma" selected>🪷 ធម្មទេសនា &amp; ធម៌អប់រំចិត្ត</option>
-                                <option value="education">💡 ចំណេះដឹង &amp; បទពិសោធន៍ជីវិត</option>
-                                <option value="general">🔥 Highlight &amp; ឈុតសំខាន់ៗ</option>
-                            </select>
+
+                        <div id="aiCustomTopicRow" class="hidden" style="display:flex; align-items:center; gap:8px;">
+                            <label style="font-size:0.82rem; color:#a78bfa; font-weight:700; white-space:nowrap;">✍️ ចំណងជើងប្រធានបទ:</label>
+                            <input type="text" id="aiCustomTopicInput" class="form-control" placeholder="ឧ. បុណ្យផ្កាប្រាក់សាមគ្គី ឬ កំណើតសត្វមាន៤..." style="font-size:0.85rem;">
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:8px; border-top: 1px dotted rgba(255,255,255,0.1); padding-top: 8px;">
+                            <input type="checkbox" id="aiSkipIntroChantCheck" checked style="width:16px; height:16px; cursor:pointer;">
+                            <label for="aiSkipIntroChantCheck" style="font-size:0.82rem; color:#fbbf24; cursor:pointer; font-weight:600;">
+                                ⏩ រំលងបទនមសិការដើមវីដេអូ (អនោតស្ស/នមោ តស្ស...) ➔ យកសាច់ធម៌សុទ្ធ ២នាទី+
+                            </label>
                         </div>
                     </div>
 

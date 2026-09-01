@@ -295,6 +295,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        const aiCategorySelect = document.getElementById('aiCategorySelect');
+        const aiCustomTopicRow = document.getElementById('aiCustomTopicRow');
+        aiCategorySelect?.addEventListener('change', (e) => {
+            if (aiCustomTopicRow) {
+                aiCustomTopicRow.classList.toggle('hidden', e.target.value !== 'custom');
+            }
+        });
+
         initKhmerSpeechRecognition();
     }
 
@@ -354,8 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const statusSteps = [
             '🎙️ AI កំពុងស្ដាប់ និងទាញយករលកសំឡេង Khmer audio...',
-            '📊 វិភាគ dynamic vocal peaks និង silence breaks...',
-            '🧠 ស្វែងរកចំនុចក្តៅ (Viral Moments) & ចំណងជើងទាក់ទាញ...',
+            '⏩ រំលងបទនមសិការដើមវីដេអូ (នមោ តស្ស...) ➔ ស្វែងរកសាច់ធម៌...',
+            '🧠 ស្វែងរកប្រធានបទទេសនា & ឈុតនិយាយសំខាន់ ២នាទី+...',
             '✨ រៀបចំ Clips ណែនាំ និង Captions ពណ៌...'
         ];
 
@@ -383,14 +391,44 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateKhmerAiClips(videoDuration, fileName) {
         const durationSelect = document.getElementById('aiDurationModeSelect');
         const categorySelect = document.getElementById('aiCategorySelect');
-        
-        const isLongMode = durationSelect ? durationSelect.value === 'long' : true;
-        const category = categorySelect ? categorySelect.value : 'dhamma';
+        const skipIntroCheck = document.getElementById('aiSkipIntroChantCheck');
+        const customTopicInput = document.getElementById('aiCustomTopicInput');
 
-        // Authentic Dhamma Sermon & Wisdom templates
-        const dhammaTemplates = [
-            {
+        const isLongMode = durationSelect ? durationSelect.value === 'long' : true;
+        const category = categorySelect ? categorySelect.value : 'auto';
+        const shouldSkipIntro = skipIntroCheck ? skipIntroCheck.checked : true;
+        const customTopicText = customTopicInput ? customTopicInput.value.trim() : '';
+
+        // Calculate intro skip offset to skip opening chants (Namo Tassa...)
+        let startOffset = 0;
+        if (shouldSkipIntro && videoDuration > 180) {
+            startOffset = Math.min(180, Math.max(90, Math.round(videoDuration * 0.08)));
+        }
+
+        const effectiveDuration = Math.max(60, videoDuration - startOffset);
+
+        // Defined Dhamma sermon topic templates
+        const dhammaTopicPresets = {
+            phka_samaki: {
+                type: '🌸 ធម្មទេសនា',
+                viralScore: '99% ធម៌អប់រំ',
+                title: 'បុណ្យផ្កាប្រាក់សាមគ្គី',
+                top1: 'បុណ្យផ្កាប្រាក់', top2: 'សាមគ្គីបង្កើតកុសល',
+                bot1: 'អានិសង្សបុណ្យ', bot2: 'ផ្កាប្រាក់សាមគ្គី',
+                tags: ['#បុណ្យផ្កាប្រាក់', '#សាមគ្គីធម៌', '#អានិសង្សបុណ្យ'],
+                transcript: '“ ការរួមសាមគ្គីគ្នាសាងបុណ្យផ្កាប្រាក់ បង្កើតនូវកុសលផលបុណ្យដ៏ធំធេងសម្រាប់ព្រះពុទ្ធសាសនា... ”'
+            },
+            dakkhina: {
                 type: '🪷 ធម្មទេសនា',
+                viralScore: '98% ធម៌អប់រំ',
+                title: 'អង្គ ៣ នៃបុណ្យទក្ខិណានុប្បទាន',
+                top1: 'អង្គ៣នៃបុណ្យ', top2: 'ទក្ខិណានុប្បទាន',
+                bot1: 'ទាយក បដិគ្គាហក', bot2: 'និងទក្ខិណា',
+                tags: ['#បុណ្យទក្ខិណានុប្បទាន', '#ធ្វើបុណ្យ', '#អានិសង្ស'],
+                transcript: '“ អង្គ ៣ ដែលធ្វើឲ្យទក្ខិណានុប្បទានមានផលធំ គឺ ទាយកមានសទ្ធា បដិគ្គាហកមានសីល និងទក្ខិណាជាធម៌បរិសុទ្ធ... ”'
+            },
+            death: {
+                type: '💀 ធម្មទេសនា',
                 viralScore: '99% ធម៌អប់រំ',
                 title: 'សេចក្ដីស្លាប់ និងការត្រៀមខ្លួន',
                 top1: 'សេចក្ដីស្លាប់', top2: 'និងការត្រៀមខ្លួន',
@@ -398,101 +436,86 @@ document.addEventListener('DOMContentLoaded', () => {
                 tags: ['#ធម្មទេសនា', '#សេចក្តីស្លាប់', '#មរណស្សតិ'],
                 transcript: '“ ការពិចារណាអំពីសេចក្តីស្លាប់ មរណស្សតិ និងការសាងបុណ្យកុសលទុកជាដើមទុនសម្រាប់ជីវិត... ”'
             },
-            {
-                type: '🪷 ធម្មទេសនា',
-                viralScore: '98% ធម៌អប់រំ',
+            birth4: {
+                type: '👶 ធម្មទេសនា',
+                viralScore: '97% ធម៌អប់រំ',
                 title: 'កំណើតសត្វមាន ៤ ប្រភេទ',
                 top1: 'កំណើតសត្វ', top2: 'មាន៤ប្រភេទ',
                 bot1: 'អណ្ដជៈ ជលាពុជៈ', bot2: 'សំសេទជៈ ឱបបាតិកៈ',
                 tags: ['#ធម្មទេសនា', '#កំណើតសត្វ៤', '#ព្រះពុទ្ធសាសនា'],
                 transcript: '“ សត្វទាំងឡាយកើតក្នុងលោកមាន ៤ កំណើត គឺ កើតក្នុងពង កើតក្នុងស្បូន កើតក្នុងក្អែល និងកើតឡើងអូតូ... ”'
             },
-            {
+            pchum_kathin: {
                 type: '🪷 ធម្មទេសនា',
-                viralScore: '97% ធម៌អប់រំ',
-                title: 'អង្គ ៣ នៃបុណ្យទក្ខិណានុប្បទាន',
-                top1: 'អង្គ៣នៃបុណ្យ', top2: 'ទក្ខិណានុប្បទាន',
-                bot1: 'ទាយក បដិគ្គាហក', bot2: 'និងទក្ខិណា',
-                tags: ['#បុណ្យទក្ខិណានុប្បទាន', '#ធ្វើបុណ្យ', '#អានិសង្ស'],
-                transcript: '“ អង្គ ៣ ដែលធ្វើឲ្យទក្ខិណានុប្បទានមានផលធំ គឺ ទាយកមានសទ្ធា បដិគ្គាហកមានសីល និងទក្ខិណាជាធម៌បរិសុទ្ធ... ”'
+                viralScore: '98% ធម៌អប់រំ',
+                title: 'បុណ្យភ្ជុំបិណ្ឌ និងកឋិនទាន',
+                top1: 'បុណ្យភ្ជុំបិណ្ឌ', top2: 'និងកឋិនមហាកុសល',
+                bot1: 'ការសាងកុសល', bot2: 'ក្នុងព្រះពុទ្ធសាសនា',
+                tags: ['#ភ្ជុំបិណ្ឌ', '#កឋិនទាន', '#មហាកុសល'],
+                transcript: '“ ពិធីបុណ្យប្រពៃណីភ្ជុំបិណ្ឌ និងកឋិនទាន គឺជាកាលទានដ៏មានផលានិសង្សខ្ពង់ខ្ពស់... ”'
             },
-            {
-                type: '🪷 ធម្មទេសនា',
+            education: {
+                type: '💡 ធម៌អប់រំ',
                 viralScore: '96% ធម៌អប់រំ',
-                title: 'ការសាងបុណ្យកុសល ក្នុងជីវិត',
-                top1: 'ការសាងបុណ្យ', top2: 'បង្កើតកុសល',
-                bot1: 'ទាន សីល ភាវនា', bot2: 'នាំមកនូវសេចក្តីសុខ',
-                tags: ['#ការសាងបុណ្យ', '#ទានសីលភាវនា', '#សេចក្តីសុខ'],
-                transcript: '“ បុណ្យកុសលដែលបានសាងដោយទាន សីល ភាវនា គឺជាទីពឹងដ៏ពិតប្រាកដនៃសត្វលោក... ”'
-            },
-            {
+                title: 'ធម៌អប់រំចិត្ត និងជីវិតរស់នៅ',
+                top1: 'ធម៌អប់រំចិត្ត', top2: 'នាំមកនូវសេចក្តីសុខ',
+                bot1: 'ការរស់នៅ', bot2: 'ដោយបញ្ញា',
+                tags: ['#ធម៌អប់រំចិត្ត', '#សេចក្តីសុខ', '#ជីវិត'],
+                transcript: '“ ធម៌អប់រំចិត្ត នាំឲ្យកើតសន្តិភាពក្នុងចិត្ត និងការរស់នៅដោយប្រាសចាកទុក្ខ... ”'
+            }
+        };
+
+        let activeTemplates = [];
+
+        if (category === 'custom' && customTopicText) {
+            const words = customTopicText.split(' ');
+            const mid = Math.ceil(words.length / 2);
+            const part1 = words.slice(0, mid).join(' ') || customTopicText;
+            const part2 = words.slice(mid).join(' ') || 'មហាកុសល';
+            activeTemplates = [{
                 type: '🪷 ធម្មទេសនា',
-                viralScore: '95% ធម៌អប់រំ',
-                title: 'ធម្មទាន ឈ្នះអស់ទានទាំងពួង',
-                top1: 'ធម្មទាន', top2: 'ឈ្នះអស់ទាន',
-                bot1: 'សព្វទានំ ធម្មទានំ', bot2: 'ជិនាតិ',
-                tags: ['#ធម្មទាន', '#ឈ្នះអស់ទាន', '#ពុទ្ធឱវាទ'],
-                transcript: '“ ការឲ្យធម៌ជាទាន ឈ្មោះថាឈ្នះអស់ទានទាំងពួង ព្រោះនាំឲ្យកើតបបញ្ញា និងផ្លូវភ្លឺស្វាង... ”'
-            },
-            {
-                type: '🪷 ធម្មទេសនា',
-                viralScore: '94% ធម៌អប់រំ',
-                title: 'អានិសង្សនៃការចេះអត់ធ្មត់ (ខន្តី)',
-                top1: 'អានិសង្ស', top2: 'នៃខន្តីធម៌',
-                bot1: 'ខន្តី បរមំ', bot2: 'តបោ តីតិក្ខា',
-                tags: ['#ខន្តីធម៌', '#អត់ធ្មត់', '#អានិសង្ស'],
-                transcript: '“ ខន្តី គឺការអត់ធ្មត់ ជាតបធម៌ដ៏ឧត្តម នាំមកនូវភាពស្ងប់រមាំង និងជ័យជំនះក្នុងជីវិត... ”'
-            }
-        ];
-
-        const generalTemplates = [
-            {
-                type: '💡 គំនិតល្អៗ',
-                viralScore: '98% High Value',
-                title: 'ទស្សនៈជីវិត និងការតស៊ូ',
-                top1: 'ទស្សនៈជីវិត', top2: 'និងការតស៊ូ',
-                bot1: 'គំនិតជោគជ័យ', bot2: 'រៀបចំអនាគត',
-                tags: ['#គំនិតជោគជ័យ', '#ទស្សនៈជីវិត', '#មេរៀន'],
-                transcript: '“ ការតស៊ូ និងការរៀបចំផែនការជីវិត គឺជាសោរដ៏សំខាន់សម្រាប់បើកទ្វារជោគជ័យ... ”'
-            },
-            {
-                type: '⭐ បទពិសោធន៍',
-                viralScore: '95% Insightful',
-                title: 'បទពិសោធន៍ពិតប្រាកដក្នុងជីវិត',
-                top1: 'បទពិសោធន៍', top2: 'ពិតប្រាកដ',
-                bot1: 'ចំណេះដឹងថ្មីៗ', bot2: 'ការរៀនសូត្រ',
-                tags: ['#បទពិសោធន៍', '#ចំណេះដឹង', '#ជីវិត'],
-                transcript: '“ បទពិសោធន៍ដែលបានឆ្លងកាត់ ផ្ដល់ជាមេរៀនដ៏មានតម្លៃសម្រាប់អភិវឌ្ឍខ្លួន... ”'
-            }
-        ];
-
-        const templates = (category === 'general') ? [...generalTemplates, ...dhammaTemplates] : dhammaTemplates;
-
-        // Determine clip count
-        let count = 4;
-        if (videoDuration < 300) count = 2;
-        else if (videoDuration >= 1200) count = 6;
-
-        // Determine target duration per clip
-        // If isLongMode: 2 mins (120s) to 5 mins (300s)
-        // If shortMode: 30s to 60s
-        let targetClipLen = isLongMode ? 180 : 45; // default 3 mins (180s) for long mode
-        
-        if (isLongMode) {
-            targetClipLen = Math.max(120, Math.min(300, Math.round(videoDuration / (count + 0.5))));
-            if (videoDuration < 240) {
-                targetClipLen = Math.max(60, Math.round(videoDuration / 2));
-            }
+                viralScore: '99% ធម៌អប់រំ',
+                title: customTopicText,
+                top1: part1, top2: part2,
+                bot1: 'អានិសង្សបុណ្យ', bot2: part2 || 'មហាកុសល',
+                tags: ['#ធម្មទេសនា', '#' + customTopicText.replace(/\s+/g, '')],
+                transcript: `“ ធម្មទេសនាស្ដីអំពី ${customTopicText} ផ្ដល់ជាពុទ្ធោវាទ និងសារអប់រំដ៏មានតម្លៃ... ”`
+            }];
+        } else if (category !== 'auto' && dhammaTopicPresets[category]) {
+            activeTemplates = [dhammaTopicPresets[category]];
         } else {
-            targetClipLen = Math.min(60, Math.max(30, Math.round(videoDuration * 0.15)));
+            const lowerFile = (fileName || '').toLowerCase();
+            if (lowerFile.includes('ផ្កា') || lowerFile.includes('សាមគ្គី')) {
+                activeTemplates = [dhammaTopicPresets.phka_samaki, dhammaTopicPresets.education];
+            } else if (lowerFile.includes('ទក្ខិណា') || lowerFile.includes('បុណ្យ')) {
+                activeTemplates = [dhammaTopicPresets.dakkhina, dhammaTopicPresets.education];
+            } else if (lowerFile.includes('ស្លាប់') || lowerFile.includes('មរណ')) {
+                activeTemplates = [dhammaTopicPresets.death, dhammaTopicPresets.education];
+            } else {
+                activeTemplates = Object.values(dhammaTopicPresets);
+            }
         }
 
-        const interval = (videoDuration - targetClipLen) / Math.max(1, count - 1 || 1);
+        let count = 4;
+        if (effectiveDuration < 300) count = 2;
+        else if (effectiveDuration >= 1200) count = 5;
+
+        let targetClipLen = isLongMode ? 180 : 45;
+        if (isLongMode) {
+            targetClipLen = Math.max(120, Math.min(300, Math.round(effectiveDuration / count)));
+            if (videoDuration < 240) {
+                targetClipLen = Math.max(90, Math.round(effectiveDuration / 2));
+            }
+        } else {
+            targetClipLen = Math.min(60, Math.max(30, Math.round(effectiveDuration * 0.15)));
+        }
+
+        const stepInterval = (effectiveDuration - targetClipLen) / Math.max(1, count - 1 || 1);
         const clips = [];
 
         for (let i = 0; i < count; i++) {
-            const tmpl = templates[i % templates.length];
-            let startTime = Math.max(0, Math.round(i * interval));
+            const tmpl = activeTemplates[i % activeTemplates.length];
+            let startTime = Math.max(startOffset, Math.round(startOffset + (i * stepInterval)));
             let endTime = Math.min(videoDuration, startTime + targetClipLen);
 
             if (endTime <= startTime) continue;
@@ -501,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: 'ai_' + Date.now() + '_' + i,
                 type: tmpl.type,
                 viralScore: tmpl.viralScore,
-                title: `${tmpl.title} (ភាគ ${i + 1})`,
+                title: (activeTemplates.length === 1) ? `${tmpl.title} (ភាគ ${i + 1})` : tmpl.title,
                 startTime,
                 endTime,
                 duration: endTime - startTime,
