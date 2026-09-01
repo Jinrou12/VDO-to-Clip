@@ -378,27 +378,110 @@ document.addEventListener('DOMContentLoaded', () => {
             await new Promise(r => setTimeout(r, 50));
         }
 
+        const recheckBtn = document.getElementById('recheckOllamaBtn');
+        recheckBtn?.addEventListener('click', async () => {
+            const isUp = await checkOllamaIsRunning();
+            const alertBox = document.getElementById('ollamaRequiredAlert');
+            if (isUp) {
+                alertBox?.classList.add('hidden');
+                showToastNotification('🟢 រកឃើញ Ollama រួចរាល់! អាចចាប់ផ្តើមប្រើ AI វិភាគបាន។');
+            } else {
+                alertBox?.classList.remove('hidden');
+                showToastNotification('⚠️ រកមិនឃើញ Ollama ទេ។ សូម Download និងដំឡើងពី https://ollama.com!');
+            }
+        });
+
+        async function checkOllamaIsRunning() {
+            try {
+                const resp = await fetch('http://localhost:11434/api/tags');
+                if (resp.ok) return true;
+            } catch (e) {}
+            try {
+                const serverResp = await fetch('http://localhost:5000/');
+                if (serverResp.ok) {
+                    const data = await serverResp.json();
+                    if (data.ollama_available) return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
         // Check for client-side Gemini API Key (stored in localStorage or input)
         const apiKeyInput = document.getElementById('geminiApiKeyInput');
         const apiKey = apiKeyInput ? apiKeyInput.value.trim() : (localStorage.getItem('vdo_gemini_api_key') || '');
+        const alertBox = document.getElementById('ollamaRequiredAlert');
 
-        if (apiKey) {
-            if (statusText) statusText.textContent = '🧠 កំពុងផ្ញើទៅ Google Gemini API (100% Real AI)...';
-            try {
-                const realClips = await callGeminiApiForClips(apiKey, state.duration, state.videoFile ? state.videoFile.name : '');
-                if (realClips && realClips.length > 0) {
-                    aiState.recommendedClips = realClips;
-                    showToastNotification(`🟢 Gemini AI: បានវិភាគ និងណែនាំ ${realClips.length} Clips តាម Real AI!`);
-                } else {
-                    aiState.recommendedClips = generateKhmerAiClips(state.duration, state.videoFile ? state.videoFile.name : '');
-                }
-            } catch (err) {
-                console.warn('Gemini API call failed:', err);
-                showToastNotification(`⚠️ Gemini API Key មិនដើរ (${err.message}) — សូមយក Key (AIzaSy...) ពី aistudio.google.com!`);
-                aiState.recommendedClips = generateKhmerAiClips(state.duration, state.videoFile ? state.videoFile.name : '');
+        // Check if Ollama is installed/running when no Gemini API key is provided
+        if (!apiKey) {
+            const isOllamaInstalled = await checkOllamaIsRunning();
+            if (!isOllamaInstalled) {
+                if (alertBox) alertBox.classList.remove('hidden');
+                if (progressBox) progressBox.classList.add('hidden');
+                if (startBtn) startBtn.disabled = false;
+                aiState.isScanning = false;
+                showToastNotification('⚠️ តម្រូវឱ្យដំឡើង Ollama លើ PC ជាមុនសិន! (https://ollama.com/download)');
+                return; // BLOCK EXECUTION UNTIL OLLAMA IS INSTALLED
             }
-        } else {
-            aiState.recommendedClips = generateKhmerAiClips(state.duration, state.videoFile ? state.videoFile.name : '');
+        }
+        
+        if (alertBox) alertBox.classList.add('hidden');
+
+        // Try Local Backend Python Server (if auto_clip_engine server is running on localhost:5000)
+        let scannedFromBackend = false;
+        try {
+            if (statusText) statusText.textContent = '🦙 កំពុងវិភាគតាម Ollama Local Gemma 3 Model...';
+            const videoPath = state.videoFile ? (state.videoFile.path || state.videoFile.name) : '';
+            if (videoPath) {
+                const serverResp = await fetch('http://localhost:5000/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        video: videoPath,
+                        api_key: apiKey,
+                        min_duration: 120,
+                        mode: 'analyze_only'
+                    })
+                });
+                if (serverResp.ok) {
+                    const serverData = await serverResp.json();
+                    if (serverData.clips && serverData.clips.length > 0) {
+                        scannedFromBackend = true;
+                        aiState.recommendedClips = serverData.clips.map((c, i) => ({
+                            id: Date.now() + i,
+                            startTime: c.start_time,
+                            endTime: c.end_time,
+                            duration: c.duration,
+                            title: c.title,
+                            top1: c.top_1,
+                            top2: c.top_2,
+                            bot1: c.bot_1,
+                            bot2: c.bot_2,
+                            viralScore: c.viral_score || '98%',
+                            tags: ['#ធម៌ទេសនា', '#KhmerClip'],
+                            transcript: c.title
+                        }));
+                        showToastNotification(`🟢 Local Gemma 3 AI: បានវិភាគ និងណែនាំ ${aiState.recommendedClips.length} Clips!`);
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Local server notice:', e);
+        }
+
+        if (!scannedFromBackend) {
+            if (apiKey) {
+                if (statusText) statusText.textContent = '🧠 កំពុងផ្ញើទៅ Google Gemini API (100% Real AI)...';
+                try {
+                    const realClips = await callGeminiApiForClips(apiKey, state.duration, state.videoFile ? state.videoFile.name : '');
+                    if (realClips && realClips.length > 0) {
+                        aiState.recommendedClips = realClips;
+                        showToastNotification(`🟢 Gemini AI: បានវិភាគ និងណែនាំ ${realClips.length} Clips តាម Real AI!`);
+                    }
+                } catch (err) {
+                    console.warn('Gemini API call failed:', err);
+                    showToastNotification(`⚠️ Gemini API Key មិនដើរ (${err.message}) — សូមដំឡើង Ollama ជំនួស!`);
+                }
+            }
         }
 
         if (progressBox) progressBox.classList.add('hidden');
@@ -406,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
         aiState.isScanning = false;
 
         renderAiResultsGrid();
-        if (!apiKey) {
+        if (aiState.recommendedClips.length > 0) {
             showToastNotification(`✨ AI បានស្កែនចប់ និងណែនាំ ${aiState.recommendedClips.length} Clips ល្អៗ!`);
         }
     }
@@ -531,10 +614,10 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                 statusBadge.style.borderColor = 'rgba(52,211,153,0.4)';
                 statusBadge.textContent = '🟢 បានភ្ជាប់ Gemini API Key (Real AI Active)';
             } else {
-                statusBadge.style.background = 'rgba(251,191,36,0.15)';
-                statusBadge.style.color = '#fbbf24';
-                statusBadge.style.borderColor = 'rgba(251,191,36,0.3)';
-                statusBadge.textContent = '💡 មិនទាន់ដាក់ Key (ប្រើ Auto Preset)';
+                statusBadge.style.background = 'rgba(167,139,250,0.15)';
+                statusBadge.style.color = '#c084fc';
+                statusBadge.style.borderColor = 'rgba(167,139,250,0.4)';
+                statusBadge.textContent = '⚡ ប្រើ Python Rules & Local AI (Free, No Key)';
             }
         }
     }

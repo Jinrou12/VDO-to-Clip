@@ -507,6 +507,30 @@
                         </button>
                     </div>
 
+                    <!-- Mandatory Ollama Installation Alert Box -->
+                    <div id="ollamaRequiredAlert" class="hidden" style="background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.4); border-radius:12px; padding:16px; margin-bottom:16px;">
+                        <div style="display:flex; align-items:flex-start; gap:12px;">
+                            <span style="font-size:1.8rem;">⚠️</span>
+                            <div style="flex:1;">
+                                <h4 style="color:#f87171; margin:0 0 6px 0; font-size:1.05rem;">តម្រូវឱ្យដំឡើង Ollama (Local AI) ជាមុនសិន!</h4>
+                                <p style="color:#e2e8f0; font-size:0.88rem; margin:0 0 12px 0; line-height:1.5;">
+                                    កម្មវិធីនេះតម្រូវឱ្យមាន <strong>Ollama (Local Gemma 3 Model)</strong> លើម៉ាស៊ីន PC របស់អ្នក ដើម្បីស្ដាប់សំឡេងខ្មែរ និងបង្កើត Clip ដោយឥតគិតថ្លៃ មិនបាច់ប្រើ API Key!
+                                </p>
+                                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                                    <a href="https://ollama.com/download" target="_blank" class="btn btn-primary" style="background:#ef4444; border-color:#dc2626; text-decoration:none; padding:8px 16px; font-weight:bold; display:inline-flex; align-items:center; gap:6px;">
+                                        📥 Download &amp; Install Ollama (ollama.com)
+                                    </a>
+                                    <button type="button" id="recheckOllamaBtn" class="btn btn-secondary" style="padding:8px 14px;">
+                                        🔄 ពិនិត្យការដំឡើងឡើងវិញ
+                                    </button>
+                                </div>
+                                <small style="color:#94a3b8; display:block; margin-top:8px;">
+                                    * ក្រោយពេល Download និង Install រួច សូមចុចប៊ូតុង "ពិនិត្យការដំឡើងឡើងវិញ" ដើម្បីចាប់ផ្តើមប្រើ AI!
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="ai-config-bar-inline" style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px; background:rgba(15,23,42,0.75); padding:14px 16px; border-radius:10px; border:1px solid rgba(139, 92, 246, 0.35);">
                         <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
                             <div style="display:flex; align-items:center; gap:8px;">
