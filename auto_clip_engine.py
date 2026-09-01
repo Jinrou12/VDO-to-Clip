@@ -61,9 +61,9 @@ def extract_audio(video_path: str, output_audio_path: str = "temp_audio.wav") ->
     return output_audio_path
 
 
-def transcribe_audio_whisper(audio_path: str, model_size: str = "base") -> List[Dict[str, Any]]:
+def transcribe_audio_whisper(audio_path: str, model_size: str = "large-v3") -> List[Dict[str, Any]]:
     """
-    Transcribes audio using OpenAI Whisper model.
+    Transcribes audio using OpenAI Whisper model with Khmer Dhamma initial prompt.
     Returns list of segments: [{'start': 12.5, 'end': 45.0, 'text': '...'}]
     """
     print(f"🗣️ [Step 2/4] Transcribing Khmer audio with Whisper ({model_size} model)...")
@@ -80,8 +80,16 @@ def transcribe_audio_whisper(audio_path: str, model_size: str = "base") -> List[
             {"start": 850.0, "end": 960.0, "text": "ខន្តី បរមំ តបោ ទីតិក្ខា — ការចេះអត់ធ្មត់ជាតបៈដ៏ឧត្តមក្នុងជីវិត"}
         ]
 
-    model = whisper.load_model(model_size)
-    result = model.transcribe(audio_path, language="km")
+    # Dhamma vocabulary prompt to boost Khmer Whisper recognition accuracy
+    prompt_khmer = "ធម្មទេសនា ព្រះធម៌ ព្រះសង្ឃ អរិយសច្ច កម្មផល សីល សមាធិ បញ្ញា បុណ្យផ្កាប្រាក់ ទក្ខិណានុប្បទាន មរណស្សតិ"
+
+    try:
+        model = whisper.load_model(model_size)
+    except Exception:
+        print(f"ℹ️ Model '{model_size}' not cached locally, falling back to 'base' model...")
+        model = whisper.load_model("base")
+
+    result = model.transcribe(audio_path, language="km", initial_prompt=prompt_khmer)
     
     segments = []
     for seg in result.get("segments", []):
@@ -90,8 +98,12 @@ def transcribe_audio_whisper(audio_path: str, model_size: str = "base") -> List[
             "end": round(seg["end"], 2),
             "text": seg["text"].strip()
         })
+
+    # Save transcript.json
+    with open("transcript.json", "w", encoding="utf-8") as f:
+        json.dump(segments, f, ensure_ascii=False, indent=2)
     
-    print(f"✅ Transcribed {len(segments)} audio segments successfully!")
+    print(f"✅ Transcribed {len(segments)} segments & saved 'transcript.json' successfully!")
     return segments
 
 
