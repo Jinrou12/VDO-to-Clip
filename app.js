@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         strokeColorBox: document.getElementById('strokeColorBox'),
         strokeColorSwatch: document.getElementById('strokeColorSwatch'),
         strokeColorVal: document.getElementById('strokeColorVal'),
+        bgColorSwatch: document.getElementById('bgColorSwatch'),
 
         customColorPopover: document.getElementById('customColorPopover'),
         popoverTitle: document.getElementById('popoverTitle'),
@@ -173,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         fontFamilySelect: document.getElementById('fontFamilySelect'),
         strokeColorInput: document.getElementById('strokeColorInput'),
-        strokeColorVal: document.getElementById('strokeColorVal'),
         strokeWidthInput: document.getElementById('strokeWidthInput'),
         strokeWidthVal: document.getElementById('strokeWidthVal'),
         shadowBlurInput: document.getElementById('shadowBlurInput'),
@@ -1769,6 +1769,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2200);
     }
 
+    // Alias: showToastNotification was called throughout AI module but showToast is the real implementation
+    const showToastNotification = showToast;
+
     function toggleVideoPlayPause() {
         if (state.currentScreen === 1) {
             if (elements.mainVideoPlayer && elements.mainVideoPlayer.src) {
@@ -2001,8 +2004,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         state.clips.forEach(c => {
             c.colorMode = state.colorMode;
-            c.textColor1 = state.textColor1;
-            c.textColor2 = state.textColor2;
+            c.topTextColor1 = state.topTextColor1;
+            c.topTextColor2 = state.topTextColor2;
+            c.bottomTextColor1 = state.bottomTextColor1;
+            c.bottomTextColor2 = state.bottomTextColor2;
             c.fontFamily = state.fontFamily;
             c.strokeColor = state.strokeColor;
             c.strokeWidth = state.strokeWidth;
@@ -2296,13 +2301,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.deleteClip = function(id) {
-        state.clips = state.clips.filter(c => c.id !== id);
-        if (state.activeClipId === id) {
-            state.activeClipId = state.clips.length > 0 ? state.clips[0].id : null;
-        }
-        renderClipsList();
-    };
+    // Note: window.deleteClip is defined above at line ~1904 with full undo support.
 
     // --- Canvas Render Loop (Screen 2 Studio) ---
     function renderLoop() {
@@ -2593,7 +2592,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const y = parseFloat(posY);
             ctx.textAlign = 'center';
             if (state.strokeWidth > 0) ctx.strokeText(txt, canvasWidth / 2, y);
-            ctx.fillStyle = state.textColor1;
+            ctx.fillStyle = targetName === 'top' ? state.topTextColor1 : state.bottomTextColor1;
             ctx.fillText(txt, canvasWidth / 2, y);
         }
 
