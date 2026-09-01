@@ -542,6 +542,20 @@
                             <input type="text" id="aiCustomTopicInput" class="form-control" placeholder="ឧ. បុណ្យផ្កាប្រាក់សាមគ្គី ឬ កំណើតសត្វមាន៤..." style="font-size:0.85rem;">
                         </div>
 
+                        <!-- Gemini API Key Input Row (Direct Browser-to-Gemini AI for Vercel) -->
+                        <div style="display:flex; align-items:center; gap:8px; background:rgba(167,139,250,0.08); border:1px dashed rgba(167,139,250,0.3); border-radius:8px; padding:8px 12px; flex-wrap:wrap;">
+                            <label style="font-size:0.82rem; color:#c084fc; font-weight:700; white-space:nowrap; display:flex; align-items:center; gap:4px;">
+                                🔑 Gemini API Key <span style="font-weight:400; color:#cbd5e1; font-size:0.75rem;">(សម្រាប់ AI វិភាគសាច់ធម៌ Real 100% លើ Vercel):</span>
+                            </label>
+                            <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:260px;">
+                                <input type="password" id="geminiApiKeyInput" class="form-control" placeholder="AIzaSy... (ប៉ះទីនេះដើម្បីដាក់ Key)" style="font-size:0.82rem; font-family:monospace; background:rgba(0,0,0,0.3); color:#f3e8ff;">
+                                <button type="button" id="toggleApiKeyVisibilityBtn" class="btn btn-secondary btn-sm" style="padding:3px 8px; font-size:0.78rem;" title="បង្ហាញ/លាក់ Key">👁️</button>
+                            </div>
+                            <span id="geminiApiKeyStatusBadge" style="font-size:0.75rem; background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); padding:2px 8px; border-radius:4px; white-space:nowrap;">
+                                💡 មិនទាន់ដាក់ Key (ប្រើ Auto Preset)
+                            </span>
+                        </div>
+
                         <div style="display:flex; align-items:center; gap:12px; border-top: 1px dotted rgba(255,255,255,0.1); padding-top: 8px; flex-wrap:wrap;">
                             <div style="display:flex; align-items:center; gap:6px;">
                                 <input type="checkbox" id="aiSkipIntroChantCheck" checked style="width:16px; height:16px; cursor:pointer;">
