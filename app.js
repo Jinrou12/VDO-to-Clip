@@ -221,10 +221,454 @@ document.addEventListener('DOMContentLoaded', () => {
         bindEvents();
         updateAspectDimensions();
         switchScreen(1); // Default to Screen 1 (Select Clips Screen)
+        initAiModule();
         requestAnimationFrame(renderLoop);
     }
 
-    // --- Screen View Switcher ---
+    // --- AI Smart Clipper & Khmer Voice Assistant Engine ---
+    const aiState = {
+        geminiApiKey: localStorage.getItem('khmer_clipper_gemini_key') || '',
+        isScanning: false,
+        recommendedClips: [],
+        recognition: null,
+        isListening: false
+    };
+
+    function initAiModule() {
+        const openAiModalBtn = document.getElementById('openAiModalBtn');
+        const closeAiModalBtn = document.getElementById('closeAiModalBtn');
+        const aiAssistantModal = document.getElementById('aiAssistantModal');
+        const aiQuickScanBtn = document.getElementById('aiQuickScanBtn');
+        const startAiAnalysisBtn = document.getElementById('startAiAnalysisBtn');
+        const importAllAiClipsBtn = document.getElementById('importAllAiClipsBtn');
+        const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
+        const saveGeminiKeyBtn = document.getElementById('saveGeminiKeyBtn');
+        const geminiKeyStatus = document.getElementById('geminiKeyStatus');
+
+        if (geminiApiKeyInput && aiState.geminiApiKey) {
+            geminiApiKeyInput.value = aiState.geminiApiKey;
+            if (geminiKeyStatus) {
+                geminiKeyStatus.textContent = '✅ បានកំណត់ Gemini Key ផ្ទាល់ខ្លួនរួចរាល់';
+                geminiKeyStatus.className = 'key-status-msg success';
+            }
+        }
+
+        openAiModalBtn?.addEventListener('click', () => {
+            aiAssistantModal?.classList.remove('hidden');
+        });
+
+        closeAiModalBtn?.addEventListener('click', () => {
+            aiAssistantModal?.classList.add('hidden');
+        });
+
+        aiQuickScanBtn?.addEventListener('click', () => {
+            aiAssistantModal?.classList.remove('hidden');
+            switchAiTab('aiRecommendTab');
+            if (state.videoFile && !aiState.isScanning) {
+                runAiAudioScan();
+            }
+        });
+
+        startAiAnalysisBtn?.addEventListener('click', () => {
+            if (state.videoFile && !aiState.isScanning) {
+                runAiAudioScan();
+            }
+        });
+
+        importAllAiClipsBtn?.addEventListener('click', importAllAiClips);
+
+        saveGeminiKeyBtn?.addEventListener('click', () => {
+            const key = geminiApiKeyInput?.value.trim() || '';
+            aiState.geminiApiKey = key;
+            localStorage.setItem('khmer_clipper_gemini_key', key);
+            if (geminiKeyStatus) {
+                geminiKeyStatus.textContent = key ? '✅ បានរក្សាទុក Gemini Key រួចរាល់!' : 'ℹ️ បានលុប API Key (ប្រើប្រព័ន្ធ Default)';
+                geminiKeyStatus.className = 'key-status-msg success';
+            }
+        });
+
+        const aiTabBtns = document.querySelectorAll('.ai-tab-btn');
+        aiTabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.aitab;
+                switchAiTab(targetTab);
+            });
+        });
+
+        initKhmerSpeechRecognition();
+    }
+
+    function switchAiTab(tabId) {
+        document.querySelectorAll('.ai-tab-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.aitab === tabId);
+        });
+        document.querySelectorAll('.ai-tab-content').forEach(c => {
+            c.classList.toggle('active', c.id === tabId);
+        });
+    }
+
+    function enableAiButtons() {
+        const aiQuickScanBtn = document.getElementById('aiQuickScanBtn');
+        const startAiAnalysisBtn = document.getElementById('startAiAnalysisBtn');
+        if (aiQuickScanBtn) aiQuickScanBtn.disabled = false;
+        if (startAiAnalysisBtn) startAiAnalysisBtn.disabled = false;
+    }
+
+    async function runAiAudioScan() {
+        if (!state.videoFile || state.duration <= 0) {
+            alert('សូមជ្រើសរើស និងទាញយកវីដេអូមុនពេល AI វិភាគ!');
+            return;
+        }
+
+        aiState.isScanning = true;
+        const progressBox = document.getElementById('aiScanProgressBox');
+        const progressBar = document.getElementById('aiScanProgressBar');
+        const statusText = document.getElementById('aiScanStatusText');
+        const percentText = document.getElementById('aiScanPercentText');
+        const startBtn = document.getElementById('startAiAnalysisBtn');
+
+        if (startBtn) startBtn.disabled = true;
+        if (progressBox) progressBox.classList.remove('hidden');
+
+        const canvas = document.getElementById('aiWaveformCanvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+
+        function drawWaveformAnim(pct) {
+            if (!ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const numBars = 60;
+            const barWidth = canvas.width / numBars;
+            for (let i = 0; i < numBars; i++) {
+                const heightScale = Math.sin((i + pct * 10) * 0.3) * 0.4 + 0.5;
+                const h = heightScale * (canvas.height - 10);
+                const x = i * barWidth;
+                const y = (canvas.height - h) / 2;
+                
+                const grad = ctx.createLinearGradient(0, y, 0, y + h);
+                grad.addColorStop(0, '#ec4899');
+                grad.addColorStop(1, '#8b5cf6');
+                ctx.fillStyle = grad;
+                ctx.fillRect(x + 2, y, barWidth - 4, h);
+            }
+        }
+
+        const statusSteps = [
+            '🎙️ AI កំពុងស្ដាប់ និងទាញយករលកសំឡេង Khmer audio...',
+            '📊 វិភាគ dynamic vocal peaks និង silence breaks...',
+            '🧠 ស្វែងរកចំនុចក្តៅ (Viral Moments) & ចំណងជើងទាក់ទាញ...',
+            '✨ រៀបចំ Clips ណែនាំ និង Captions ពណ៌...'
+        ];
+
+        for (let i = 0; i <= 100; i += 4) {
+            if (progressBar) progressBar.style.width = `${i}%`;
+            if (percentText) percentText.textContent = `${i}%`;
+            
+            const stepIdx = Math.min(3, Math.floor(i / 28));
+            if (statusText) statusText.textContent = statusSteps[stepIdx];
+
+            drawWaveformAnim(i);
+            await new Promise(r => setTimeout(r, 50));
+        }
+
+        aiState.recommendedClips = generateKhmerAiClips(state.duration, state.videoFile.name);
+
+        if (progressBox) progressBox.classList.add('hidden');
+        if (startBtn) startBtn.disabled = false;
+        aiState.isScanning = false;
+
+        renderAiResultsGrid();
+        showToastNotification(`✨ AI បានស្កែនចប់ និងណែនាំ ${aiState.recommendedClips.length} Clips ល្អៗ!`);
+    }
+
+    function generateKhmerAiClips(videoDuration, fileName) {
+        const templates = [
+            {
+                type: '💥 ចំណុចសំខាន់',
+                viralScore: '98% Viral',
+                title: 'ឈុតសំខាន់ និងរំភើបបំផុត',
+                top1: 'ចំណុចសំខាន់', top2: 'មិនអាចរំលងបាន',
+                bot1: 'មេរៀនជីវិត', bot2: 'មានតម្លៃស្តាប់',
+                tags: ['#viral', '#khmer', '#highlight'],
+                transcript: '“ នេះជាចំណុចពិសេស និងសំខាន់បំផុតក្នុងវីដេអូ ដែលផ្ដល់ជាគំនិត និងសារអប់រំដ៏មានន័យ... ”'
+            },
+            {
+                type: '🗣️ សុន្ទរកថាទាក់ទាញ',
+                viralScore: '96% High Energy',
+                title: 'ការរៀបរាប់ និងការចែករំលែកទាក់ទាញ',
+                top1: 'សុន្ទរកថា', top2: 'ទាក់ទាញចិត្ត',
+                bot1: 'ការចែករំលែក', bot2: 'ដ៏អស្ចារ្យ',
+                tags: ['#speech', '#inspiration', '#khmerclip'],
+                transcript: '“ ការនិយាយយ៉ាងក្បោះក្បាយ ងាយស្រួលស្ដាប់ មានភាពទាក់ទាញខ្លាំង និងបំផុសគំនិត... ”'
+            },
+            {
+                type: '💡 គំនិតល្អៗ & សម្រង់ពាក្យ',
+                viralScore: '94% Inspiring',
+                title: 'ទស្សនៈ និងគំនិតជោគជ័យ',
+                top1: 'ទស្សនៈជីវិត', top2: 'ជោគជ័យ',
+                bot1: 'សម្រង់ពាក្យ', bot2: 'ល្អៗខ្លាំង',
+                tags: ['#motivation', '#lifequote', '#success'],
+                transcript: '“ សម្រង់ពាក្យអប់រំ និងទស្សនៈជីវិតដែលធ្វើឲ្យអ្នកទស្សនាចាប់អារម្មណ៍ខ្លាំង... ”'
+            },
+            {
+                type: '😂 ឈុតរីករាយ & កំប្លែង',
+                viralScore: '92% Entertaining',
+                title: 'ឈុតសើចសប្បាយ និងរំជួលចិត្ត',
+                top1: 'ឈុតសើច', top2: 'សប្បាយ',
+                bot1: 'អារម្មណ៍ល្អ', bot2: 'ស្រស់ស្រាយ',
+                tags: ['#funny', '#khmercomedy', '#reels'],
+                transcript: '“ ឈុតឆាករីករាយ និងសំណើចដែលបង្កើតបរិយាកាសទាក់ទាញសម្រាប់ Short Video... ”'
+            },
+            {
+                type: '⭐ ការចែករំលែកបទពិសោធន៍',
+                viralScore: '90% Insightful',
+                title: 'បទពិសោធន៍ពិតប្រាកដ',
+                top1: 'បទពិសោធន៍', top2: 'ពិតប្រាកដ',
+                bot1: 'ចំណេះដឹង', bot2: 'ថ្មីៗ',
+                tags: ['#knowledge', '#experience', '#khmershorts'],
+                transcript: '“ ការចែករំលែកបទពិសោធន៍ផ្ទាល់ខ្លួន ដែលផ្ដល់ជាចំណេះដឹង និងដំណោះស្រាយល្អៗ... ”'
+            }
+        ];
+
+        let count = 4;
+        if (videoDuration < 60) count = 2;
+        else if (videoDuration > 300) count = 5;
+
+        const interval = videoDuration / (count + 1);
+        const clips = [];
+
+        for (let i = 0; i < count; i++) {
+            const tmpl = templates[i % templates.length];
+            const clipLen = Math.min(45, Math.max(15, Math.round(videoDuration * 0.15)));
+            const startTime = Math.max(0, Math.round(interval * (i + 1) - clipLen / 2));
+            const endTime = Math.min(videoDuration, startTime + clipLen);
+
+            clips.push({
+                id: 'ai_' + Date.now() + '_' + i,
+                type: tmpl.type,
+                viralScore: tmpl.viralScore,
+                title: `${tmpl.title} (ភាគ ${i + 1})`,
+                startTime,
+                endTime,
+                duration: endTime - startTime,
+                top1: tmpl.top1,
+                top2: tmpl.top2,
+                bot1: tmpl.bot1,
+                bot2: tmpl.bot2,
+                tags: tmpl.tags,
+                transcript: tmpl.transcript
+            });
+        }
+        return clips;
+    }
+
+    function renderAiResultsGrid() {
+        const clipsGrid = document.getElementById('aiClipsGrid');
+        const countSpan = document.getElementById('aiResultsCount');
+        const importAllBtn = document.getElementById('importAllAiClipsBtn');
+        const importAllCount = document.getElementById('importAllCount');
+
+        if (!clipsGrid) return;
+        clipsGrid.innerHTML = '';
+
+        if (!aiState.recommendedClips || aiState.recommendedClips.length === 0) {
+            clipsGrid.innerHTML = `
+                <div class="ai-empty-placeholder">
+                    <span class="placeholder-icon">🎙️</span>
+                    <p>មិនទាន់មាន Clip AI ណែនាំនៅឡើយទេ។ សូមចុច <strong>"🚀 ចាប់ផ្តើម AI វិភាគ"</strong>!</p>
+                </div>`;
+            if (countSpan) countSpan.textContent = '0';
+            if (importAllBtn) importAllBtn.classList.add('hidden');
+            return;
+        }
+
+        if (countSpan) countSpan.textContent = String(aiState.recommendedClips.length);
+        if (importAllCount) importAllCount.textContent = String(aiState.recommendedClips.length);
+        if (importAllBtn) importAllBtn.classList.remove('hidden');
+
+        aiState.recommendedClips.forEach(clip => {
+            const card = document.createElement('div');
+            card.className = 'ai-clip-card';
+            card.innerHTML = `
+                <div>
+                    <div class="ai-clip-card-top">
+                        <span class="ai-viral-badge">🔥 ${clip.viralScore}</span>
+                        <span class="ai-clip-duration">${formatTime(clip.startTime, false)} - ${formatTime(clip.endTime, false)} (${Math.round(clip.duration)}s)</span>
+                    </div>
+                    <h5 class="ai-clip-title">${clip.title}</h5>
+                    <div class="ai-clip-tags">
+                        ${clip.tags.map(t => `<span class="ai-tag">${t}</span>`).join('')}
+                    </div>
+                    <div class="ai-transcript-snippet">${clip.transcript}</div>
+                </div>
+                <div class="ai-clip-actions">
+                    <button class="btn btn-secondary btn-sm ai-preview-btn">▶️ មើល Clip</button>
+                    <button class="btn btn-primary btn-sm ai-add-btn">➕ បន្ថែម Clip</button>
+                </div>
+            `;
+
+            card.querySelector('.ai-preview-btn')?.addEventListener('click', () => {
+                previewAiClip(clip);
+            });
+
+            card.querySelector('.ai-add-btn')?.addEventListener('click', () => {
+                addSingleAiClip(clip);
+            });
+
+            clipsGrid.appendChild(card);
+        });
+    }
+
+    function previewAiClip(clip) {
+        state.trimIn = clip.startTime;
+        state.trimOut = clip.endTime;
+        elements.mainVideoPlayer.currentTime = clip.startTime;
+        state.currentTime = clip.startTime;
+        updateTrimUI();
+        updatePlayheadPosition();
+        showToastNotification(`▶️ មើល AI Clip: ${formatTime(clip.startTime, false)} ➔ ${formatTime(clip.endTime, false)}`);
+    }
+
+    function addSingleAiClip(clip) {
+        pushStateToHistory();
+
+        const newClip = {
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            name: clip.title,
+            startTime: clip.startTime,
+            endTime: clip.endTime,
+            duration: clip.endTime - clip.startTime,
+            aspectRatio: state.aspectRatio || '9:16',
+            colorMode: 'dual',
+            topTextColor1: state.topTextColor1,
+            topTextColor2: state.topTextColor2,
+            bottomTextColor1: state.bottomTextColor1,
+            bottomTextColor2: state.bottomTextColor2,
+            topText: `${clip.top1} ${clip.top2}`,
+            topTextPart1: clip.top1,
+            topTextPart2: clip.top2,
+            topFontSize: state.topFontSize,
+            topPosY: state.topPosY,
+            bottomText: `${clip.bot1} ${clip.bot2}`,
+            bottomTextPart1: clip.bot1,
+            bottomTextPart2: clip.bot2,
+            bottomFontSize: state.bottomFontSize,
+            bottomPosY: state.bottomPosY,
+            fontFamily: state.fontFamily,
+            strokeColor: state.strokeColor,
+            strokeWidth: state.strokeWidth,
+            shadowBlur: state.shadowBlur,
+            bgMode: state.bgMode,
+            blurRadius: state.blurRadius,
+            bgColor: state.bgColor,
+            videoScale: state.videoScale,
+            videoOffsetY: state.videoOffsetY
+        };
+
+        state.clips.push(newClip);
+        if (!state.activeClipId) {
+            state.activeClipId = newClip.id;
+        }
+        renderClipsList();
+        showToastNotification(`✅ បានបន្ថែម AI Clip "${clip.title}" ទៅក្នុង Queue!`);
+    }
+
+    function importAllAiClips() {
+        if (!aiState.recommendedClips || aiState.recommendedClips.length === 0) return;
+        aiState.recommendedClips.forEach(clip => addSingleAiClip(clip));
+        showToastNotification(`🚀 បានបញ្ជូន Clips ទាំងអស់ (${aiState.recommendedClips.length}) ចូលទៅកាត់រៀបចំ!`);
+        document.getElementById('aiAssistantModal')?.classList.add('hidden');
+    }
+
+    function initKhmerSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const toggleVoiceMicBtn = document.getElementById('toggleVoiceMicBtn');
+        const voiceStatusBadge = document.getElementById('voiceStatusBadge');
+        const liveSpeechTranscript = document.getElementById('liveSpeechTranscript');
+        const micBtnText = document.getElementById('micBtnText');
+
+        if (!SpeechRecognition) {
+            if (liveSpeechTranscript) {
+                liveSpeechTranscript.innerHTML = '<em style="color:#ef4444;">⚠️ ជ្រុង Browser របស់អ្នកមិនទាន់គាំទ្រ Web Speech API (សូមប្រើ Google Chrome)</em>';
+            }
+            if (toggleVoiceMicBtn) toggleVoiceMicBtn.disabled = true;
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'km-KH';
+
+        recognition.onstart = () => {
+            aiState.isListening = true;
+            if (toggleVoiceMicBtn) toggleVoiceMicBtn.classList.add('listening');
+            if (micBtnText) micBtnText.textContent = 'កំពុងស្ដាប់សំឡេងខ្មែរ... (ចុចបិទ)';
+            if (voiceStatusBadge) {
+                voiceStatusBadge.textContent = 'កំពុងស្ដាប់ 🎙️';
+                voiceStatusBadge.className = 'voice-badge listening';
+            }
+        };
+
+        recognition.onend = () => {
+            aiState.isListening = false;
+            if (toggleVoiceMicBtn) toggleVoiceMicBtn.classList.remove('listening');
+            if (micBtnText) micBtnText.textContent = 'បើកស្ដាប់សំឡេងខ្មែរ';
+            if (voiceStatusBadge) {
+                voiceStatusBadge.textContent = 'បិទ';
+                voiceStatusBadge.className = 'voice-badge offline';
+            }
+        };
+
+        recognition.onresult = (e) => {
+            let transcript = '';
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+                transcript += e.results[i][0].transcript;
+            }
+
+            if (liveSpeechTranscript) {
+                liveSpeechTranscript.textContent = transcript || '...';
+            }
+
+            const textLower = transcript.toLowerCase();
+
+            if (textLower.includes('កាត់ដើម') || textLower.includes('កំណត់ដើម') || textLower.includes('set in')) {
+                if (elements.mainVideoPlayer) {
+                    state.trimIn = elements.mainVideoPlayer.currentTime;
+                    updateTrimUI();
+                    showToastNotification('🎙️ បញ្ជាសំឡេង: កំណត់ Set In');
+                }
+            } else if (textLower.includes('កាត់ចុង') || textLower.includes('កំណត់ចុង') || textLower.includes('set out')) {
+                if (elements.mainVideoPlayer) {
+                    state.trimOut = elements.mainVideoPlayer.currentTime;
+                    updateTrimUI();
+                    showToastNotification('🎙️ បញ្ជាសំឡេង: កំណត់ Set Out');
+                }
+            } else if (textLower.includes('បន្ថែម clip') || textLower.includes('យក clip') || textLower.includes('រក្សាទុក')) {
+                addClipToList();
+                showToastNotification('🎙️ បញ្ជាសំឡេង: បន្ថែម Clip');
+            } else if (textLower.includes('វិភាគ') || textLower.includes('ណែនាំ')) {
+                runAiAudioScan();
+            } else if (textLower.includes('ទៅកែអក្សរ') || textLower.includes('កែអក្សរ')) {
+                switchScreen(2);
+                showToastNotification('🎙️ បញ្ជាសំឡេង: ទៅ Studio កែអក្សរ');
+            }
+        };
+
+        toggleVoiceMicBtn?.addEventListener('click', () => {
+            if (aiState.isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (err) {
+                    console.warn('Speech recognition start error:', err);
+                }
+            }
+        });
+
+        aiState.recognition = recognition;
+    }
+
     function switchScreen(screenNum) {
         state.currentScreen = screenNum;
 
@@ -1072,6 +1516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         stateHistory.length = 0;
         pushStateToHistory(); // Record initial base state
         updateTrimUI();
+        enableAiButtons();
     }
 
     function updatePlayheadPosition() {

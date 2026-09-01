@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         speakerGlowSize: 0,
         speakerShadow: 15,
         speakerMaskShape: 'none',
+        maskFeather: 0,
         speakerAspect: 'auto',
         cropTop: 0,
         cropBottom: 0,
@@ -79,12 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tabs: document.querySelectorAll('.tab-btn'),
         panes: document.querySelectorAll('.tab-pane'),
         dropZone: document.getElementById('dropZone'),
-        mediaFileInput: document.getElementById('mediaFileInput'),
+        mediaFileInput: document.getElementById('multiFileInput') || document.getElementById('mediaFileInput'),
         mediaGrid: document.getElementById('mediaGrid'),
-        mediaCount: document.getElementById('mediaCount'),
-        clearAllMediaBtn: document.getElementById('clearAllMediaBtn'),
+        mediaCount: document.getElementById('fileCount') || document.getElementById('mediaCount'),
+        clearAllMediaBtn: document.getElementById('clearAllFilesBtn') || document.getElementById('clearAllMediaBtn'),
         converterList: document.getElementById('converterList'),
-        convertAllVideosBtn: document.getElementById('convertAllVideosBtn'),
+        convertAllVideosBtn: document.getElementById('convertAllBtn') || document.getElementById('convertAllVideosBtn'),
         
         // Studio Elements
         posterCanvas: document.getElementById('posterCanvas'),
@@ -105,12 +106,13 @@ document.addEventListener('DOMContentLoaded', () => {
         removeBgApiBtn: document.getElementById('removeBgApiBtn'),
         removeBgApiGroup: document.getElementById('removeBgApiGroup'),
         removeBgApiKeyInput: document.getElementById('removeBgApiKeyInput'),
-        humanSegBtn: document.getElementById('humanSegBtn'),
-        mediaPipeAiBtn: document.getElementById('mediaPipeAiBtn'),
+        runRemoveBgApiBtn: document.getElementById('runRemoveBgApiBtn'),
         edgeErodeInput: document.getElementById('edgeErodeInput'),
         edgeErodeVal: document.getElementById('edgeErodeVal'),
         cropToolBtn: document.getElementById('cropToolBtn'),
         cropPanelGroup: document.getElementById('cropPanelGroup'),
+        eraserSizeGroup: document.getElementById('eraserSizeGroup'),
+        bgToleranceGroup: document.getElementById('bgToleranceGroup'),
         bgToleranceInput: document.getElementById('bgToleranceInput'),
         bgToleranceVal: document.getElementById('bgToleranceVal'),
         cropTopInput: document.getElementById('cropTopInput'),
@@ -124,6 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
         resetCropBtn: document.getElementById('resetCropBtn'),
         speakerAspectSelect: document.getElementById('speakerAspectSelect'),
         speakerMaskShapeSelect: document.getElementById('speakerMaskShapeSelect'),
+        maskFeatherInput: document.getElementById('maskFeatherInput'),
+        maskFeatherVal: document.getElementById('maskFeatherVal'),
 
         speakerGlowColorInput: document.getElementById('speakerGlowColorInput'),
         speakerGlowSizeInput: document.getElementById('speakerGlowSizeInput'),
@@ -178,8 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
         startCanvasLoop();
     }
 
-    // --- Tab Navigation ---
+    // --- Tab Navigation & Accordion Controls ---
     function setupTabEvents() {
+        // Main Header Tabs
         elements.tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const targetTab = tab.dataset.tab;
@@ -189,6 +194,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 tab.classList.add('active');
                 document.getElementById(targetTab).classList.add('active');
                 state.activeTab = targetTab;
+            });
+        });
+
+        // Collapsible Accordion Headers (Auto-Accordion Mode)
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const item = header.closest('.accordion-item');
+                if (item) {
+                    const isCollapsed = item.classList.contains('collapsed');
+                    // Collapse all accordions first
+                    document.querySelectorAll('.accordion-item').forEach(acc => acc.classList.add('collapsed'));
+                    // Toggle current accordion
+                    if (isCollapsed) {
+                        item.classList.remove('collapsed');
+                    }
+                }
+            });
+        });
+
+        // Speaker Controls Sub-Tabs
+        document.querySelectorAll('.subtab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetId = btn.dataset.subtab;
+                document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.subtab-pane').forEach(p => p.classList.remove('active'));
+
+                btn.classList.add('active');
+                const targetPane = document.getElementById(targetId);
+                if (targetPane) targetPane.classList.add('active');
             });
         });
 
@@ -219,36 +254,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- File Upload & Queue Manager ---
     function setupFileUploadEvents() {
-        elements.dropZone.addEventListener('click', () => elements.mediaFileInput.click());
+        if (elements.dropZone) {
+            elements.dropZone.addEventListener('click', () => {
+                if (elements.mediaFileInput) elements.mediaFileInput.click();
+            });
 
-        elements.dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            elements.dropZone.classList.add('dragover');
-        });
+            elements.dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                elements.dropZone.classList.add('dragover');
+            });
 
-        elements.dropZone.addEventListener('dragleave', () => elements.dropZone.classList.remove('dragover'));
+            elements.dropZone.addEventListener('dragleave', () => {
+                elements.dropZone.classList.remove('dragover');
+            });
 
-        elements.dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            elements.dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length > 0) {
-                handleFiles(e.dataTransfer.files);
-            }
-        });
+            elements.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                elements.dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+        }
 
-        elements.mediaFileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFiles(e.target.files);
-            }
-        });
+        if (elements.mediaFileInput) {
+            elements.mediaFileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFiles(e.target.files);
+                }
+            });
+        }
 
-        elements.clearAllMediaBtn.addEventListener('click', () => {
-            state.mediaFiles = [];
-            renderMediaLibrary();
-            renderConverterList();
-            updateAudioSelectOptions();
-            showToast('បានលុប File ទាំងអស់!');
-        });
+        if (elements.clearAllMediaBtn) {
+            elements.clearAllMediaBtn.addEventListener('click', () => {
+                state.mediaFiles = [];
+                renderMediaLibrary();
+                renderConverterList();
+                updateAudioSelectOptions();
+                showToast('បានលុប File ទាំងអស់!');
+            });
+        }
     }
 
     function handleFiles(files) {
@@ -396,12 +441,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    elements.convertAllVideosBtn.addEventListener('click', async () => {
-        const videoFiles = state.mediaFiles.filter(m => m.type === 'video');
-        for (const v of videoFiles) {
-            await convertSingleVideo(v.id);
-        }
-    });
+    if (elements.convertAllVideosBtn) {
+        elements.convertAllVideosBtn.addEventListener('click', async () => {
+            const videoFiles = state.mediaFiles.filter(m => m.type === 'video');
+            for (const v of videoFiles) {
+                await convertSingleVideo(v.id);
+            }
+        });
+    }
 
     // --- Background Removal Algorithm ---
     async function processAutoRemoveBg(imageElement, tolerance = 30) {
@@ -1019,14 +1066,47 @@ document.addEventListener('DOMContentLoaded', () => {
             canvas.style.cursor = 'grabbing';
         });
 
-        // Mouse Wheel → Zoom Speaker
+        // Mouse Wheel → Zoom Speaker or Background depending on cursor position
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            if (!state.speakerImg) return;
-            const delta = e.deltaY < 0 ? 3 : -3;
-            state.speakerScale = Math.min(300, Math.max(10, state.speakerScale + delta));
-            if (elements.speakerScaleInput) elements.speakerScaleInput.value = state.speakerScale;
-            if (elements.speakerScaleVal) elements.speakerScaleVal.textContent = state.speakerScale + '%';
+            const pos = getMousePos(e);
+            const delta = e.deltaY < 0 ? 5 : -5;
+
+            // Check if mouse is hovering over Speaker cutout
+            let isOverSpeaker = false;
+            if (state.speakerImg) {
+                const scale = state.speakerScale / 100;
+                const naturalW = state.speakerImg.naturalWidth || state.speakerImg.width || 400;
+                const naturalH = state.speakerImg.naturalHeight || state.speakerImg.height || 600;
+                const cropL = (state.cropLeft / 100) * naturalW;
+                const cropR = (state.cropRight / 100) * naturalW;
+                const cropT = (state.cropTop / 100) * naturalH;
+                const cropB = (state.cropBottom / 100) * naturalH;
+                const srcW = Math.max(1, naturalW - cropL - cropR);
+                const srcH = Math.max(1, naturalH - cropT - cropB);
+                let spImgRatio = srcW / srcH;
+                if (state.speakerAspect === '1:1') spImgRatio = 1;
+                else if (state.speakerAspect === '3:4') spImgRatio = 3 / 4;
+                else if (state.speakerAspect === '4:3') spImgRatio = 4 / 3;
+                const spHeight = (state.canvasHeight * 0.88) * scale;
+                const spWidth = spHeight * spImgRatio;
+                const spX = 30 + state.speakerX;
+                const spY = (state.canvasHeight - spHeight) + state.speakerY;
+
+                isOverSpeaker = (pos.x >= spX && pos.x <= spX + spWidth && pos.y >= spY && pos.y <= spY + spHeight);
+            }
+
+            if (isOverSpeaker && state.dragTarget !== 'background') {
+                // Zoom Speaker
+                state.speakerScale = Math.min(300, Math.max(10, state.speakerScale + delta));
+                if (elements.speakerScaleInput) elements.speakerScaleInput.value = state.speakerScale;
+                if (elements.speakerScaleVal) elements.speakerScaleVal.textContent = state.speakerScale + '%';
+            } else {
+                // Zoom Background
+                state.bgScale = Math.min(500, Math.max(10, state.bgScale + delta));
+                if (elements.bgScaleInput) elements.bgScaleInput.value = state.bgScale;
+                if (elements.bgScaleVal) elements.bgScaleVal.textContent = state.bgScale + '%';
+            }
         }, { passive: false });
 
         canvas.addEventListener('mousemove', (e) => {
@@ -1191,19 +1271,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 elements.mediaPipeAiBtn.textContent = '⏳ AI Loading... (Load ២-៥ វិ)';
 
                 try {
-                    // ---- RMBG-1.4 via @imgly/background-removal (WASM, runs 100% in browser) ----
-                    showToast('🤖 RMBG-1.4 AI: Loading model... (ដំបូង ២-៥ វិនាទី)');
+                    // ---- RMBG via @imgly/background-removal (WASM, runs 100% in browser) ----
+                    showToast('🤖 RMBG AI: Loading model... (ដំបូង ២-១០ វិនាទី)');
 
-                    const imgUrl = state.rawSpeakerImg.src || state.rawSpeakerImg.currentSrc;
-                    if (!imgUrl || imgUrl === '') throw new Error('no src');
+                    const IMGLY_VERSION = '1.7.0';
+                    // Official imgly static CDN — this is where the AI model chunks actually live
+                    const IMGLY_DATA_CDN = `https://staticimgly.com/@imgly/background-removal-data/${IMGLY_VERSION}/dist/`;
 
-                    const IMGLY_VERSION = '1.5.5';
-                    const IMGLY_CDN = `https://cdn.jsdelivr.net/npm/@imgly/background-removal@${IMGLY_VERSION}/dist/`;
+                    // Use correct +esm path for jsdelivr ESM import
+                    const { removeBackground } = await import(
+                        `https://cdn.jsdelivr.net/npm/@imgly/background-removal@${IMGLY_VERSION}/+esm`
+                    );
 
-                    const { removeBackground } = await import(`${IMGLY_CDN}browser/index.js`);
+                    // Convert speaker image to Blob (more reliable than data: URL)
+                    const srcImg = state.rawSpeakerImg;
+                    const tmpC = document.createElement('canvas');
+                    tmpC.width = srcImg.naturalWidth || srcImg.width || 512;
+                    tmpC.height = srcImg.naturalHeight || srcImg.height || 512;
+                    tmpC.getContext('2d').drawImage(srcImg, 0, 0);
+                    const imgBlob = await new Promise(r => tmpC.toBlob(r, 'image/png'));
 
-                    const resultBlob = await removeBackground(imgUrl, {
-                        publicPath: `${IMGLY_CDN}`,
+                    const resultBlob = await removeBackground(imgBlob, {
+                        publicPath: IMGLY_DATA_CDN,
                         model: 'medium',
                         output: { format: 'image/png', quality: 0.95 },
                         progress: (key, current, total) => {
@@ -1287,17 +1376,28 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        function updateToolActiveStates() {
+            const tools = {
+                cropToolBtn: 'crop',
+                eraserToolBtn: 'eraser',
+                lassoToolBtn: 'lasso',
+                pickColorKeyBtn: 'colorKey'
+            };
+            for (const [btnId, toolName] of Object.entries(tools)) {
+                const btn = elements[btnId];
+                if (btn) {
+                    if (state.activeTool === toolName) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            }
+        }
+
         if (elements.lassoToolBtn) {
             elements.lassoToolBtn.addEventListener('click', () => {
-                if (state.activeTool === 'lasso') {
-                    state.activeTool = 'select';
-                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'grab';
-                    showToast('បានបិទ ឧបករណ៍ Lasso');
-                } else {
-                    state.activeTool = 'lasso';
-                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'crosshair';
-                    showToast('✂️ ឧបករណ៍ Lasso ត្រូវបានបើក៖ ប្រើ Mouse គូសរង្វង់ជុំវិញតំបន់ចង់លុប!');
-                }
+                state.activeTool = state.activeTool === 'lasso' ? 'select' : 'lasso';
+                if (elements.posterCanvas) elements.posterCanvas.style.cursor = state.activeTool === 'lasso' ? 'crosshair' : 'grab';
+                updateToolActiveStates();
+                showToast(state.activeTool === 'lasso' ? '✂️ ឧបករណ៍ Lasso៖ ប្រើ Mouse គូសរង្វង់ដើម្បីលុប' : 'បានបិទ Lasso Mode');
             });
         }
 
@@ -1307,7 +1407,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     initSpeakerCanvas(state.rawSpeakerImg);
                     state.activeTool = 'select';
                     if (elements.eraserSizeGroup) elements.eraserSizeGroup.style.display = 'none';
+                    if (elements.cropPanelGroup) elements.cropPanelGroup.style.display = 'none';
                     if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'grab';
+                    updateToolActiveStates();
                     showToast('🔄 បានស្តាររូប Speaker ដើមវិញ!');
                 }
             });
@@ -1315,45 +1417,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (elements.eraserToolBtn) {
             elements.eraserToolBtn.addEventListener('click', () => {
-                if (state.activeTool === 'eraser') {
-                    state.activeTool = 'select';
-                    if (elements.eraserSizeGroup) elements.eraserSizeGroup.style.display = 'none';
-                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'grab';
-                    showToast('បានបិទ ជក់លុប BG (Normal Mode)');
-                } else {
-                    state.activeTool = 'eraser';
-                    if (elements.eraserSizeGroup) elements.eraserSizeGroup.style.display = 'block';
-                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'crosshair';
-                    showToast('🧹 ជក់លុប BG ត្រូវបានបើក៖ ប្រើ Mouse អូសលើរូបដើម្បីលុប!');
-                }
+                state.activeTool = state.activeTool === 'eraser' ? 'select' : 'eraser';
+                if (elements.eraserSizeGroup) elements.eraserSizeGroup.style.display = state.activeTool === 'eraser' ? 'block' : 'none';
+                if (elements.posterCanvas) elements.posterCanvas.style.cursor = state.activeTool === 'eraser' ? 'crosshair' : 'grab';
+                updateToolActiveStates();
+                showToast(state.activeTool === 'eraser' ? '🧹 ជក់លុប BG៖ ប្រើ Mouse អូសលើរូប' : 'បានបិទ ជក់លុប BG');
             });
         }
 
         if (elements.cropToolBtn) {
             elements.cropToolBtn.addEventListener('click', () => {
-                if (state.activeTool === 'crop') {
-                    // Toggle off
-                    state.activeTool = 'select';
-                    if (elements.cropPanelGroup) elements.cropPanelGroup.style.display = 'none';
-                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'grab';
-                    elements.cropToolBtn.classList.remove('active');
-                    showToast('✅ បានបិទ Crop Mode');
-                } else {
-                    // Toggle on
-                    state.activeTool = 'crop';
-                    if (elements.cropPanelGroup) elements.cropPanelGroup.style.display = 'block';
-                    if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'crosshair';
-                    elements.cropToolBtn.classList.add('active');
-                    showToast('✂️ Crop Mode: អូស Handle លើ Canvas ដើម្បី Crop! Scroll = Zoom!');
-                }
+                state.activeTool = state.activeTool === 'crop' ? 'select' : 'crop';
+                if (elements.cropPanelGroup) elements.cropPanelGroup.style.display = state.activeTool === 'crop' ? 'block' : 'none';
+                if (elements.posterCanvas) elements.posterCanvas.style.cursor = state.activeTool === 'crop' ? 'crosshair' : 'grab';
+                updateToolActiveStates();
+                showToast(state.activeTool === 'crop' ? '✂️ Crop Mode: អូស Handle លើ Canvas ដើម្បី Crop' : 'បានបិទ Crop Mode');
             });
         }
 
         if (elements.pickColorKeyBtn) {
             elements.pickColorKeyBtn.addEventListener('click', () => {
-                state.activeTool = 'colorKey';
-                if (elements.posterCanvas) elements.posterCanvas.style.cursor = 'cell';
-                showToast('🎯 ជ្រើសរើសពណ៌លុប៖ សូម ចុចលើពណ៌ background លើរូបភាព!');
+                state.activeTool = state.activeTool === 'colorKey' ? 'select' : 'colorKey';
+                if (elements.posterCanvas) elements.posterCanvas.style.cursor = state.activeTool === 'colorKey' ? 'cell' : 'grab';
+                updateToolActiveStates();
+                showToast(state.activeTool === 'colorKey' ? '🎯 ជ្រើសរើសពណ៌លុប៖ ចុចលើពណ៌ background លើរូប' : 'បានបិទ Picker Mode');
             });
         }
 
@@ -1423,6 +1510,13 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.speakerMaskShapeSelect.addEventListener('change', (e) => {
                 state.speakerMaskShape = e.target.value;
                 showToast(`បានប្តូរស៊ុមរាងរូបទៅជា៖ ${e.target.options[e.target.selectedIndex].text}`);
+            });
+        }
+
+        if (elements.maskFeatherInput) {
+            elements.maskFeatherInput.addEventListener('input', (e) => {
+                state.maskFeather = parseInt(e.target.value);
+                if (elements.maskFeatherVal) elements.maskFeatherVal.textContent = state.maskFeather + 'px';
             });
         }
 
@@ -1585,6 +1679,53 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(loop);
     }
 
+    // --- Filmora-Style Mask Shapes Helper ---
+    function applySpeakerMaskPath(ctx, shape, x, y, w, h, radius = 0) {
+        ctx.beginPath();
+        if (shape === 'rectangle' || shape === 'rect') {
+            if (radius > 0) ctx.roundRect(x, y, w, h, radius);
+            else ctx.rect(x, y, w, h);
+        } else if (shape === 'circle') {
+            ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+        } else if (shape === 'arch') {
+            const r = w / 2;
+            ctx.arc(x + r, y + r, r, Math.PI, 0, false);
+            ctx.rect(x, y + r, w, h - r);
+        } else if (shape === 'double-line') {
+            ctx.rect(x, y + h * 0.12, w, h * 0.76);
+        } else if (shape === 'single-line') {
+            ctx.rect(x + w * 0.1, y, w * 0.8, h);
+        } else if (shape === 'heart') {
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+            const hw = w / 2;
+            const hh = h / 2;
+            ctx.moveTo(cx, cy + hh * 0.75);
+            ctx.bezierCurveTo(cx - hw * 1.3, cy - hh * 0.1, cx - hw * 0.7, cy - hh * 1.05, cx, cy - hh * 0.35);
+            ctx.bezierCurveTo(cx + hw * 0.7, cy - hh * 1.05, cx + hw * 1.3, cy - hh * 0.1, cx, cy + hh * 0.75);
+            ctx.closePath();
+        } else if (shape === 'star') {
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+            const rOuter = Math.min(w, h) / 2;
+            const rInner = rOuter * 0.45;
+            for (let i = 0; i < 10; i++) {
+                const r = i % 2 === 0 ? rOuter : rInner;
+                const a = (i * Math.PI / 5) - Math.PI / 2;
+                const px = cx + r * Math.cos(a);
+                const py = cy + r * Math.sin(a);
+                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+        } else if (shape === 'feather') {
+            ctx.rect(x, y, w, h);
+        } else if (radius > 0) {
+            ctx.roundRect(x, y, w, h, radius);
+        } else {
+            ctx.rect(x, y, w, h);
+        }
+    }
+
     function renderPosterCanvas() {
         const ctx = elements.ctx;
         const width = state.canvasWidth;
@@ -1596,9 +1737,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.bgImg && state.bgImg.complete && state.bgImg.naturalWidth > 0) {
             ctx.save();
             ctx.filter = `blur(${state.bgBlur}px) brightness(${state.bgBright}%)`;
+
+            // Cover mode: preserve BG image aspect ratio (like object-fit: cover)
+            const bgNatW = state.bgImg.naturalWidth || state.bgImg.width || width;
+            const bgNatH = state.bgImg.naturalHeight || state.bgImg.height || height;
             const bgScale = state.bgScale / 100;
-            const bgW = width * bgScale;
-            const bgH = height * bgScale;
+            const coverScale = Math.max(width / bgNatW, height / bgNatH) * bgScale;
+            const bgW = bgNatW * coverScale;
+            const bgH = bgNatH * coverScale;
             const bgX = (width - bgW) / 2 + state.bgX;
             const bgY = (height - bgH) / 2 + state.bgY;
 
@@ -1641,63 +1787,62 @@ document.addEventListener('DOMContentLoaded', () => {
             const spX = 30 + state.speakerX;
             const spY = (height - spHeight) + state.speakerY;
 
-            // Outer Glow / Sticker Outline Pass
-            if (state.speakerGlowSize > 0) {
-                ctx.save();
-                ctx.shadowColor = state.speakerGlowColor;
-                ctx.shadowBlur = state.speakerGlowSize;
-                
-                for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
-                    const dx = Math.cos(angle) * (state.speakerGlowSize * 0.25);
-                    const dy = Math.sin(angle) * (state.speakerGlowSize * 0.25);
+            // Render Speaker Layer onto Offscreen Canvas so Composite Mask/Feather doesn't wipe main Canvas Background
+            const offC = document.createElement('canvas');
+            offC.width = Math.max(1, Math.ceil(spWidth));
+            offC.height = Math.max(1, Math.ceil(spHeight));
+            const offCtx = offC.getContext('2d');
 
-                    if (state.speakerFlipH) {
-                        ctx.save();
-                        ctx.translate((spX + dx) + spWidth / 2, (spY + dy) + spHeight / 2);
-                        ctx.scale(-1, 1);
-                        ctx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
-                        ctx.restore();
-                    } else {
-                        ctx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, spX + dx, spY + dy, spWidth, spHeight);
-                    }
+            if (offC.width > 0 && offC.height > 0) {
+                offCtx.save();
+                if (state.speakerMaskShape !== 'none' || state.speakerRadius > 0) {
+                    applySpeakerMaskPath(offCtx, state.speakerMaskShape, 0, 0, spWidth, spHeight, state.speakerRadius);
+                    offCtx.clip();
                 }
+
+                if (state.speakerFlipH) {
+                    offCtx.translate(spWidth / 2, spHeight / 2);
+                    offCtx.scale(-1, 1);
+                    offCtx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
+                } else {
+                    offCtx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, 0, 0, spWidth, spHeight);
+                }
+
+                // Apply Mask Feather / Soft Edge Gradient Fade on Offscreen Canvas ONLY
+                if (state.speakerMaskShape === 'feather') {
+                    const grad = offCtx.createLinearGradient(0, spHeight * 0.5, 0, spHeight);
+                    grad.addColorStop(0, 'rgba(0,0,0,1)');
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    offCtx.globalCompositeOperation = 'destination-in';
+                    offCtx.fillStyle = grad;
+                    offCtx.fillRect(0, 0, spWidth, spHeight);
+                } else if (state.maskFeather > 0) {
+                    const f = state.maskFeather;
+                    const gradV = offCtx.createLinearGradient(0, 0, 0, spHeight);
+                    gradV.addColorStop(0, 'rgba(0,0,0,0)');
+                    gradV.addColorStop(Math.min(0.25, f / spHeight), 'rgba(0,0,0,1)');
+                    gradV.addColorStop(Math.max(0.75, 1 - f / spHeight), 'rgba(0,0,0,1)');
+                    gradV.addColorStop(1, 'rgba(0,0,0,0)');
+                    offCtx.globalCompositeOperation = 'destination-in';
+                    offCtx.fillStyle = gradV;
+                    offCtx.fillRect(0, 0, spWidth, spHeight);
+                }
+                offCtx.restore();
+
+                // Draw final isolated Speaker cutout onto main Canvas with Glow & Drop Shadow
+                ctx.save();
+                if (state.speakerGlowSize > 0) {
+                    ctx.shadowColor = state.speakerGlowColor;
+                    ctx.shadowBlur = state.speakerGlowSize;
+                } else if (state.speakerShadow > 0) {
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                    ctx.shadowBlur = state.speakerShadow;
+                    ctx.shadowOffsetX = 8;
+                    ctx.shadowOffsetY = 8;
+                }
+                ctx.drawImage(offC, spX, spY);
                 ctx.restore();
             }
-
-            // Drop Shadow & Main Cutout Pass
-            ctx.save();
-            if (state.speakerShadow > 0) {
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-                ctx.shadowBlur = state.speakerShadow;
-                ctx.shadowOffsetX = 8;
-                ctx.shadowOffsetY = 8;
-            }
-
-            if (state.speakerMaskShape === 'arch') {
-                ctx.beginPath();
-                const r = spWidth / 2;
-                ctx.arc(spX + r, spY + r, r, Math.PI, 0, false);
-                ctx.rect(spX, spY + r, spWidth, spHeight - r);
-                ctx.clip();
-            } else if (state.speakerMaskShape === 'circle') {
-                ctx.beginPath();
-                ctx.ellipse(spX + spWidth / 2, spY + spHeight / 2, spWidth / 2, spHeight / 2, 0, 0, Math.PI * 2);
-                ctx.clip();
-            } else if (state.speakerRadius > 0) {
-                ctx.beginPath();
-                ctx.roundRect(spX, spY, spWidth, spHeight, state.speakerRadius);
-                ctx.clip();
-            }
-
-            if (state.speakerFlipH) {
-                ctx.translate(spX + spWidth / 2, spY + spHeight / 2);
-                ctx.scale(-1, 1);
-                ctx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, -spWidth / 2, -spHeight / 2, spWidth, spHeight);
-            } else {
-                ctx.drawImage(state.speakerImg, cropL, cropT, srcW, srcH, spX, spY, spWidth, spHeight);
-            }
-
-            ctx.restore();
         }
 
         // 3. Draw Audio Spectrum Waveform Equalizer

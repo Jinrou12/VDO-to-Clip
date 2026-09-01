@@ -5,36 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khmer Audio & Video Poster Studio Demo</title>
     <link rel="stylesheet" href="poster_demo.css">
+    <!-- MediaPipe & ImgLy CDNs -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
-    <script>
-        // MediaPipe Tasks Vision - ImageSegmenter (Much better than old selfie_segmentation)
-        (async function() {
-            try {
-                const { ImageSegmenter, FilesetResolver } = await import(
-                    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.15/vision_bundle.mjs'
-                );
-                const filesetResolver = await FilesetResolver.forVisionTasks(
-                    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.15/wasm'
-                );
-                const segmenter = await ImageSegmenter.createFromOptions(filesetResolver, {
-                    baseOptions: {
-                        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
-                        delegate: 'GPU'
-                    },
-                    runningMode: 'IMAGE',
-                    outputCategoryMask: false,
-                    outputConfidenceMasks: true
-                });
-                window._mpTasksSegmenter = segmenter;
-                console.log('✅ MediaPipe Tasks ImageSegmenter loaded!');
-            } catch (e) {
-                console.warn('MediaPipe Tasks failed to load:', e);
-            }
-        })();
-    </script>
 </head>
 <body>
-    <!-- Navbar Header -->
+
+    <!-- Header Navbar -->
     <header class="app-header">
         <div class="brand">
             <div class="brand-icon">🎬</div>
@@ -43,60 +20,59 @@
                 <div class="brand-subtitle">Multi Audio/Video Upload • Video to Audio • Poster & Waveform Visualizer</div>
             </div>
         </div>
-
+        
         <nav class="nav-tabs">
-            <button class="tab-btn active" data-tab="tab-upload">📁 1. Upload & Library</button>
-            <button class="tab-btn" data-tab="tab-converter">🎵 2. Video → Audio</button>
-            <button class="tab-btn" data-tab="tab-studio">🎨 3. Poster & Waveform Studio</button>
+            <button class="tab-btn" data-tab="tab-upload">📁 1. Upload & Library</button>
+            <button class="tab-btn" data-tab="tab-convert">🎵 2. Video → Audio</button>
+            <button class="tab-btn active" data-tab="tab-studio">🎨 3. Poster & Waveform Studio</button>
         </nav>
     </header>
 
-    <!-- Main App Container -->
+    <!-- Main Container -->
     <main class="main-content">
-        <!-- TAB 1: UPLOAD & LIBRARY -->
-        <section id="tab-upload" class="tab-pane active">
+        <!-- TAB 1: Multi Audio/Video Upload & Library -->
+        <section id="tab-upload" class="tab-pane">
             <div class="drop-zone" id="dropZone">
-                <span class="drop-icon">☁️</span>
-                <div class="drop-title">ទម្លាក់ ឬ ចុចទីនេះដើម្បី Upload File Audio & Video</div>
-                <div class="drop-desc">គាំទ្រ File ច្រើនក្នុងពេលតែមួយ (MP4, WEBM, MOV, MP3, WAV, M4A, AAC)</div>
-                <input type="file" id="mediaFileInput" multiple accept="audio/*,video/*" style="display:none;">
+                <span class="drop-icon">📥</span>
+                <div class="drop-title">ទម្លាក់ File Audio ឬ Video (Drag & Drop) ឬ ចុចទីនេះដើម្បី Upload</div>
+                <div class="drop-desc">គាំទ្រ Files: MP3, WAV, M4A, MP4, MOV, WEBM (អាចជ្រើសរើសបានច្រើនក្នុងពេលតែមួយ)</div>
+                <input type="file" id="multiFileInput" multiple accept="audio/*,video/*" style="display: none;">
             </div>
 
             <div class="section-header">
-                <div class="section-title">📂 បញ្ជីរាយ File ទាំងអស់ (<span id="mediaCount">0</span>)</div>
-                <button class="btn btn-secondary" id="clearAllMediaBtn">🗑️ លុបទាំងអស់</button>
+                <div class="section-title">📚 បញ្ជី Media Files ដែលបាន Upload (<span id="fileCount">0</span>)</div>
+                <button class="btn btn-danger btn-sm" id="clearAllFilesBtn">🗑️ លុបទាំងអស់</button>
             </div>
 
             <div class="media-grid" id="mediaGrid">
-                <!-- Media Cards dynamically rendered here -->
+                <!-- Media cards injected dynamically -->
             </div>
         </section>
 
-        <!-- TAB 2: VIDEO TO AUDIO CONVERTER -->
-        <section id="tab-converter" class="tab-pane">
+        <!-- TAB 2: Video to Audio Converter -->
+        <section id="tab-convert" class="tab-pane">
             <div class="section-header">
-                <div class="section-title">🎵 បំប្លែង Video ទៅជា File Audio (.WAV / .MP3)</div>
-                <button class="btn btn-primary" id="convertAllVideosBtn">⚡ បំប្លែង Video ទាំងអស់ជា Audio</button>
+                <div class="section-title">⚡ ដកស្រង់សំឡេងចេញពីវីដេអូ (Extract Audio from Video)</div>
+                <button class="btn btn-green" id="convertAllBtn">⚡ បំប្លែងទាំងអស់ទៅជា Audio</button>
             </div>
 
             <div class="converter-list" id="converterList">
-                <!-- Converter items dynamically rendered here -->
+                <!-- Video conversion cards injected dynamically -->
             </div>
         </section>
 
-        <!-- TAB 3: POSTER & WAVEFORM STUDIO -->
-        <section id="tab-studio" class="tab-pane">
+        <!-- TAB 3: Poster Studio & Waveform Visualizer -->
+        <section id="tab-studio" class="tab-pane active">
             <div class="studio-layout">
-                <!-- Center Canvas Area -->
+                <!-- Left Interactive Poster Canvas Container -->
                 <div class="canvas-container">
-                    <div style="font-size:0.85rem; color:var(--primary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                        💡 <span>អាចប្រើ Mouse ចុចចាប់អូស (Drag & Drop) ទីតាំងអក្សរ, រូប Speaker, និង Waveform លើ Canvas ដោយផ្ទាល់!</span>
-                    </div>
-
                     <div class="aspect-selector">
-                        <button class="aspect-btn active" data-ratio="16:9">16:9 Landscape</button>
-                        <button class="aspect-btn" data-ratio="1:1">1:1 Square</button>
-                        <button class="aspect-btn" data-ratio="9:16">9:16 Story/Reels</button>
+                        <span style="font-size:0.85rem; color:#fbbf24; align-self:center; font-weight:600;">💡 អាចប្រើ Mouse អូសចាប់ដូរ (Drag & Drop) ទីតាំងអត្ថបទ, រូប Speaker, និង Waveform លើ Canvas ដោយផ្ទាល់!</span>
+                        <div style="margin-left:auto; display:flex; gap:6px;">
+                            <button class="aspect-btn active" data-ratio="16:9">16:9 Landscape</button>
+                            <button class="aspect-btn" data-ratio="1:1">1:1 Square</button>
+                            <button class="aspect-btn" data-ratio="9:16">9:16 Story/Reels</button>
+                        </div>
                     </div>
 
                     <canvas id="posterCanvas" width="1280" height="720" style="cursor:grab;"></canvas>
@@ -111,240 +87,269 @@
 
                 <!-- Right Controls Sidebar -->
                 <aside class="control-sidebar">
-                    <!-- Audio Track Selector -->
-                    <div class="form-group">
-                        <label class="form-label">🔊 ជ្រើសរើស Audio/Video សម្រាប់ Waveform:</label>
-                        <select id="activeAudioSelect" class="form-control">
-                            <option value="">-- សូមជ្រើសរើស File --</option>
-                        </select>
-                    </div>
+                    <div class="sidebar-scroll-area">
+                        <!-- Audio Track Selector -->
+                        <div class="form-group">
+                            <label class="form-label">🔊 ជ្រើសរើស Audio/Video សម្រាប់ Waveform:</label>
+                            <select id="activeAudioSelect" class="form-control">
+                                <option value="">-- សូមជ្រើសរើស File --</option>
+                            </select>
+                        </div>
 
-                    <!-- Speaker Photo (Left Layer) -->
-                    <div class="accordion-item">
-                        <div class="accordion-header">👤 រូប Speaker / លោកគ្រូ (ខាងឆ្វេង)</div>
-                        <div class="accordion-body">
-                            <div class="form-group">
-                                <label class="form-label">Upload រូប Speaker:</label>
-                                <input type="file" id="speakerPhotoInput" accept="image/*" class="form-control">
-                            </div>
-                            <div class="form-row">
-                                <button class="btn btn-secondary btn-sm" id="flipSpeakerBtn" style="flex:1;">🔄 ត្រឡប់រូប (Flip ⇄)</button>
-                                <button class="btn btn-secondary btn-sm" id="resetSpeakerImgBtn" style="flex:1;">🔄 ស្តាររូបដើម</button>
-                            </div>
-                            <div class="form-group" style="margin-top:6px;">
-                                <button class="btn btn-green btn-sm" id="mediaPipeAiBtn" style="width:100%; font-weight:bold;">🤖 Remove BG ជាមួយ RMBG AI (ស្អាតបំផុត)</button>
-                            </div>
-                            <div class="form-group" style="margin-top:6px; background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">
-                                <label class="form-label" style="color:#fbbf24; font-weight:bold; font-size:12px;">✨ កាត់ជម្រៅគែមស (Edge Choke / De-fringe): <span id="edgeErodeVal">0px</span></label>
-                                <input type="range" id="edgeErodeInput" min="0" max="8" value="0" class="form-control">
-                            </div>
-                            <div class="form-row" style="margin-top:6px;">
-                                <button class="btn btn-primary btn-sm" id="removeBgBtn" style="flex:1;">✨ លុប BG Auto</button>
-                                <button class="btn btn-secondary btn-sm" id="removeBgApiBtn" style="flex:1;">⚡ Remove.bg HD AI</button>
-                            </div>
-                            <div class="form-group" id="removeBgApiGroup" style="display:none; margin-top:6px;">
-                                <label class="form-label">Remove.bg API Key (Free 50 images):</label>
-                                <div style="display:flex; gap:6px;">
-                                    <input type="password" id="removeBgApiKeyInput" placeholder="បិទភ្ជាប់ API Key..." class="form-control" style="flex:1;">
-                                    <button class="btn btn-green btn-sm" id="runRemoveBgApiBtn"> Run </button>
+                        <!-- Speaker Photo (Left Layer) -->
+                        <div class="accordion-item">
+                            <div class="accordion-header">👤 រូប Speaker / លោកគ្រូ (ខាងឆ្វេង)</div>
+                            <div class="accordion-body">
+                                <div class="form-group">
+                                    <label class="form-label">Upload រូប Speaker:</label>
+                                    <input type="file" id="speakerPhotoInput" accept="image/*" class="form-control">
+                                </div>
+                                <div class="tool-grid-2">
+                                    <button class="btn btn-secondary btn-sm" id="flipSpeakerBtn">🔄 Flip ⇄</button>
+                                    <button class="btn btn-secondary btn-sm" id="resetSpeakerImgBtn">🔄 ស្តារដើម</button>
+                                </div>
+
+                                <!-- Sub-Tabs Navigation for Speaker Controls -->
+                                <div class="speaker-subtabs" style="margin-top:6px;">
+                                    <button class="subtab-btn active" data-subtab="subtab-removebg">🤖 Remove BG</button>
+                                    <button class="subtab-btn" data-subtab="subtab-tools">✂️ Tools</button>
+                                    <button class="subtab-btn" data-subtab="subtab-mask">🎭 Mask</button>
+                                    <button class="subtab-btn" data-subtab="subtab-style">📐 Scale & Pos</button>
+                                </div>
+
+                                <!-- SUB-TAB 1: Remove BG -->
+                                <div id="subtab-removebg" class="subtab-pane active">
+                                    <button class="btn btn-green btn-sm" id="mediaPipeAiBtn" style="width:100%; font-weight:bold;">🤖 Remove BG ជាមួយ RMBG AI (ស្អាតបំផុត)</button>
+                                    <div class="form-group" style="background:rgba(255,255,255,0.05); padding:8px; border-radius:6px;">
+                                        <label class="form-label" style="color:#fbbf24; font-weight:bold; font-size:12px;">✨ កាត់ជម្រៅគែមស (Edge Choke): <span id="edgeErodeVal">0px</span></label>
+                                        <input type="range" id="edgeErodeInput" min="0" max="8" value="0" class="form-control">
+                                    </div>
+                                    <div class="tool-grid-2">
+                                        <button class="btn btn-primary btn-sm" id="removeBgBtn">✨ លុប BG Auto</button>
+                                        <button class="btn btn-secondary btn-sm" id="removeBgApiBtn">⚡ Remove.bg HD AI</button>
+                                    </div>
+                                    <div class="form-group" id="removeBgApiGroup" style="display:none;">
+                                        <label class="form-label">Remove.bg API Key (Free 50 images):</label>
+                                        <div style="display:flex; gap:6px;">
+                                            <input type="password" id="removeBgApiKeyInput" placeholder="បិទភ្ជាប់ API Key..." class="form-control" style="flex:1;">
+                                            <button class="btn btn-green btn-sm" id="runRemoveBgApiBtn"> Run </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SUB-TAB 2: Interactive Cut/Edit Tools -->
+                                <div id="subtab-tools" class="subtab-pane">
+                                    <div class="tool-grid-4">
+                                        <button class="btn btn-tool" id="cropToolBtn" title="Crop">✂️ Crop</button>
+                                        <button class="btn btn-tool" id="eraserToolBtn" title="Eraser">🧹 Eraser</button>
+                                        <button class="btn btn-tool" id="lassoToolBtn" title="Lasso">✂️ Lasso</button>
+                                        <button class="btn btn-tool" id="pickColorKeyBtn" title="Pick Color">🎯 Picker</button>
+                                    </div>
+                                    <!-- Speaker Crop Panel -->
+                                    <div class="form-group" id="cropPanelGroup" style="display:none; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px;">
+                                        <div class="form-label" style="font-weight:bold; color:#fbbf24; margin-bottom:6px;">✂️ កាត់តម្រឹមរូប (Speaker Crop):</div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label class="form-label">កាត់លើ (Top): <span id="cropTopVal">0%</span></label>
+                                                <input type="range" id="cropTopInput" min="0" max="50" value="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">កាត់ក្រោម (Bottom): <span id="cropBottomVal">0%</span></label>
+                                                <input type="range" id="cropBottomInput" min="0" max="50" value="0">
+                                            </div>
+                                        </div>
+                                        <div class="form-row" style="margin-top:4px;">
+                                            <div class="form-group">
+                                                <label class="form-label">កាត់ឆ្វេង (Left): <span id="cropLeftVal">0%</span></label>
+                                                <input type="range" id="cropLeftInput" min="0" max="50" value="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">កាត់ស្តាំ (Right): <span id="cropRightVal">0%</span></label>
+                                                <input type="range" id="cropRightInput" min="0" max="50" value="0">
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-secondary btn-sm" id="resetCropBtn" style="width:100%; margin-top:6px;">🔄 ស្តារ Crop ដើម</button>
+                                    </div>
+                                    <div class="form-group" id="eraserSizeGroup" style="display:none;">
+                                        <label class="form-label">ទំហំជក់លុប (Brush Size): <span id="eraserSizeVal">30px</span></label>
+                                        <input type="range" id="eraserSizeInput" min="5" max="100" value="30">
+                                    </div>
+                                    <div class="form-group" id="bgToleranceGroup" style="display:none;">
+                                        <label class="form-label">កម្រិតលុប BG (Tolerance): <span id="bgToleranceVal">30</span></label>
+                                        <input type="range" id="bgToleranceInput" min="5" max="80" value="30">
+                                    </div>
+                                </div>
+
+                                <!-- SUB-TAB 3: Mask & Aspect Ratio -->
+                                <div id="subtab-mask" class="subtab-pane">
+                                    <div class="form-group">
+                                        <label class="form-label">🎭 ជ្រើសរើស Mask (Filmora Style):</label>
+                                        <select id="speakerMaskShapeSelect" class="form-control">
+                                            <option value="none">🚫 គ្មាន Mask (រាងដើម)</option>
+                                            <option value="rectangle">🔲 Rectangle (រាងចតុកោណ)</option>
+                                            <option value="circle">⭕ Circle / Oval (រង្វង់មូល)</option>
+                                            <option value="arch">🏛️ Arch Portal (ស៊ុមរោង)</option>
+                                            <option value="double-line">║ Double Line (បន្ទាត់ទន្ទឹម)</option>
+                                            <option value="single-line">︱ Single Line (បន្ទាត់ទោល)</option>
+                                            <option value="heart">❤️ Heart (រាងបេះដូង)</option>
+                                            <option value="star">⭐ Star (រាងផ្កាយ)</option>
+                                            <option value="feather">☁️ Soft Fade (បាំងបាតទន់)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" style="color:#fbbf24; font-weight:bold;">✨ កម្រិតគែមទន់ (Mask Feather): <span id="maskFeatherVal">0px</span></label>
+                                        <input type="range" id="maskFeatherInput" min="0" max="60" value="0" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">📐 ទ្រង់ទ្រាយរូប (Aspect Ratio):</label>
+                                        <select id="speakerAspectSelect" class="form-control">
+                                            <option value="auto">🔒 រក្សាទ្រង់ទ្រាយដើម (Auto Natural)</option>
+                                            <option value="1:1">1:1 Square (រាងការ៉េ)</option>
+                                            <option value="3:4">3:4 Portrait (រាងឈរ)</option>
+                                            <option value="4:3">4:3 Landscape (រាងផ្តេក)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">កោងគែម (Border Radius):</label>
+                                        <input type="range" id="speakerRadiusInput" min="0" max="100" value="0">
+                                    </div>
+                                </div>
+
+                                <!-- SUB-TAB 4: Scale, Position, Glow & FX -->
+                                <div id="subtab-style" class="subtab-pane">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">ពណ៌គែម Glow:</label>
+                                            <input type="color" id="speakerGlowColorInput" value="#FFFFFF" class="form-control" style="height:34px;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">ទំហំគែម (Glow): <span id="speakerGlowSizeVal">0px</span></label>
+                                            <input type="range" id="speakerGlowSizeInput" min="0" max="40" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">ស្រមោល (Drop Shadow): <span id="speakerShadowVal">15px</span></label>
+                                        <input type="range" id="speakerShadowInput" min="0" max="50" value="15">
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">ទំហំ (Scale): <span id="speakerScaleVal">100%</span></label>
+                                            <input type="range" id="speakerScaleInput" min="20" max="200" value="100">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">ទីតាំង X: <span id="speakerXVal">0px</span></label>
+                                            <input type="range" id="speakerXInput" min="-400" max="800" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">ទីតាំង Y: <span id="speakerYVal">0px</span></label>
+                                        <input type="range" id="speakerYInput" min="-400" max="400" value="0">
+                                    </div>
                                 </div>
                             </div>
-                            <div class="form-row" style="margin-top:6px;">
-                                <button class="btn btn-secondary btn-sm" id="cropToolBtn" style="flex:1;">✂️ Crop រូប Speaker</button>
-                                <button class="btn btn-secondary btn-sm" id="eraserToolBtn" style="flex:1;">🧹 ជក់លុប BG</button>
-                                <button class="btn btn-secondary btn-sm" id="lassoToolBtn" style="flex:1;">✂️ Lasso គូសលុប</button>
-                                <button class="btn btn-secondary btn-sm" id="pickColorKeyBtn" style="flex:1;">🎯 ចុចរើសពណ៌</button>
-                            </div>
-                            <!-- Speaker Crop Panel -->
-                            <div class="form-group" id="cropPanelGroup" style="display:none; margin-top:8px; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px;">
-                                <div class="form-label" style="font-weight:bold; color:#fbbf24; margin-bottom:6px;">✂️ កាត់តម្រឹមរូប (Speaker Crop):</div>
+                        </div>
+
+                        <!-- Background Image (Right Layer) -->
+                        <div class="accordion-item collapsed">
+                            <div class="accordion-header">🖼️ រូបភាព Background ទេសភាព (ខាងស្តាំ)</div>
+                            <div class="accordion-body">
+                                <div class="form-group">
+                                    <label class="form-label">Upload រូប Background:</label>
+                                    <input type="file" id="bgPhotoInput" accept="image/*" class="form-control">
+                                </div>
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label class="form-label">កាត់លើ (Top): <span id="cropTopVal">0%</span></label>
-                                        <input type="range" id="cropTopInput" min="0" max="50" value="0">
+                                        <label class="form-label">ទំហំ (Scale): <span id="bgScaleVal">100%</span></label>
+                                        <input type="range" id="bgScaleInput" min="10" max="500" value="100">
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">កាត់ក្រោម (Bottom): <span id="cropBottomVal">0%</span></label>
-                                        <input type="range" id="cropBottomInput" min="0" max="50" value="0">
+                                        <label class="form-label">ទីតាំង X: <span id="bgXVal">0px</span></label>
+                                        <input type="range" id="bgXInput" min="-500" max="500" value="0">
                                     </div>
                                 </div>
-                                <div class="form-row" style="margin-top:4px;">
+                                <div class="form-row">
                                     <div class="form-group">
-                                        <label class="form-label">កាត់ឆ្វេង (Left): <span id="cropLeftVal">0%</span></label>
-                                        <input type="range" id="cropLeftInput" min="0" max="50" value="0">
+                                        <label class="form-label">ទីតាំង Y: <span id="bgYVal">0px</span></label>
+                                        <input type="range" id="bgYInput" min="-500" max="500" value="0">
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">កាត់ស្តាំ (Right): <span id="cropRightVal">0%</span></label>
-                                        <input type="range" id="cropRightInput" min="0" max="50" value="0">
+                                        <label class="form-label">ទំហំ Blur: <span id="bgBlurVal">0px</span></label>
+                                        <input type="range" id="bgBlurInput" min="0" max="30" value="0">
                                     </div>
                                 </div>
-                                <button class="btn btn-secondary btn-sm" id="resetCropBtn" style="width:100%; margin-top:6px;">🔄 ស្តារ Crop ដើម</button>
-                            </div>
-                            <div class="form-group" id="eraserSizeGroup" style="display:none; margin-top:6px;">
-                                <label class="form-label">ទំហំជក់លុប (Brush Size): <span id="eraserSizeVal">30px</span></label>
-                                <input type="range" id="eraserSizeInput" min="5" max="100" value="30">
-                            </div>
-                            <div class="form-group" id="bgToleranceGroup" style="display:none; margin-top:6px;">
-                                <label class="form-label">កម្រិតលុប BG (Tolerance): <span id="bgToleranceVal">30</span></label>
-                                <input type="range" id="bgToleranceInput" min="5" max="80" value="30">
-                            </div>
-                            <div class="form-row" style="margin-top:6px;">
                                 <div class="form-group">
-                                    <label class="form-label">🖼️ ស៊ុមរាង (Frame Shape):</label>
-                                    <select id="speakerMaskShapeSelect" class="form-control">
-                                        <option value="none">រាងដើម (Full Rectangle)</option>
-                                        <option value="arch">🏛️ ស៊ុមរោង (Arch Portal Frame)</option>
-                                        <option value="circle">⭕ រង្វង់មូល (Circle / Oval)</option>
-                                        <option value="feather">☁️ គែមទន់ (Soft Gradient Feather Edge)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">📐 ទ្រង់ទ្រាយរូប (Aspect Ratio):</label>
-                                    <select id="speakerAspectSelect" class="form-control">
-                                        <option value="auto">🔒 រក្សាទ្រង់ទ្រាយដើម (Auto Natural)</option>
-                                        <option value="1:1">1:1 Square (រាងការ៉េ)</option>
-                                        <option value="3:4">3:4 Portrait (រាងឈរ)</option>
-                                        <option value="4:3">4:3 Landscape (រាងផ្តេក)</option>
-                                    </select>
+                                    <label class="form-label">ពន្លឺ (Brightness): <span id="bgBrightVal">100%</span></label>
+                                    <input type="range" id="bgBrightInput" min="20" max="150" value="100">
                                 </div>
                             </div>
-                            <div class="form-row" style="margin-top:8px;">
+                        </div>
+
+                        <!-- Khmer Text Typography -->
+                        <div class="accordion-item collapsed">
+                            <div class="accordion-header">✍️ អត្ថបទចំណងជើងខ្មែរ (Text)</div>
+                            <div class="accordion-body">
                                 <div class="form-group">
-                                    <label class="form-label">ពណ៌គែម Stroke Glow:</label>
-                                    <input type="color" id="speakerGlowColorInput" value="#FFFFFF" class="form-control" style="height:36px;">
+                                    <label class="form-label">ចំណងជើងធំ (Main Title):</label>
+                                    <input type="text" id="mainTitleInput" value="មនុស្សអត់ប្រយោជន៍" class="form-control">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Font Family:</label>
+                                        <select id="titleFontSelect" class="form-control">
+                                            <option value="Moul">Moul (ម៉ូល)</option>
+                                            <option value="Kantumruy Pro">Kantumruy Pro</option>
+                                            <option value="Battambang">Battambang</option>
+                                            <option value="Siemreap">Siemreap</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">ទំហំអក្សរ (Font Size):</label>
+                                        <input type="range" id="titleFontSizeInput" min="20" max="120" value="65">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">ពណ៌អក្សរ 1:</label>
+                                        <input type="color" id="titleColor1Input" value="#FFE600" class="form-control" style="height:38px;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">ពណ៌អក្សរ 2 (Gradient):</label>
+                                        <input type="color" id="titleColor2Input" value="#FF9900" class="form-control" style="height:38px;">
+                                    </div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">ទំហំគែម (Glow/Outline): <span id="speakerGlowSizeVal">0px</span></label>
-                                    <input type="range" id="speakerGlowSizeInput" min="0" max="40" value="0">
+                                    <label class="form-label">ចំណងជើងរង (Subtitle):</label>
+                                    <input type="text" id="subTitleInput" value="លោកគ្រូសាន ភិរម្យ ធម្មទានកាត់ខ្លី" class="form-control">
                                 </div>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">ស្រមោល (Drop Shadow): <span id="speakerShadowVal">15px</span></label>
-                                    <input type="range" id="speakerShadowInput" min="0" max="50" value="15">
+                        </div>
+
+                        <!-- Audio Waveform Visualizer -->
+                        <div class="accordion-item collapsed">
+                            <div class="accordion-header">📊 ចលនា Waveform Equalizer</div>
+                            <div class="accordion-body">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">ពណ៌ Waveform:</label>
+                                        <input type="color" id="waveColorInput" value="#FFFFFF" class="form-control" style="height:38px;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">កម្ពស់ Waveform:</label>
+                                        <input type="range" id="waveHeightInput" min="20" max="200" value="80">
+                                    </div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">កោងគែម (Border Radius):</label>
-                                    <input type="range" id="speakerRadiusInput" min="0" max="100" value="0">
+                                    <label class="form-label">ទីតាំង Y (កម្ពស់លើ Canvas):</label>
+                                    <input type="range" id="waveYInput" min="10" max="90" value="62">
                                 </div>
-                            </div>
-                            <div class="form-row" style="margin-top:6px;">
-                                <div class="form-group">
-                                    <label class="form-label">ទំហំ (Scale): <span id="speakerScaleVal">100%</span></label>
-                                    <input type="range" id="speakerScaleInput" min="20" max="200" value="100">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">ទីតាំង X: <span id="speakerXVal">0px</span></label>
-                                    <input type="range" id="speakerXInput" min="-400" max="800" value="0">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">ទីតាំង Y: <span id="speakerYVal">0px</span></label>
-                                <input type="range" id="speakerYInput" min="-400" max="400" value="0">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Background Image (Right Layer) -->
-                    <div class="accordion-item">
-                        <div class="accordion-header">🖼️ រូបភាព Background ទេសភាព (ខាងស្តាំ)</div>
-                        <div class="accordion-body">
-                            <div class="form-group">
-                                <label class="form-label">Upload រូប Background:</label>
-                                <input type="file" id="bgPhotoInput" accept="image/*" class="form-control">
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">ទំហំ (Scale): <span id="bgScaleVal">100%</span></label>
-                                    <input type="range" id="bgScaleInput" min="50" max="300" value="100">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">ទីតាំង X: <span id="bgXVal">0px</span></label>
-                                    <input type="range" id="bgXInput" min="-500" max="500" value="0">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">ទីតាំង Y: <span id="bgYVal">0px</span></label>
-                                    <input type="range" id="bgYInput" min="-500" max="500" value="0">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">ទំហំ Blur: <span id="bgBlurVal">0px</span></label>
-                                    <input type="range" id="bgBlurInput" min="0" max="30" value="0">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">ពន្លឺ (Brightness): <span id="bgBrightVal">100%</span></label>
-                                <input type="range" id="bgBrightInput" min="20" max="150" value="100">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Khmer Text Typography -->
-                    <div class="accordion-item">
-                        <div class="accordion-header">✍️ អត្ថបទចំណងជើងខ្មែរ (Text)</div>
-                        <div class="accordion-body">
-                            <div class="form-group">
-                                <label class="form-label">ចំណងជើងធំ (Main Title):</label>
-                                <input type="text" id="mainTitleInput" value="មនុស្សអត់ប្រយោជន៍" class="form-control">
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Font Family:</label>
-                                    <select id="titleFontSelect" class="form-control">
-                                        <option value="Moul">Moul (ម៉ូល)</option>
-                                        <option value="Kantumruy Pro">Kantumruy Pro</option>
-                                        <option value="Battambang">Battambang</option>
-                                        <option value="Siemreap">Siemreap</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">ទំហំអក្សរ (Font Size):</label>
-                                    <input type="range" id="titleFontSizeInput" min="20" max="120" value="65">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">ពណ៌អក្សរ 1:</label>
-                                    <input type="color" id="titleColor1Input" value="#FFE600" class="form-control" style="height:38px;">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">ពណ៌អក្សរ 2 (Gradient):</label>
-                                    <input type="color" id="titleColor2Input" value="#FF9900" class="form-control" style="height:38px;">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">ចំណងជើងរង (Subtitle):</label>
-                                <input type="text" id="subTitleInput" value="លោកគ្រូសាន ភិរម្យ ធម្មទានកាត់ខ្លី" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Audio Waveform Visualizer -->
-                    <div class="accordion-item">
-                        <div class="accordion-header">📊 ចលនា Waveform Equalizer</div>
-                        <div class="accordion-body">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">ពណ៌ Waveform:</label>
-                                    <input type="color" id="waveColorInput" value="#FFFFFF" class="form-control" style="height:38px;">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">កម្ពស់ Waveform:</label>
-                                    <input type="range" id="waveHeightInput" min="20" max="200" value="80">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">ទីតាំង Y (កម្ពស់លើ Canvas):</label>
-                                <input type="range" id="waveYInput" min="10" max="90" value="62">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Export Buttons -->
-                    <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
-                        <button class="btn btn-primary" id="exportPosterImgBtn" style="padding:12px;">📸 Export រូបភាព Poster (PNG)</button>
-                        <button class="btn btn-green" id="exportPosterVideoBtn" style="padding:12px;">🎥 Export Video ជាមួយចលនា Waveform</button>
+                    <!-- Pinned Export Footer -->
+                    <div class="sidebar-export-footer">
+                        <button class="btn btn-primary" id="exportPosterImgBtn" style="padding:10px;">📸 Export រូបភាព Poster (PNG)</button>
+                        <button class="btn btn-green" id="exportPosterVideoBtn" style="padding:10px;">🎥 Export Video ជាមួយចលនា Waveform</button>
                     </div>
                 </aside>
             </div>

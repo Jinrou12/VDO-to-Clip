@@ -35,6 +35,11 @@
             </div>
 
             <div class="header-actions">
+                <button id="openAiModalBtn" class="btn btn-ai-sparkle">
+                    <span class="ai-sparkle-icon">✨</span>
+                    <span>AI ណែនាំ Clip</span>
+                    <span class="ai-badge-live">Khmer AI</span>
+                </button>
                 <a href="poster_demo.html" target="_blank" class="btn btn-secondary" style="text-decoration:none; padding:8px 14px;">🎨 Poster Studio Demo</a>
                 <label for="videoUploadInput" class="btn btn-primary btn-upload">
                     <span>📁 ជ្រើសរើសវីដេអូ</span>
@@ -60,6 +65,21 @@
                     <h3 class="panel-title">📁 ឯកសារ</h3>
                     <div id="fileInfoBox" class="file-info-box empty">
                         <p class="placeholder-text">សូមជ្រើសរើសវីដេអូ...</p>
+                    </div>
+                </div>
+
+                <div class="panel-section ai-quick-section">
+                    <div class="ai-widget-card">
+                        <div class="ai-widget-header">
+                            <span class="ai-widget-icon">🤖</span>
+                            <div class="ai-widget-text">
+                                <h4>AI ស្កែន &amp; ណែនាំ Clip</h4>
+                                <p>ស្ដាប់សំឡេងខ្មែរ &amp; រក Clip ល្អៗ</p>
+                            </div>
+                        </div>
+                        <button id="aiQuickScanBtn" class="btn btn-ai-pulse btn-block btn-sm" disabled>
+                            ✨ វិភាគ AI ស្វ័យប្រវត្តិ
+                        </button>
                     </div>
                 </div>
 
@@ -453,6 +473,127 @@
     </div>
 
     <div id="toastNotification" class="toast-notification hidden"></div>
+
+    <!-- AI Smart Assistant Modal (Khmer AI Clip Recommender & Voice Listener) -->
+    <div id="aiAssistantModal" class="modal-overlay hidden">
+        <div class="modal-card ai-modal-card">
+            <div class="modal-header ai-modal-header">
+                <div class="ai-title-group">
+                    <span class="ai-header-icon">✨</span>
+                    <div>
+                        <h3>Khmer AI Smart Clipper</h3>
+                        <span class="ai-header-sub">ប្រព័ន្ធ AI ស្ដាប់សំឡេងខ្មែរ &amp; ណែនាំ Clip ល្អៗពី Video ពេញ</span>
+                    </div>
+                </div>
+                <button id="closeAiModalBtn" class="modal-close-btn">&times;</button>
+            </div>
+            
+            <div class="ai-modal-tabs">
+                <button class="ai-tab-btn active" data-aitab="aiRecommendTab">🤖 ណែនាំ Clip (AI Highlights)</button>
+                <button class="ai-tab-btn" data-aitab="aiVoiceTab">🎤 បញ្ជាសំឡេងខ្មែរ (Voice Command)</button>
+                <button class="ai-tab-btn" data-aitab="aiConfigTab">⚙️ កំណត់ Gemini API Key</button>
+            </div>
+
+            <div class="modal-body ai-modal-body">
+                <!-- TAB 1: AI Recommend -->
+                <div id="aiRecommendTab" class="ai-tab-content active">
+                    <div class="ai-control-banner">
+                        <div class="ai-banner-info">
+                            <h4>🎯 ស្កែន &amp; វិភាគសំឡេង full video រក Clip ដែលទាក់ទាញបំផុត</h4>
+                            <p>AI នឹងស្ដាប់សំឡេង វិភាគចំនុចក្តៅ (High Energy), ឈុតនិយាយសំខាន់, និងបង្កើតចំណងជើងខ្មែរទាក់ទាញ auto!</p>
+                        </div>
+                        <button id="startAiAnalysisBtn" class="btn btn-ai-sparkle btn-lg" disabled>
+                            🚀 ចាប់ផ្តើម AI វិភាគ (Scan Video)
+                        </button>
+                    </div>
+
+                    <!-- Scanning / Processing Visualizer -->
+                    <div id="aiScanProgressBox" class="ai-progress-box hidden">
+                        <div class="waveform-visualizer-container">
+                            <canvas id="aiWaveformCanvas" width="600" height="60"></canvas>
+                        </div>
+                        <div class="ai-progress-bar-container">
+                            <div id="aiScanProgressBar" class="ai-progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="ai-scan-status">
+                            <span id="aiScanStatusText">🤖 កំពុងស្ដាប់សំឡេង &amp; វិភាគ Peaks...</span>
+                            <span id="aiScanPercentText">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="aiResultsSection" class="ai-results-section">
+                        <div class="ai-results-header">
+                            <h4>🎬 Clips ដែរ AI ណែនាំ (<span id="aiResultsCount">0</span>)</h4>
+                            <button id="importAllAiClipsBtn" class="btn btn-success btn-sm hidden">
+                                ⚡ បញ្ចូល Clips ទាំងអស់ (<span id="importAllCount">0</span>)
+                            </button>
+                        </div>
+
+                        <div id="aiClipsGrid" class="ai-clips-grid">
+                            <div class="ai-empty-placeholder">
+                                <span class="placeholder-icon">🎙️</span>
+                                <p>សូមចុចប៊ូតុង <strong>"🚀 ចាប់ផ្តើម AI វិភាគ"</strong> ដើម្បីឲ្យ AI ស្ដាប់ និងស្វែងរក Clip ល្អៗ!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Voice Commands -->
+                <div id="aiVoiceTab" class="ai-tab-content">
+                    <div class="voice-assistant-card">
+                        <div class="mic-status-box">
+                            <button id="toggleVoiceMicBtn" class="btn btn-mic-toggle">
+                                <span class="mic-icon">🎙️</span>
+                                <span id="micBtnText">បើកស្ដាប់សំឡេងខ្មែរ</span>
+                            </button>
+                            <span id="voiceStatusBadge" class="voice-badge offline">បិទ</span>
+                        </div>
+
+                        <div class="khmer-speech-box">
+                            <label>អក្សរដែល AI ស្ដាប់បាន (Live Transcription):</label>
+                            <div id="liveSpeechTranscript" class="speech-output-area">
+                                <em>ចុចប៊ូតុងខាងលើ រួចនិយាយភាសាខ្មែរ...</em>
+                            </div>
+                        </div>
+
+                        <div class="voice-commands-guide">
+                            <h5>💡 ពាក្យបញ្ជាសំឡេងខ្មែរដែលគាំទ្រ (Khmer Voice Commands):</h5>
+                            <div class="command-grid">
+                                <div class="cmd-item"><code>"កាត់ដើម"</code> ឬ <code>"Set In"</code> ➔ កំណត់ Set In</div>
+                                <div class="cmd-item"><code>"កាត់ចុង"</code> ឬ <code>"Set Out"</code> ➔ កំណត់ Set Out</div>
+                                <div class="cmd-item"><code>"បន្ថែម clip"</code> ➔ រក្សាទុក Clip</div>
+                                <div class="cmd-item"><code>"វិភាគ video"</code> ➔ បើក AI វិភាគ</div>
+                                <div class="cmd-item"><code>"ទៅកែអក្សរ"</code> ➔ ទៅកាន់ Studio Screen 2</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: AI Configuration / Gemini Key -->
+                <div id="aiConfigTab" class="ai-tab-content">
+                    <div class="config-card">
+                        <h4>🔑 Google Gemini API Key (ជម្រើស advanced)</h4>
+                        <p class="help-text">អ្នកអាចដាក់ Gemini API Key ផ្ទាល់ខ្លួនដើម្បីអោយ AI វិភាគ context និង transcript សំឡេងខ្មែរកាន់តែសុក្រឹត និងវៃឆ្លាត!</p>
+                        
+                        <div class="form-group" style="margin-top: 14px;">
+                            <label for="geminiApiKeyInput">Gemini API Key:</label>
+                            <div class="input-with-btn">
+                                <input type="password" id="geminiApiKeyInput" class="form-control" placeholder="AIzaSy...">
+                                <button id="saveGeminiKeyBtn" class="btn btn-primary btn-sm">💾 រក្សាទុក</button>
+                            </div>
+                        </div>
+                        <div id="geminiKeyStatus" class="key-status-msg"></div>
+
+                        <div class="engine-info-box" style="margin-top: 20px;">
+                            <h5>ℹ️ របៀបដំណើរការ default (ដោយមិនបាច់ប្រើ API Key):</h5>
+                            <p>ប្រសិនបើមិនមាន API Key ប្រព័ន្ធនឹងប្រើ <strong>Local Khmer Audio Waveform &amp; Speech Heuristic Engine</strong> ដើម្បីស្កែនរក dynamic loud speech, vocal energy peaks, និង speech breaks នៅក្នុងវីដេអូ ដើម្បីបង្កើត clips ដោយឥតគិតថ្លៃ!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="app.js?v=44.0"></script>
