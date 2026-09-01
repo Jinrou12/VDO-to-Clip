@@ -383,17 +383,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const apiKey = apiKeyInput ? apiKeyInput.value.trim() : (localStorage.getItem('vdo_gemini_api_key') || '');
 
         if (apiKey) {
-            if (statusText) statusText.textContent = '🧠 កំពុងផ្ញើទៅ Google Gemini 2.0 Flash API (100% Real AI)...';
+            if (statusText) statusText.textContent = '🧠 កំពុងផ្ញើទៅ Google Gemini API (100% Real AI)...';
             try {
                 const realClips = await callGeminiApiForClips(apiKey, state.duration, state.videoFile ? state.videoFile.name : '');
                 if (realClips && realClips.length > 0) {
                     aiState.recommendedClips = realClips;
-                    showToastNotification(`🟢 Gemini 2.0 Flash (Real AI): បានវិភាគសាច់ធម៌ និងណែនាំ ${realClips.length} Clips!`);
+                    showToastNotification(`🟢 Gemini AI: បានវិភាគ និងណែនាំ ${realClips.length} Clips តាម Real AI!`);
                 } else {
                     aiState.recommendedClips = generateKhmerAiClips(state.duration, state.videoFile ? state.videoFile.name : '');
                 }
             } catch (err) {
-                console.warn('Gemini API call failed, using fallback clips generator:', err);
+                console.warn('Gemini API call failed:', err);
+                showToastNotification(`⚠️ Gemini API Key មិនដើរ (${err.message}) — សូមយក Key (AIzaSy...) ពី aistudio.google.com!`);
                 aiState.recommendedClips = generateKhmerAiClips(state.duration, state.videoFile ? state.videoFile.name : '');
             }
         } else {
