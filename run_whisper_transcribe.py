@@ -9,8 +9,21 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     except Exception:
         pass
 
+import os
+
 # ១. ដាក់ឈ្មោះ File វីដេអូ ឬ សំឡេងរបស់អ្នកនៅទីនេះ
 AUDIO_OR_VIDEO_FILE = "dharma_talk.mp4"
+
+# Check if target file exists, or find any mp4/wav file in directory
+if not os.path.exists(AUDIO_OR_VIDEO_FILE):
+    media_files = [f for f in os.listdir('.') if f.lower().endswith(('.mp4', '.mp3', '.wav', '.m4a', '.mkv', '.webm'))]
+    if media_files:
+        AUDIO_OR_VIDEO_FILE = media_files[0]
+        print(f"ℹ️ រកឃើញ File: '{AUDIO_OR_VIDEO_FILE}' សម្រាប់ប្រើប្រាស់!")
+    else:
+        print(f"❌ Error: រកមិនឃើញ File '{AUDIO_OR_VIDEO_FILE}' ក្នុង Folder នេះទេ។")
+        print("👉 សូម Copy File វីដេអូ ឬ សំឡេង ដាក់ចូលក្នុង Folder នេះ រួចប្តូរឈ្មោះជា 'dharma_talk.mp4'!")
+        sys.exit(1)
 
 print("កំពុងស្តាប់ និងបំប្លែងសំឡេងជាអត្ថបទ (Transcribing)...")
 # ប្រើ large-v3 ដើម្បីចាប់ភាសាខ្មែរបានច្បាស់ល្អ
