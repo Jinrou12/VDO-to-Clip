@@ -392,17 +392,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const durationSelect = document.getElementById('aiDurationModeSelect');
         const categorySelect = document.getElementById('aiCategorySelect');
         const skipIntroCheck = document.getElementById('aiSkipIntroChantCheck');
+        const skipDurationSelect = document.getElementById('aiIntroSkipDurationSelect');
         const customTopicInput = document.getElementById('aiCustomTopicInput');
 
         const isLongMode = durationSelect ? durationSelect.value === 'long' : true;
-        const category = categorySelect ? categorySelect.value : 'auto';
+        const category = categorySelect ? categorySelect.value : 'phka_samaki';
         const shouldSkipIntro = skipIntroCheck ? skipIntroCheck.checked : true;
+        const userSkipSecs = skipDurationSelect ? parseInt(skipDurationSelect.value, 10) : 300;
         const customTopicText = customTopicInput ? customTopicInput.value.trim() : '';
 
-        // Calculate intro skip offset to skip opening chants (Namo Tassa...)
+        // Calculate intro skip offset (Default: 5 minutes = 300 seconds to skip Namo Tassa & opening chants)
         let startOffset = 0;
-        if (shouldSkipIntro && videoDuration > 180) {
-            startOffset = Math.min(180, Math.max(90, Math.round(videoDuration * 0.08)));
+        if (shouldSkipIntro && videoDuration > 120) {
+            startOffset = Math.min(Math.max(0, videoDuration - 120), userSkipSecs);
         }
 
         const effectiveDuration = Math.max(60, videoDuration - startOffset);
@@ -465,14 +467,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        let activeTemplates = [];
+        let activeTemplate = dhammaTopicPresets.phka_samaki;
 
         if (category === 'custom' && customTopicText) {
             const words = customTopicText.split(' ');
             const mid = Math.ceil(words.length / 2);
             const part1 = words.slice(0, mid).join(' ') || customTopicText;
             const part2 = words.slice(mid).join(' ') || 'មហាកុសល';
-            activeTemplates = [{
+            activeTemplate = {
                 type: '🪷 ធម្មទេសនា',
                 viralScore: '99% ធម៌អប់រំ',
                 title: customTopicText,
@@ -480,31 +482,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 bot1: 'អានិសង្សបុណ្យ', bot2: part2 || 'មហាកុសល',
                 tags: ['#ធម្មទេសនា', '#' + customTopicText.replace(/\s+/g, '')],
                 transcript: `“ ធម្មទេសនាស្ដីអំពី ${customTopicText} ផ្ដល់ជាពុទ្ធោវាទ និងសារអប់រំដ៏មានតម្លៃ... ”`
-            }];
+            };
         } else if (category !== 'auto' && dhammaTopicPresets[category]) {
-            activeTemplates = [dhammaTopicPresets[category]];
+            activeTemplate = dhammaTopicPresets[category];
         } else {
             const lowerFile = (fileName || '').toLowerCase();
-            if (lowerFile.includes('ផ្កា') || lowerFile.includes('សាមគ្គី')) {
-                activeTemplates = [dhammaTopicPresets.phka_samaki, dhammaTopicPresets.education];
-            } else if (lowerFile.includes('ទក្ខិណា') || lowerFile.includes('បុណ្យ')) {
-                activeTemplates = [dhammaTopicPresets.dakkhina, dhammaTopicPresets.education];
+            if (lowerFile.includes('ទក្ខិណា') || lowerFile.includes('អង្គ៣')) {
+                activeTemplate = dhammaTopicPresets.dakkhina;
             } else if (lowerFile.includes('ស្លាប់') || lowerFile.includes('មរណ')) {
-                activeTemplates = [dhammaTopicPresets.death, dhammaTopicPresets.education];
+                activeTemplate = dhammaTopicPresets.death;
             } else {
-                activeTemplates = Object.values(dhammaTopicPresets);
+                activeTemplate = dhammaTopicPresets.phka_samaki;
             }
         }
 
-        let count = 4;
+        let count = 5;
         if (effectiveDuration < 300) count = 2;
-        else if (effectiveDuration >= 1200) count = 5;
+        else if (effectiveDuration >= 1800) count = 6;
 
-        let targetClipLen = isLongMode ? 180 : 45;
+        let targetClipLen = isLongMode ? 180 : 45; // default 3 mins (180s)
         if (isLongMode) {
             targetClipLen = Math.max(120, Math.min(300, Math.round(effectiveDuration / count)));
-            if (videoDuration < 240) {
-                targetClipLen = Math.max(90, Math.round(effectiveDuration / 2));
+            if (videoDuration < 300) {
+                targetClipLen = Math.max(90, Math.round(effectiveDuration / Math.max(1, count)));
             }
         } else {
             targetClipLen = Math.min(60, Math.max(30, Math.round(effectiveDuration * 0.15)));
@@ -514,7 +514,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const clips = [];
 
         for (let i = 0; i < count; i++) {
-            const tmpl = activeTemplates[i % activeTemplates.length];
             let startTime = Math.max(startOffset, Math.round(startOffset + (i * stepInterval)));
             let endTime = Math.min(videoDuration, startTime + targetClipLen);
 
@@ -522,18 +521,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             clips.push({
                 id: 'ai_' + Date.now() + '_' + i,
-                type: tmpl.type,
-                viralScore: tmpl.viralScore,
-                title: (activeTemplates.length === 1) ? `${tmpl.title} (ភាគ ${i + 1})` : tmpl.title,
+                type: activeTemplate.type,
+                viralScore: activeTemplate.viralScore,
+                title: `${activeTemplate.title} (ភាគ ${i + 1})`,
                 startTime,
                 endTime,
                 duration: endTime - startTime,
-                top1: tmpl.top1,
-                top2: tmpl.top2,
-                bot1: tmpl.bot1,
-                bot2: tmpl.bot2,
-                tags: tmpl.tags,
-                transcript: tmpl.transcript
+                top1: activeTemplate.top1,
+                top2: activeTemplate.top2,
+                bot1: activeTemplate.bot1,
+                bot2: activeTemplate.bot2,
+                tags: activeTemplate.tags,
+                transcript: activeTemplate.transcript
             });
         }
         return clips;
