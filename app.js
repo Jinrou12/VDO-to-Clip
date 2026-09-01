@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Khmer Video Clipper Pro - Core Engine (v8.0 SPA Architecture)
  * Complete 2-Screen Separation: Screen 1 (Trimmer) vs Screen 2 (Studio Editor)
  */
@@ -395,13 +395,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const skipDurationSelect = document.getElementById('aiIntroSkipDurationSelect');
         const customTopicInput = document.getElementById('aiCustomTopicInput');
 
-        const isLongMode = durationSelect ? durationSelect.value === 'long' : true;
-        const category = categorySelect ? categorySelect.value : 'phka_samaki';
+        const category = categorySelect ? categorySelect.value : 'auto';
         const shouldSkipIntro = skipIntroCheck ? skipIntroCheck.checked : true;
         const userSkipSecs = skipDurationSelect ? parseInt(skipDurationSelect.value, 10) : 300;
         const customTopicText = customTopicInput ? customTopicInput.value.trim() : '';
 
-        // Calculate intro skip offset (Default: 5 minutes = 300 seconds to skip Namo Tassa & opening chants)
+        // Calculate intro skip offset
         let startOffset = 0;
         if (shouldSkipIntro && videoDuration > 120) {
             startOffset = Math.min(Math.max(0, videoDuration - 120), userSkipSecs);
@@ -409,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const effectiveDuration = Math.max(60, videoDuration - startOffset);
 
-        // Defined Dhamma sermon topic templates
+        // ---- All Dhamma sermon topic templates (pool for auto rotation) ----
         const dhammaTopicPresets = {
             phka_samaki: {
                 type: '🌸 ធម្មទេសនា',
@@ -418,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 top1: 'បុណ្យផ្កាប្រាក់', top2: 'សាមគ្គីបង្កើតកុសល',
                 bot1: 'អានិសង្សបុណ្យ', bot2: 'ផ្កាប្រាក់សាមគ្គី',
                 tags: ['#បុណ្យផ្កាប្រាក់', '#សាមគ្គីធម៌', '#អានិសង្សបុណ្យ'],
-                transcript: '“ ការរួមសាមគ្គីគ្នាសាងបុណ្យផ្កាប្រាក់ បង្កើតនូវកុសលផលបុណ្យដ៏ធំធេងសម្រាប់ព្រះពុទ្ធសាសនា... ”'
+                transcript: '" ការរួមសាមគ្គីគ្នាសាងបុណ្យផ្កាប្រាក់ បង្កើតនូវកុសលផលបុណ្យដ៏ធំធេង... "'
             },
             dakkhina: {
                 type: '🪷 ធម្មទេសនា',
@@ -427,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 top1: 'អង្គ៣នៃបុណ្យ', top2: 'ទក្ខិណានុប្បទាន',
                 bot1: 'ទាយក បដិគ្គាហក', bot2: 'និងទក្ខិណា',
                 tags: ['#បុណ្យទក្ខិណានុប្បទាន', '#ធ្វើបុណ្យ', '#អានិសង្ស'],
-                transcript: '“ អង្គ ៣ ដែលធ្វើឲ្យទក្ខិណានុប្បទានមានផលធំ គឺ ទាយកមានសទ្ធា បដិគ្គាហកមានសីល និងទក្ខិណាជាធម៌បរិសុទ្ធ... ”'
+                transcript: '" អង្គ ៣ ដែលធ្វើឲ្យទក្ខិណានុប្បទានមានផលធំ គឺ ទាយក បដិគ្គាហក និងទក្ខិណា... "'
             },
             death: {
                 type: '💀 ធម្មទេសនា',
@@ -436,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 top1: 'សេចក្ដីស្លាប់', top2: 'និងការត្រៀមខ្លួន',
                 bot1: 'ការពិចារណា', bot2: 'មរណស្សតិ',
                 tags: ['#ធម្មទេសនា', '#សេចក្តីស្លាប់', '#មរណស្សតិ'],
-                transcript: '“ ការពិចារណាអំពីសេចក្តីស្លាប់ មរណស្សតិ និងការសាងបុណ្យកុសលទុកជាដើមទុនសម្រាប់ជីវិត... ”'
+                transcript: '" ការពិចារណាអំពីសេចក្តីស្លាប់ — មរណស្សតិ — ផ្ដល់ញាណដ៏ស៊ីជម្រៅ... "'
             },
             birth4: {
                 type: '👶 ធម្មទេសនា',
@@ -445,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 top1: 'កំណើតសត្វ', top2: 'មាន៤ប្រភេទ',
                 bot1: 'អណ្ដជៈ ជលាពុជៈ', bot2: 'សំសេទជៈ ឱបបាតិកៈ',
                 tags: ['#ធម្មទេសនា', '#កំណើតសត្វ៤', '#ព្រះពុទ្ធសាសនា'],
-                transcript: '“ សត្វទាំងឡាយកើតក្នុងលោកមាន ៤ កំណើត គឺ កើតក្នុងពង កើតក្នុងស្បូន កើតក្នុងក្អែល និងកើតឡើងអូតូ... ”'
+                transcript: '" សត្វទាំងឡាយកើតក្នុងលោកមាន ៤ កំណើត — ពង — ស្បូន — ក្អែល — ឱបបាតិកៈ... "'
             },
             pchum_kathin: {
                 type: '🪷 ធម្មទេសនា',
@@ -454,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 top1: 'បុណ្យភ្ជុំបិណ្ឌ', top2: 'និងកឋិនមហាកុសល',
                 bot1: 'ការសាងកុសល', bot2: 'ក្នុងព្រះពុទ្ធសាសនា',
                 tags: ['#ភ្ជុំបិណ្ឌ', '#កឋិនទាន', '#មហាកុសល'],
-                transcript: '“ ពិធីបុណ្យប្រពៃណីភ្ជុំបិណ្ឌ និងកឋិនទាន គឺជាកាលទានដ៏មានផលានិសង្សខ្ពង់ខ្ពស់... ”'
+                transcript: '" ពិធីបុណ្យភ្ជុំបិណ្ឌ និងកឋិនទាន មានអានិសង្សខ្ពង់ខ្ពស់ដល់ព្រលឹងបុព្វការី... "'
             },
             education: {
                 type: '💡 ធម៌អប់រំ',
@@ -463,43 +462,114 @@ document.addEventListener('DOMContentLoaded', () => {
                 top1: 'ធម៌អប់រំចិត្ត', top2: 'នាំមកនូវសេចក្តីសុខ',
                 bot1: 'ការរស់នៅ', bot2: 'ដោយបញ្ញា',
                 tags: ['#ធម៌អប់រំចិត្ត', '#សេចក្តីសុខ', '#ជីវិត'],
-                transcript: '“ ធម៌អប់រំចិត្ត នាំឲ្យកើតសន្តិភាពក្នុងចិត្ត និងការរស់នៅដោយប្រាសចាកទុក្ខ... ”'
+                transcript: '" ធម៌អប់រំចិត្ត នាំឲ្យកើតសន្តិភាព និងការរស់នៅប្រាសចាកទុក្ខ... "'
             }
         };
 
-        let activeTemplate = dhammaTopicPresets.phka_samaki;
+        // Auto-rotation pool — varied clips across the full video timeline
+        // Each position in the video uses a different sub-topic so titles are never identical
+        const autoRotationPool = [
+            // Position-based varied templates (cycle through meaningful Dhamma sub-topics)
+            {
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '99% ធម៌អប់រំ',
+                titleBase: 'ចំណុចដំបូង',
+                top1: 'ចំណុចដំបូង', top2: 'សាច់ធម៌ស្នូល',
+                bot1: 'ទេសនា', bot2: 'ប្រធានបទ',
+                tags: ['#ធម្មទេសនា', '#សាច់ធម៌', '#ជ្រួតជ្រាប'],
+                transcript: '" ចំណុចស្នូលនៃការទេសនា — ទ្រឹស្ដីព្រះធម៌ដ៏ជ្រៅជ្រះ... "'
+            },
+            {
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '98% ធម៌អប់រំ',
+                titleBase: 'ចំណុចទី២',
+                top1: 'ការពន្យល់', top2: 'ក្នុងព្រះធម៌',
+                bot1: 'អំណះអំណាង', bot2: 'ព្រះបាលី',
+                tags: ['#ព្រះបាលី', '#ធម្មទេសនា', '#ចំណុចសំខាន់'],
+                transcript: '" ការពន្យល់ព្រះបាលី — ន័យព្រះធម៌ — ដ៏មានតម្លៃ... "'
+            },
+            {
+                type: '💡 ធម្មទេសនា',
+                viralScore: '97% ធម៌អប់រំ',
+                titleBase: 'ចំណុចទី៣',
+                top1: 'ឧទាហរណ៍', top2: 'ក្នុងព្រះធម៌',
+                bot1: 'ជីវិតប្រចាំថ្ងៃ', bot2: 'ជំនឿ',
+                tags: ['#ឧទាហរណ៍ធម៌', '#ជំនឿ', '#ព្រះពុទ្ធ'],
+                transcript: '" ឧទាហរណ៍ក្នុងព្រះបាលី — ន័យអប់រំដ៏ជ្រៅ... "'
+            },
+            {
+                type: '🔥 ចំណុចក្ដៅ',
+                viralScore: '99% ទាក់ទាញ',
+                titleBase: 'ចំណុចក្ដៅ',
+                top1: 'ចំណុចក្ដៅ', top2: 'ដ៏ទាក់ចិត្ត',
+                bot1: 'ន័យជ្រៅ', bot2: 'អំណះអំណាង',
+                tags: ['#ចំណុចក្ដៅ', '#ទាក់ចិត្ត', '#ធម្មទេសនា'],
+                transcript: '" ចំណុចក្ដៅ — ការទេសនាដ៏ជ្រាលជ្រៅ ទាក់ចិត្ត... "'
+            },
+            {
+                type: '🌟 ចំណុចបញ្ចប់',
+                viralScore: '98% ចំណុចបង្ហើប',
+                titleBase: 'ចំណុចបញ្ចប់',
+                top1: 'ចំណុចបញ្ចប់', top2: 'និងអានិសង្ស',
+                bot1: 'សំណើចំពោះ', bot2: 'អ្នកស្ដាប់',
+                tags: ['#ចំណុចបញ្ចប់', '#អានិសង្ស', '#ព្រះធម៌'],
+                transcript: '" ការបិទបញ្ចប់ — អានិសង្ស — ការអំពាវនាវ... "'
+            },
+            {
+                type: '🪷 ធម្មទេសនា',
+                viralScore: '96% ធម៌អប់រំ',
+                titleBase: 'ចំណុចបន្ថែម',
+                top1: 'ការបន្ថែម', top2: 'ព្រះបាលី',
+                bot1: 'ន័យ', bot2: 'ជ្រៅជ្រះ',
+                tags: ['#ព្រះបាលី', '#ជ្រៅជ្រះ', '#ធម៌'],
+                transcript: '" ការពន្យល់បន្ថែម — ន័យព្រះបាលីដ៏ស៊ីជម្រៅ... "'
+            }
+        ];
+
+        // ---- Determine which template(s) to use ----
+        let fixedTemplate = null; // null = use auto-rotation
 
         if (category === 'custom' && customTopicText) {
             const words = customTopicText.split(' ');
             const mid = Math.ceil(words.length / 2);
-            const part1 = words.slice(0, mid).join(' ') || customTopicText;
-            const part2 = words.slice(mid).join(' ') || 'មហាកុសល';
-            activeTemplate = {
+            fixedTemplate = {
                 type: '🪷 ធម្មទេសនា',
                 viralScore: '99% ធម៌អប់រំ',
                 title: customTopicText,
-                top1: part1, top2: part2,
-                bot1: 'អានិសង្សបុណ្យ', bot2: part2 || 'មហាកុសល',
+                top1: words.slice(0, mid).join(' ') || customTopicText,
+                top2: words.slice(mid).join(' ') || 'មហាកុសល',
+                bot1: 'អានិសង្សបុណ្យ', bot2: words.slice(mid).join(' ') || 'មហាកុសល',
                 tags: ['#ធម្មទេសនា', '#' + customTopicText.replace(/\s+/g, '')],
-                transcript: `“ ធម្មទេសនាស្ដីអំពី ${customTopicText} ផ្ដល់ជាពុទ្ធោវាទ និងសារអប់រំដ៏មានតម្លៃ... ”`
+                transcript: `" ធម្មទេសនាស្ដីអំពី ${customTopicText}... "`
             };
         } else if (category !== 'auto' && dhammaTopicPresets[category]) {
-            activeTemplate = dhammaTopicPresets[category];
-        } else {
+            fixedTemplate = dhammaTopicPresets[category];
+        }
+        // category === 'auto' => fixedTemplate stays null, use per-clip rotation
+
+        // ---- Figure out auto-topic base from filename for better titles ----
+        let autoBaseTitle = 'ទេសនា';
+        let autoBaseTemplate = null;
+        if (category === 'auto') {
             const lowerFile = (fileName || '').toLowerCase();
-            if (lowerFile.includes('ទក្ខិណា') || lowerFile.includes('អង្គ៣')) {
-                activeTemplate = dhammaTopicPresets.dakkhina;
+            if (lowerFile.includes('ទក្ខិណា') || lowerFile.includes('អង្គ')) {
+                autoBaseTemplate = dhammaTopicPresets.dakkhina;
+                autoBaseTitle = 'អង្គ ៣ នៃបុណ្យទក្ខិណានុប្បទាន';
             } else if (lowerFile.includes('ស្លាប់') || lowerFile.includes('មរណ')) {
-                activeTemplate = dhammaTopicPresets.death;
-            } else {
-                activeTemplate = dhammaTopicPresets.phka_samaki;
+                autoBaseTemplate = dhammaTopicPresets.death;
+                autoBaseTitle = 'សេចក្ដីស្លាប់';
+            } else if (lowerFile.includes('ភ្ជុំ') || lowerFile.includes('កឋិន')) {
+                autoBaseTemplate = dhammaTopicPresets.pchum_kathin;
+                autoBaseTitle = 'បុណ្យភ្ជុំបិណ្ឌ';
+            } else if (lowerFile.includes('កំណើត') || lowerFile.includes('សត្វ')) {
+                autoBaseTemplate = dhammaTopicPresets.birth4;
+                autoBaseTitle = 'កំណើតសត្វ';
             }
+            // For unrecognized filenames, rotation titles will just be generic positional labels
         }
 
         const durationVal = durationSelect ? durationSelect.value : 'dynamic';
         const isShortMode = (durationVal === 'short');
-
-        // Dynamic clip length pattern (2mn = 120s, 2.5mn = 150s, 3.5mn = 210s, 3mn = 180s, 4mn = 240s...)
         const dynamicLengths = [150, 210, 120, 240, 180, 270];
 
         let count = 5;
@@ -516,37 +586,66 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (!isNaN(parseInt(durationVal, 10))) {
                 clipLen = parseInt(durationVal, 10);
             } else {
-                // Dynamic sermon flow (varies naturally per clip: 2.5mn, 3.5mn, 2mn, 4mn, 3mn...)
                 clipLen = dynamicLengths[i % dynamicLengths.length];
             }
 
             let startTime = Math.round(currentPos);
             let endTime = Math.min(videoDuration, startTime + clipLen);
-
             if (endTime <= startTime || startTime >= videoDuration) break;
+
+            // ---- Pick template for this clip ----
+            let tpl;
+            if (fixedTemplate) {
+                // User chose a specific category — keep same topic but vary subtitles by clip number
+                const subTitles = [
+                    { top1: fixedTemplate.top1, top2: fixedTemplate.top2, bot1: fixedTemplate.bot1, bot2: fixedTemplate.bot2 },
+                    { top1: 'ចំណុចទី១', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'ការពន្យល់ I' },
+                    { top1: 'ចំណុចទី២', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'ការពន្យល់ II' },
+                    { top1: 'ចំណុចទី៣', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'អានិសង្ស' },
+                    { top1: 'ចំណុចទី៤', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'ការបញ្ចប់' },
+                    { top1: 'ចំណុចទី៥', top2: fixedTemplate.title, bot1: fixedTemplate.bot1, bot2: 'ការបំភ្លឺ' },
+                ];
+                const sub = subTitles[i] || subTitles[0];
+                tpl = { ...fixedTemplate, ...sub, title: `${fixedTemplate.title} (ភាគ ${i + 1})` };
+            } else {
+                // AUTO mode — rotate through pool for genuinely varied clips
+                const poolItem = autoRotationPool[i % autoRotationPool.length];
+                // If we have a base template from filename, blend titles
+                const baseTitle = autoBaseTitle !== 'ទេសនា'
+                    ? `${autoBaseTitle} — ${poolItem.titleBase}`
+                    : `ចំណែកទី ${i + 1}`;
+                const blendedTop1 = autoBaseTemplate ? autoBaseTemplate.top1 : poolItem.top1;
+                const blendedTop2 = poolItem.top2;
+                const blendedBot1 = autoBaseTemplate ? autoBaseTemplate.bot1 : poolItem.bot1;
+                const blendedBot2 = poolItem.bot2;
+                tpl = {
+                    ...poolItem,
+                    title: baseTitle,
+                    top1: blendedTop1, top2: blendedTop2,
+                    bot1: blendedBot1, bot2: blendedBot2
+                };
+            }
 
             clips.push({
                 id: 'ai_' + Date.now() + '_' + i,
-                type: activeTemplate.type,
-                viralScore: activeTemplate.viralScore,
-                title: `${activeTemplate.title} (ភាគ ${i + 1})`,
+                type: tpl.type,
+                viralScore: tpl.viralScore,
+                title: tpl.title,
                 startTime,
                 endTime,
                 duration: endTime - startTime,
-                top1: activeTemplate.top1,
-                top2: activeTemplate.top2,
-                bot1: activeTemplate.bot1,
-                bot2: activeTemplate.bot2,
-                tags: activeTemplate.tags,
-                transcript: activeTemplate.transcript
+                top1: tpl.top1,
+                top2: tpl.top2,
+                bot1: tpl.bot1,
+                bot2: tpl.bot2,
+                tags: tpl.tags,
+                transcript: tpl.transcript
             });
 
-            // Advance timeline position for next clip with natural spacing
             currentPos = endTime + Math.min(30, Math.round((videoDuration - endTime) / (count - i)));
         }
         return clips;
     }
-
     function renderAiResultsGrid() {
         const clipsGrid = document.getElementById('aiClipsGrid');
         const countSpan = document.getElementById('aiResultsCount');
