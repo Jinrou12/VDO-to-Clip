@@ -131,27 +131,40 @@ def analyze_highlights_with_gemini(transcript_segments: List[Dict[str, Any]], ap
     ])
 
     prompt = f"""
-You are an expert Khmer Video Clipper and Content Editor specializing in Dhamma sermons and educational talks.
-Analyze the following timestamped Khmer transcript and find the BEST video clips.
+You are an expert short-form video editor and viral content strategist specializing in extracting engaging clips from long-form educational, lecture, and sermon transcripts.
 
-Requirements:
-1. Each clip duration should be at least {min_duration} seconds (2 minutes to 4.5 minutes).
-2. Skip opening intro chants (e.g. Namo Tassa / Anotassa) if present.
-3. Make sure clip boundaries (start_time & end_time) end at natural speech breaks.
-4. Provide engaging Khmer titles and 2-part colored overlay captions (top_1, top_2, bot_1, bot_2).
-5. Output strict JSON array format with no markdown formatting.
+Your task:
+Analyze the provided transcript segments (which include precise start/end timestamps and text) to identify the highest-retention, most impactful highlight clips suitable for 9:16 vertical short videos.
 
-Format output as JSON array:
+Strict Operational Guidelines:
+
+1. Clip Architecture & Flow:
+   - Strong Hook (First 3-5 seconds): Must begin immediately with a compelling question, provocative statement, relatable pain point, or intriguing metaphor. Never start with greetings, small talk, throat-clearing, or introductory filler.
+   - Core Value (Body): Must deliver clear substance, practical wisdom, or an explanatory insight that stands on its own.
+   - Complete Thought / Resolution: The clip must end at the natural conclusion of a sentence or thematic point. Never cut off a speaker mid-sentence or leave an argument incomplete.
+
+2. Duration Constraints:
+   - Dynamic duration matching topic: at least {min_duration} seconds (2 minutes to 4.5 minutes for long Mode, or 30-60 seconds for Shorts mode).
+
+3. Timestamp & Grounding Integrity:
+   - "start_time" and "end_time" timestamps must strictly correspond to real segment boundaries from the input transcript.
+   - Do not hallucinate timestamps outside the transcript's range.
+   - "title", "top_1", "top_2", "bot_1", "bot_2" must directly reflect spoken Khmer dialogue from the transcript, not fabricated statements.
+
+4. Output Requirements:
+   - Return a valid JSON array with no Markdown backticks or commentary outside the JSON.
+
+Output JSON Format Schema:
 [
   {{
     "start_time": float,
     "end_time": float,
     "duration": float,
-    "title": "Khmer Clip Title",
-    "top_1": "Khmer Top Text 1",
-    "top_2": "Khmer Top Text 2",
-    "bot_1": "Khmer Bottom Text 1",
-    "bot_2": "Khmer Bottom Text 2",
+    "title": "Engaging Khmer Title",
+    "top_1": "Khmer Top Word Part 1",
+    "top_2": "Khmer Top Word Part 2",
+    "bot_1": "Khmer Bottom Word Part 1",
+    "bot_2": "Khmer Bottom Word Part 2",
     "viral_score": "99%"
   }}
 ]
