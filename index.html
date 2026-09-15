@@ -3,190 +3,413 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khmer Video Clipper Pro</title>
+    <title>Khmer Video Clipper Pro - កាត់វីដេអូ &amp; ដាក់អក្សរខ្មែរ</title>
+    
+    <!-- Google Fonts for High-Grade Khmer Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700;900&family=Kantumruy+Pro:ital,wght@0,400..700;1,400..700&family=Moul&family=Preahvihear&family=Siemreap&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=16.0">
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700;900&family=Kantumruy+Pro:ital,wght@0,400..700;1,400..700&family=Moul&family=Preahvihear&family=Siemreap&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Modern Creative Studio CSS -->
+    <link rel="stylesheet" href="styles.css?v=35.0">
+    
+    <!-- Puter.js AI SDK (Free Unlimited Gemini AI, Voice TTS & STT) -->
+    <script src="https://js.puter.com/v2/"></script>
 </head>
-<body class="dark-theme">
+<body class="dark-theme screen-1-mode">
     <div class="app-container">
 
-        <header class="app-header">
+        <!-- ==========================================================================
+             1. APP HEADER: Logo, Workflow Stepper, History & Actions
+             ========================================================================== -->
+        <header id="appHeader" class="app-header">
+            <!-- Brand -->
             <div class="brand">
                 <div class="logo-icon">&#127916;</div>
                 <div class="brand-text">
-                    <h1>Khmer Video Clipper Pro</h1>
-                    <span class="sub-title">កាត់វីដេអូ & ដាក់អក្សរខ្មែរ</span>
+                    <h1>Khmer Clipper <span class="app-badge">PRO</span></h1>
+                    <span class="sub-title">កាត់វីដេអូ &amp; ដាក់អក្សរខ្មែរ</span>
                 </div>
             </div>
 
-            <div class="step-nav">
-                <button id="step1TabBtn" class="step-btn active">
+            <!-- 4-Step Interactive Workflow Stepper -->
+            <nav class="workflow-stepper" aria-label="Workflow Navigation">
+                <button id="stepBtn1" class="step-item active" title="ជំហានទី ១: Upload វីដេអូមេ">
                     <span class="step-num">១</span>
-                    <span>✂️ កាត់ Clip</span>
+                    <span>📁 Upload វីដេអូ</span>
                 </button>
-                <div class="step-arrow">→</div>
-                <button id="step2TabBtn" class="step-btn">
+                <span class="step-divider">→</span>
+                <button id="stepBtn2" class="step-item" title="ជំហានទី ២: ស្រង់ Clips ខ្លីៗ">
                     <span class="step-num">២</span>
-                    <span>🎨 កែអក្សរ</span>
-                    <span id="step2Badge" class="badge-count">0</span>
+                    <span>✂️ ស្រង់ Clip</span>
+                    <span id="step2Badge" class="step-badge">0</span>
                 </button>
+                <span class="step-divider">→</span>
+                <button id="stepBtn3" class="step-item" title="ជំហានទី ៣: តុបតែងម៉ូដអក្សរខ្មែរ &amp; Presets">
+                    <span class="step-num">៣</span>
+                    <span>🎨 Edit តុបតែងម៉ូដ</span>
+                </button>
+                <span class="step-divider">→</span>
+                <button id="stepBtn4" class="step-item" title="ជំហានទី ៤: ទាញយក Clips ទៅប្រើប្រាស់">
+                    <span class="step-num">៤</span>
+                    <span>⚡ Export</span>
+                </button>
+            </nav>
+
+            <!-- Hidden legacy buttons for script backwards-compatibility -->
+            <div style="display:none;">
+                <button id="step1TabBtn"></button>
+                <button id="step2TabBtn"></button>
+                <button id="goToStep2Btn"></button>
+                <button id="backToStep1Btn"></button>
             </div>
 
+            <!-- Header Actions -->
             <div class="header-actions">
-                <button id="openAiModalBtn" class="btn btn-ai-sparkle">
-                    <span class="ai-sparkle-icon">✨</span>
-                    <span>AI ណែនាំ Clip</span>
-                    <span class="ai-badge-live">Khmer AI</span>
+                <!-- Platform Mode Switcher (YouTube 16:9 vs Facebook/TikTok 9:16) -->
+                <div class="header-platform-toggle" id="headerPlatformToggle">
+                    <button type="button" class="platform-btn" data-platform="youtube" title="YouTube Mode (16:9 Widescreen Multi-layer Studio)">
+                        <span class="platform-icon-mini">
+                            <svg class="brand-logo-svg-mini yt-logo" viewBox="0 0 28 20" width="18" height="13" fill="none">
+                                <path d="M27.41 3.13a3.52 3.52 0 0 0-2.48-2.5C22.75 0 14 0 14 0S5.25 0 3.07.63A3.52 3.52 0 0 0 .59 3.13 36.87 36.87 0 0 0 0 10a36.87 36.87 0 0 0 .59 6.87 3.52 3.52 0 0 0 2.48 2.5C5.25 20 14 20 14 20s8.75 0 10.93-.63a3.52 3.52 0 0 0 2.48-2.5A36.87 36.87 0 0 0 28 10a36.87 36.87 0 0 0-.59-6.87z" fill="#FF0000"/>
+                                <polygon points="11.2,14.2 18.2,10 11.2,5.8" fill="#FFFFFF"/>
+                            </svg>
+                        </span>
+                        <span>YouTube (16:9)</span>
+                    </button>
+                    <button type="button" class="platform-btn active" data-platform="facebook" title="Facebook / TikTok Mode (9:16 Vertical Clips)">
+                        <span class="platform-icon-mini">
+                            <svg class="brand-logo-svg-mini fb-logo" viewBox="0 0 24 24" width="16" height="16" fill="none">
+                                <circle cx="12" cy="12" r="12" fill="#1877F2"/>
+                                <path d="M16.67 15.47l.53-3.47h-3.33V9.75c0-.95.47-1.87 1.96-1.87h1.5V4.92s-1.37-.23-2.69-.23c-2.74 0-4.53 1.66-4.53 4.67v2.64H7.08v3.47h3.05V23.85a12.09 12.09 0 0 0 3.75 0V15.47h2.79z" fill="#FFFFFF"/>
+                            </svg>
+                        </span>
+                        <span>Facebook (9:16)</span>
+                    </button>
+                </div>
+
+                <!-- Undo & Redo -->
+                <div class="history-btns">
+                    <button id="headerUndoBtn" class="btn-history" onclick="window.undoLastAction && window.undoLastAction()" title="ត្រឡប់ថយក្រោយ (Ctrl + Z)">↩️ Undo</button>
+                    <button id="headerRedoBtn" class="btn-history" onclick="window.redoLastAction && window.redoLastAction()" title="ទៅមុខវិញ (Ctrl + Y)">↪️ Redo</button>
+                </div>
+
+                <!-- Autosave indicator -->
+                <!-- Autosave indicator -->
+                <div class="autosave-badge" title="ប្រព័ន្ធរក្សាទុកស្វ័យប្រវត្តិកំពុងដំណើរការ">
+                    <span class="autosave-dot"></span>
+                    <span>Autosaved</span>
+                </div>
+
+                <!-- Firebase Auth & Cloud Sync Indicator -->
+                <div id="firebaseAuthContainer" class="firebase-auth-container">
+                    <button id="firebaseLoginBtn" class="btn-google-login" type="button" title="ចូលគណនី Google ដើម្បីរក្សាទុក Clips លើ Cloud">
+                        <svg width="16" height="16" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                        </svg>
+                        <span>Google Login</span>
+                    </button>
+                    <div id="firebaseUserBox" class="firebase-user-box" style="display:none;">
+                        <button id="openCloudProjectsBtn" class="btn-cloud-sync" type="button" title="មើលគម្រោង និង Clips លើ Firebase Cloud">
+                            ☁️ <span id="cloudStatusText">Cloud</span>
+                        </button>
+                        <button id="saveToCloudBtn" class="btn-cloud-save" type="button" title="ចុច Save គម្រោងបច្ចុប្បន្នទៅ Firestore">
+                            💾 Save Cloud
+                        </button>
+                        <div class="user-profile-badge" id="userProfileBadge" title="គណនី Google របស់អ្នក">
+                            <img id="userAvatarImg" src="" alt="Avatar" class="user-avatar-img">
+                            <span id="userNameSpan" class="user-name-span"></span>
+                        </div>
+                        <button id="firebaseLogoutBtn" class="btn-logout-mini" type="button" title="ចាកចេញពីគណនី (Sign out)">
+                            🚪
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Help modal button -->
+                <button id="openHelpModalBtn" class="btn btn-secondary btn-sm" title="មគ្គុទ្ទេសក៍ &amp; Keyboard Shortcuts">
+                    ❓
                 </button>
-                <a href="poster_demo.html" target="_blank" class="btn btn-secondary" style="text-decoration:none; padding:8px 14px;">🎨 Poster Studio Demo</a>
-                <label for="videoUploadInput" class="btn btn-primary btn-upload">
-                    <span>📁 ជ្រើសរើសវីដេអូ</span>
-                    <input type="file" id="videoUploadInput" accept="video/*" hidden>
-                </label>
+
+                <!-- Hidden file input for multi-video upload -->
+                <input type="file" id="videoUploadInput" accept="video/*" multiple hidden>
+                <input type="file" id="studioImageUploadInput" accept="image/*" multiple hidden>
+
+                <!-- Hidden buttons for backwards-compatibility -->
+                <div style="display:none !important;">
+                    <button id="openAiModalBtn"></button>
+                    <a href="poster_demo.html" class="btn-upload"></a>
+                </div>
             </div>
         </header>
 
-        <div id="dropzoneOverlay" class="dropzone-overlay">
-            <div class="dropzone-card">
-                <div class="upload-icon">&#127909;</div>
-                <h2>ទម្លាក់វីដេអូនៅទីនេះ</h2>
-                <p>ឬចុចដើម្បីជ្រើសរើសវីដេអូ</p>
-                <button class="btn btn-primary btn-lg" onclick="document.getElementById('videoUploadInput').click()">
-                    📁 ជ្រើសរើសវីដេអូ
-                </button>
-            </div>
-        </div>
-
-        <main id="screen1View" class="workspace screen-layout-1">
-            <aside class="sidebar left-sidebar">
-                <div class="panel-section">
-                    <h3 class="panel-title">📁 ឯកសារ</h3>
-                    <div id="fileInfoBox" class="file-info-box empty">
-                        <p class="placeholder-text">សូមជ្រើសរើសវីដេអូ...</p>
-                    </div>
+        <!-- ==========================================================================
+             2. SCREEN 1: DEDICATED VIDEO UPLOAD VIEW
+             ========================================================================== -->
+        <section id="screenUpload" class="screen-view screen-upload">
+            <div id="dropzoneOverlay" class="upload-hero-card">
+                <div class="upload-icon-pulse">
+                    <span class="upload-icon-emoji">📁</span>
+                </div>
+                <h2 class="upload-title">ជ្រើសរើស ឬទម្លាក់វីដេអូនៅទីនេះ</h2>
+                <p class="upload-subtitle">ទម្លាក់ឯកសារវីដេអូ MP4, MOV, WebM ឬចុចរើសពីកុំព្យូទ័រ (អាចជ្រើសរើសវីដេអូច្រើនក្នុងពេលតែមួយ) ដើម្បីចាប់ផ្តើមស្រង់យក Clips ខ្លីៗ</p>
+                
+                <!-- Platform Mode Selector Card -->
+                <div class="platform-mode-selector" id="platformModeSelector">
+                    <button type="button" class="platform-btn" data-platform="youtube">
+                        <span class="platform-icon">
+                            <svg class="brand-logo-svg yt-logo" viewBox="0 0 28 20" width="34" height="24" fill="none">
+                                <path d="M27.41 3.13a3.52 3.52 0 0 0-2.48-2.5C22.75 0 14 0 14 0S5.25 0 3.07.63A3.52 3.52 0 0 0 .59 3.13 36.87 36.87 0 0 0 0 10a36.87 36.87 0 0 0 .59 6.87 3.52 3.52 0 0 0 2.48 2.5C5.25 20 14 20 14 20s8.75 0 10.93-.63a3.52 3.52 0 0 0 2.48-2.5A36.87 36.87 0 0 0 28 10a36.87 36.87 0 0 0-.59-6.87z" fill="#FF0000"/>
+                                <polygon points="11.2,14.2 18.2,10 11.2,5.8" fill="#FFFFFF"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <div class="platform-title">YouTube Mode (16:9 Widescreen)</div>
+                            <div class="platform-desc">Multi-Layer Studio: វីដេអូម្ខាង រូបភាពម្ខាង និងបដាអក្សរខាងក្រោម</div>
+                        </div>
+                    </button>
+                    <button type="button" class="platform-btn active" data-platform="facebook">
+                        <span class="platform-icon">
+                            <svg class="brand-logo-svg fb-logo" viewBox="0 0 24 24" width="28" height="28" fill="none">
+                                <circle cx="12" cy="12" r="12" fill="#1877F2"/>
+                                <path d="M16.67 15.47l.53-3.47h-3.33V9.75c0-.95.47-1.87 1.96-1.87h1.5V4.92s-1.37-.23-2.69-.23c-2.74 0-4.53 1.66-4.53 4.67v2.64H7.08v3.47h3.05V23.85a12.09 12.09 0 0 0 3.75 0V15.47h2.79z" fill="#FFFFFF"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <div class="platform-title">Facebook / TikTok Mode (9:16)</div>
+                            <div class="platform-desc">Mobile Vertical Clips ជាមួយចំណងជើងលើ-ក្រោម</div>
+                        </div>
+                    </button>
                 </div>
 
-                <div class="panel-section ai-quick-section">
-                    <div class="ai-widget-card">
-                        <div class="ai-widget-header">
-                            <span class="ai-widget-icon">🤖</span>
-                            <div class="ai-widget-text">
-                                <h4>AI ស្កែន &amp; ណែនាំ Clip</h4>
-                                <p>ស្ដាប់សំឡេងខ្មែរ &amp; រក Clip ល្អៗ</p>
+                <div class="upload-action-group">
+                    <button type="button" class="btn btn-primary btn-lg btn-upload-main" onclick="document.getElementById('videoUploadInput').click()">
+                        <span>📁 ជ្រើសរើសវីដេអូ (រើសច្រើនបាន)</span>
+                    </button>
+                    <button id="loadSampleClipsBtn" type="button" class="btn btn-secondary btn-md btn-sample-clips" onclick="window.loadDemoClips && window.loadDemoClips()" title="សាកល្បងកាត់ត ពុះ និងផ្គុំ Clips គំរូ">
+                        <span>🎬 សាកល្បងជាមួយ Sample Video &amp; Clips</span>
+                    </button>
+                    <button id="btnReturnToEditor" type="button" class="btn btn-secondary btn-md btn-sample-clips hidden" onclick="window.switchScreen && window.switchScreen(2)" style="background: linear-gradient(135deg, #10b981, #059669) !important; color: #fff !important; border:none !important;" title="ត្រឡប់ទៅផ្ទាំងកាត់ត Clip វិញ">
+                        <span>✂️ ត្រឡប់ទៅកាត់ត Clip វិញ</span>
+                    </button>
+                </div>
+
+                <!-- Batch Video Queue Container (Screen 1) -->
+                <div id="batchQueueCard" class="batch-queue-card hidden">
+                    <div class="batch-queue-header">
+                        <div class="batch-header-title">
+                            <span class="batch-header-icon">🚀</span>
+                            <div>
+                                <h3 class="batch-title">បញ្ជី Scan វីដេអូជាក្រុម (Batch Multi-Video Queue)</h3>
+                                <p class="batch-desc">ស្កេនវីដេអូពេញ ៤-៥ ក្នុងពេលតែមួយដោយប្រើ 13 Gemini Keys + 4-LLM Council</p>
                             </div>
                         </div>
-                        <button id="aiQuickScanBtn" class="btn btn-ai-pulse btn-block btn-sm" disabled>
-                            ✨ វិភាគ AI ស្វ័យប្រវត្តិ
+                        <div class="batch-header-stats">
+                            <span id="batchCountBadge" class="batch-stat-badge">0 វីដេអូ</span>
+                            <span id="batchOverallStatusBadge" class="batch-stat-status">ត្រៀមរួចរាល់</span>
+                        </div>
+                    </div>
+
+                    <!-- Concurrency / Mode Switcher -->
+                    <div class="batch-mode-bar">
+                        <div class="batch-mode-toggle">
+                            <label class="batch-mode-label">
+                                <input type="radio" name="batchMode" id="modeParallel" value="parallel" checked>
+                                <span>⚡ ដំណើរការស្របគ្នា (2 Workers Concurrent - លឿនបំផុត)</span>
+                            </label>
+                            <label class="batch-mode-label">
+                                <input type="radio" name="batchMode" id="modeSequential" value="sequential">
+                                <span>🔄 តម្រៀបជួរម្តងមួយ (Sequential Queue - ត្រជាក់ម៉ាស៊ីន)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Video Items List -->
+                    <div id="batchVideosList" class="batch-videos-list">
+                        <!-- Dynamic video items injected here -->
+                    </div>
+
+                    <!-- Overall Batch Progress Bar -->
+                    <div id="batchOverallProgressBox" class="batch-overall-progress hidden">
+                        <div class="batch-progress-info">
+                            <span id="batchProgressLabel">កំពុងដំណើរការ Batch Scan...</span>
+                            <span id="batchProgressPercent">0%</span>
+                        </div>
+                        <div class="batch-progress-track">
+                            <div id="batchProgressBar" class="batch-progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Actions -->
+                    <div class="batch-actions-row">
+                        <button type="button" id="btnStartBatchScan" class="btn btn-primary btn-lg btn-batch-start" onclick="window.startBatchScanWorkflow && window.startBatchScanWorkflow()">
+                            <span>🚀 ចាប់ផ្តើម Scan វីដេអូទាំងអស់</span>
+                        </button>
+                        <button type="button" id="btnAddMoreBatchVideos" class="btn btn-secondary btn-md" onclick="document.getElementById('videoUploadInput').click()">
+                            <span>➕ បន្ថែមវីដេអូទៀត</span>
+                        </button>
+                        <button type="button" id="btnClearBatchQueue" class="btn btn-secondary btn-sm" onclick="window.clearBatchQueue && window.clearBatchQueue()">
+                            <span>🗑️ សម្អាតបញ្ជី</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="panel-section clips-section flex-grow">
-                    <div class="section-header">
-                        <h3 class="panel-title">🎬 រៀបលំដាប់ Clips (<span id="clipCount">0</span>)</h3>
+                <!-- Uploaded Videos Preview Container (Screen 1) -->
+                <div id="uploadedVideosPreview" class="uploaded-videos-preview hidden"></div>
+
+                <!-- 3 Workflow Steps Preview Banner -->
+                <div class="upload-workflow-preview">
+                    <button type="button" class="upload-step-pill active" onclick="window.switchScreen && window.switchScreen(1)" title="ជំហានទី ១: Upload វីដេអូមេ">
+                        <span class="step-badge-mini">១</span>
+                        <span>📁 Upload វីដេអូ</span>
+                    </button>
+                    <span class="step-arrow">→</span>
+                    <button type="button" class="upload-step-pill" onclick="window.switchScreen && window.switchScreen(2)" title="ជំហានទី ២: ស្រង់ Clips ខ្លីៗ">
+                        <span class="step-badge-mini">២</span>
+                        <span>✂️ ស្រង់ Clip</span>
+                    </button>
+                    <span class="step-arrow">→</span>
+                    <button type="button" class="upload-step-pill" onclick="window.switchScreen && window.switchScreen(3)" title="ជំហានទី ៣: តុបតែងម៉ូដអក្សរខ្មែរ">
+                        <span class="step-badge-mini">៣</span>
+                        <span>🎨 Edit តុបតែងម៉ូដ</span>
+                    </button>
+                </div>
+
+                <div class="upload-formats-row">
+                    <span class="format-tag">MP4</span>
+                    <span class="format-tag">MOV</span>
+                    <span class="format-tag">WEBM</span>
+                    <span class="format-tag">MKV</span>
+                    <span class="format-tag highlight">HD / 4K</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================================================
+             3. THREE-COLUMN UNIFIED WORKSPACE (Screens 2 & 3)
+             ========================================================================== -->
+        <div id="workspace3Col" class="workspace-3col hidden">
+
+            <!-- ----------------------------------------------------------------------
+                 3.1 LEFT SIDEBAR: VIDEO SOURCE & CLIPS QUEUE
+                 ---------------------------------------------------------------------- -->
+            <aside class="sidebar-left">
+                <!-- Panel Header -->
+                <div id="leftPanelHeader" class="left-panel-header">
+                    <div class="panel-title-group">
+                        <span style="font-size:1.1rem;">🎬</span>
+                        <h3 id="leftPanelTitle" class="panel-title">បញ្ជី Clips</h3>
+                        <span id="clipCount" class="badge-count">0</span>
                     </div>
-                    <div id="clipsListScreen1" class="clips-list">
-                        <div class="empty-clips-notice">
-                            <span class="icon">&#127916;</span>
-                            <p>មិនទាន់មាន Clip</p>
-                            <small>កំណត់ <strong>Set In</strong> &amp; <strong>Set Out</strong> រួចចុច <strong>+ បន្ថែម</strong></small>
-                        </div>
-                    </div>
-                    <div class="panel-footer-box">
-                        <button id="goToStep2Btn" class="btn btn-primary btn-lg btn-block" disabled>
-                            ➡️ ទៅកែអក្សរ
+                    <div id="leftPanelActions" class="left-panel-actions" style="display:flex; align-items:center; gap:6px;">
+                        <button id="btnBackToTrimmer" class="btn btn-secondary btn-xs hidden" onclick="window.switchScreen && window.switchScreen(2)" title="ត្រឡប់ទៅកាត់ Clips បន្ថែម">
+                            ⬅️ កាត់ថែម
+                        </button>
+                        <button id="quickAddClipBtn" class="btn btn-primary btn-xs" title="បន្ថែម Clip ថ្មីត្រង់ចំនុច Set In / Set Out (Shortcut: A)">
+                            ➕ បន្ថែម Clip
                         </button>
                     </div>
                 </div>
-            </aside>
 
-            <section class="stage-container trimmer-stage">
-                <div class="video-player-container">
-                    <video id="mainVideoPlayer" controls playsinline></video>
+                <!-- Active Video Switcher for Batch Mode (វិធីទី ២) -->
+                <div id="batchVideoSwitcherBar" class="batch-video-switcher hidden">
+                    <div class="batch-switcher-label">
+                        <span>🎬 ជ្រើសរើសវីដេអូសកម្ម:</span>
+                        <span id="batchSwitcherBadge" class="batch-source-pill">1 នៃ 1</span>
+                    </div>
+                    <div id="batchVideoPillsContainer" class="batch-pills-row">
+                        <!-- Video pills dynamically injected here -->
+                    </div>
                 </div>
 
-                <div class="timeline-panel">
-                    <div class="clip-name-bar">
-                        <div class="clip-name-input-group">
-                            <label for="clipTitleInput">🏷️ ចំណងជើង Clip:</label>
-                            <input type="text" id="clipTitleInput" class="form-control clip-title-input" placeholder="ឧ. Clip 1 - ភាគ១...">
+                <!-- Video Source Card -->
+                <div id="fileInfoBox" class="video-source-card">
+                    <div class="video-source-info">
+                        <div class="video-source-icon">📹</div>
+                        <div class="video-source-meta">
+                            <div class="video-source-name" id="fileNameDisplay">មិនទាន់មានវីដេអូ</div>
+                            <div class="video-source-sub" id="fileDurationDisplay">សូមជ្រើសរើសវីដេអូ...</div>
                         </div>
-                        <div class="clip-action-btns">
-                            <button id="addClipBtn" class="btn btn-success btn-lg btn-add-clip" disabled title="Shortcut: គ្រាប់ចុច A">
-                                ➕ បន្ថែម Clip [A]
+                    </div>
+                    <button class="btn-change-video" onclick="document.getElementById('videoUploadInput').click()" title="ប្តូរវីដេអូថ្មី">
+                        ប្តូរ
+                    </button>
+                </div>
+
+                <!-- AI Quick Scan Bar -->
+                <div class="ai-quick-bar">
+                    <div class="ai-quick-text">✨ AI រក Clips សំខាន់ៗ</div>
+                    <button id="aiQuickScanBtn" class="btn-ai-quick" title="ដំណើរការ AI វិភាគសំឡេង និងបង្កើត Clips អូតូ">
+                        ស្កែន AI
+                    </button>
+                </div>
+
+                <!-- Clips Scroll Container -->
+                <div class="clips-scroll-container">
+                    <!-- Dynamic Clip Cards populated here -->
+                    <div id="clipsListScreen1" class="clips-list-box">
+                        <div class="empty-clips-state">
+                            <div class="empty-clips-icon">&#127916;</div>
+                            <div class="empty-clips-title">មិនទាន់មាន Clip ទេ</div>
+                            <p class="empty-clips-desc">កំណត់ពេល <strong>Set In [S]</strong> និង <strong>Set Out [E]</strong> រួចចុច <strong>"+ បង្កើត Clip [A]"</strong></p>
+                            <button class="btn btn-secondary btn-sm" onclick="window.loadDemoClips && window.loadDemoClips()">
+                                🎬 ដាក់ Sample Clips
                             </button>
                         </div>
                     </div>
-
-                    <div class="trim-actions-bar">
-                        <div class="trim-inputs">
-                            <div class="trim-btn-group">
-                                <span id="inTimeDisplay" class="badge badge-in">00:00:00.00</span>
-                                <button id="setInBtn" class="btn btn-lg btn-in" disabled title="Shortcut: គ្រាប់ចុច S">
-                                    🚩 Set In [S]
-                                </button>
-                            </div>
-                            <div class="trim-btn-group">
-                                <span id="outTimeDisplay" class="badge badge-out">00:00:00.00</span>
-                                <button id="setOutBtn" class="btn btn-lg btn-out" disabled title="Shortcut: គ្រាប់ចុច E">
-                                    🏁 Set Out [E]
-                                </button>
-                            </div>
-                            <div class="trim-btn-group">
-                                <button id="undoTrimBtn" class="btn btn-lg btn-secondary" onclick="window.undoLastAction && window.undoLastAction()" title="Shortcut: Ctrl + Z (ត្រឡប់ថយក្រោយ)">
-                                    ↩️ Undo [Ctrl+Z]
-                                </button>
-                            </div>
-                            <div class="duration-badge-group">
-                                <label>រយៈពេល:</label>
-                                <span id="clipDurationDisplay" class="badge badge-duration">00:00.00</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="scrubber-container expanded-scrubber">
-                        <div id="timelineTrack" class="timeline-track">
-                            <div id="trimSelectionRange" class="trim-selection-range"></div>
-                            <div id="playhead" class="playhead"></div>
-                        </div>
-                        <input type="range" id="timelineSlider" min="0" max="100" value="0" step="0.01" disabled>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <main id="screen2View" class="workspace screen-layout-2 hidden">
-            <aside class="sidebar left-sidebar">
-                <div class="panel-section">
-                    <h3 class="panel-title">🎬 រៀបលំដាប់ Clips</h3>
-                    <p class="help-text">ចុច ▲ ▼ ដើម្បីតំរៀបលំដាប់</p>
-                </div>
-                <div class="panel-section clips-section flex-grow">
-                    <div id="clipsListScreen2" class="clips-list"></div>
-                </div>
-                <div class="panel-footer-box">
-                    <button id="backToStep1Btn" class="btn btn-secondary btn-md btn-block">
-                        ⬅️ ត្រឡប់ទៅកាត់ Clips
-                    </button>
+                    <!-- Hidden duplicate for app.js sync compatibility -->
+                    <div id="clipsListScreen2" style="display:none;"></div>
                 </div>
             </aside>
 
-            <section class="stage-container studio-stage">
-                <div class="studio-top-bar">
+            <!-- ----------------------------------------------------------------------
+                 3.2 CENTER AREA: LARGE VIDEO PREVIEW & PRECISION TIMELINE
+                 ---------------------------------------------------------------------- -->
+            <section class="stage-center">
+                <!-- Stage Top Toolbar -->
+                <div id="stageTopToolbar" class="stage-top-toolbar">
+                    <!-- View Mode Switcher -->
+                    <div id="viewModeTabs" class="view-mode-tabs">
+                        <button id="viewModeTrimmerBtn" class="view-tab-btn active" title="មើល និងកាត់តវីដេអូដើម">
+                            ✂️ វីដេអូដើម (Trimmer)
+                        </button>
+                        <button id="viewModeStudioBtn" class="view-tab-btn" title="មើល Canvas ម៉ូដអក្សរ &amp; Captions">
+                            🎨 ម៉ូដ Clip (Canvas)
+                        </button>
+                    </div>
+
+                    <!-- Aspect Ratio Selector -->
                     <div class="aspect-ratio-selector">
-                        <label>ទម្រង់:</label>
-                        <div class="segmented-control">
-                            <button class="aspect-btn active" data-ratio="9:16">📱 9:16</button>
-                            <button class="aspect-btn" data-ratio="1:1">🔲 1:1</button>
-                            <button class="aspect-btn" data-ratio="16:9">🖥️ 16:9</button>
+                        <span class="aspect-ratio-label">ទម្រង់:</span>
+                        <div class="segmented-control" id="aspectRatioSegmentedControl">
+                            <button class="aspect-btn active" data-ratio="9:16" title="TikTok, Reels, Shorts (9:16)">📱 9:16</button>
+                            <button class="aspect-btn" data-ratio="1:1" title="Instagram, Facebook Feed (1:1)">🔲 1:1</button>
+                            <button id="aspectRatio169Btn" class="aspect-btn" data-ratio="16:9" title="YouTube Landscape (16:9)">🖥️ 16:9</button>
                         </div>
+                        <span id="youtubeLockedBadge" class="youtube-locked-badge hidden">🔒 16:9 YouTube Locked</span>
+                    </div>
+
+                    <!-- Zoom & Fullscreen Controls -->
+                    <div id="stageZoomControls" class="stage-zoom-controls" style="display:flex; align-items:center; gap:6px;">
+                        <button id="timelineZoomOutBtn" class="btn btn-secondary btn-xs" title="បង្រួម Timeline Zoom Out">🔍 -</button>
+                        <button id="timelineZoomResetBtn" class="btn btn-secondary btn-xs" title="Zoom ស្តង់ដារ 100%">100%</button>
+                        <button id="timelineZoomInBtn" class="btn btn-secondary btn-xs" title="ពង្រីក Timeline Zoom In">🔍 +</button>
+                        <button id="fullscreenPreviewBtn" class="btn btn-secondary btn-xs" title="ពេញអេក្រង់ (Fullscreen)">⛶</button>
                     </div>
                 </div>
 
+                <!-- Canvas / Video Viewport -->
                 <div class="canvas-viewport">
-                    <div id="canvasWrapper" class="canvas-wrapper aspect-9-16">
+                    <!-- View 1: Raw Video Player (Active when in Trimmer mode) -->
+                    <div id="rawVideoViewport" class="raw-video-container">
+                        <video id="mainVideoPlayer" controls playsinline></video>
+                    </div>
+
+                    <!-- View 2: Styled Canvas (Active when in Studio mode) -->
+                    <div id="canvasWrapper" class="canvas-wrapper aspect-9-16 hidden">
                         <canvas id="mainCanvas" width="1080" height="1920"></canvas>
                         <input type="text" id="canvasInlineInput" class="canvas-inline-input hidden" placeholder="វាយអក្សរ...">
                         <div id="canvasLoadingSpinner" class="canvas-loader hidden">
@@ -196,151 +419,516 @@
                     </div>
                 </div>
 
-                <div class="studio-bottom-panel">
-                    <div class="studio-scrubber-bar">
-                        <span id="studioClipTimeDisplay" class="badge">00:00.00 / 00:00.00</span>
-                        <input type="range" id="studioClipScrubber" min="0" max="100" value="0" step="0.05" class="studio-slider" title="អូសដើម្បីមើល / Playback Clip ចុះឡើង">
-                    </div>
-                    <div class="studio-controls-row">
-                        <div class="clip-play-info">
-                            <div class="playback-controls-group">
-                                <button id="seekBackBtn" class="btn btn-icon btn-secondary btn-sm">⏪ -5s</button>
-                                <button id="canvasPlayPauseBtn" class="btn btn-icon btn-play-pause">▶ Play</button>
-                                <button id="seekForwardBtn" class="btn btn-icon btn-secondary btn-sm">⏩ +5s</button>
+                <!-- Hidden video source for canvas rendering -->
+                <video id="hiddenVideo" playsinline preload="auto" style="position:fixed; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;"></video>
+
+                <!-- Stage Bottom Timeline & Controls -->
+                <div class="stage-bottom-timeline">
+
+                    <!-- ==========================================================
+                         A. SCREEN 2 TIMELINE: RAW MASTER VIDEO TRIMMER CONTROLS
+                         ========================================================== -->
+                    <div id="screen2TimelineControls" class="timeline-controls-view">
+                        <!-- Timeline Track with Draggable Playhead -->
+                        <div class="timeline-track-container">
+                            <div class="timeline-info-row">
+                                <div class="timeline-times">
+                                    <span class="badge-timestamp badge-in" title="ចំនុចចាប់ផ្តើម Clip (Set In)">
+                                        🚩 <span id="inTimeDisplay">00:00:00.00</span>
+                                    </span>
+                                    <span class="badge-timestamp badge-out" title="ចំនុចបញ្ចប់ Clip (Set Out)">
+                                        🏁 <span id="outTimeDisplay">00:00:00.00</span>
+                                    </span>
+                                    <span class="badge-timestamp badge-duration" title="រយៈពេលសរុបនៃ Clip">
+                                        ⏱️ <span id="clipDurationDisplay">00:00.00</span>
+                                    </span>
+                                </div>
+                                <div style="font-size:0.76rem; color:var(--text-muted);">
+                                    កាត់វីដេអូដើម: <strong>Space</strong> (ចាក់/ផ្អាក) | <strong>S</strong> (Set In) | <strong>E</strong> (Set Out) | <strong>A</strong> (បន្ថែម Clip)
+                                </div>
+                            </div>
+
+                            <!-- Scrubber Track -->
+                            <div id="timelineTrackBox" class="scrubber-track-box">
+                                <div id="timelineTrack" class="timeline-track">
+                                    <div id="trimSelectionRange" class="trim-selection-range"></div>
+                                    <div id="playhead" class="playhead"></div>
+                                </div>
+                                <input type="range" id="timelineSlider" class="timeline-native-slider" min="0" max="100" value="0" step="0.01" disabled title="អូសដើម្បីផ្លាស់ប្តូរពេលវេលា">
                             </div>
                         </div>
-                        <div class="studio-export-btns">
-                            <button id="exportActiveClipBtn" class="btn btn-primary btn-md">⚡ Export Clip នេះ</button>
-                            <button id="exportAllClipsStudioBtn" class="btn btn-success btn-md">📦 Export ទាំងអស់</button>
+
+                        <!-- Transport Action Buttons Row -->
+                        <div class="transport-actions-row">
+                            <!-- Playback Controls -->
+                            <div class="transport-group-left">
+                                <button id="seekBackBtn" class="btn-transport" title="ថយក្រោយ ៥ វិនាទី">⏪ -5s</button>
+                                <button id="canvasPlayPauseBtn" class="btn-transport btn-play-pause" title="ចាក់ / ផ្អាក វីដេអូ (Shortcut: Space)">▶ Play</button>
+                                <button id="seekForwardBtn" class="btn-transport" title="ទៅមុខ ៥ វិនាទី">⏩ +5s</button>
+                            </div>
+
+                            <!-- In / Out / Create Clip Primary Actions -->
+                            <div class="transport-group-center">
+                                <button id="setInBtn" class="btn-transport btn-set-in" disabled title="កំណត់ចំនុចចាប់ផ្តើម Clip ត្រង់ពេលកំពុងចាក់នេះ (Shortcut: S)">
+                                    🚩 Set Start [S]
+                                </button>
+                                <button id="setOutBtn" class="btn-transport btn-set-out" disabled title="កំណត់ចំនុចបញ្ចប់ Clip ត្រង់ពេលកំពុងចាក់នេះ (Shortcut: E)">
+                                    🏁 Set End [E]
+                                </button>
+                                <button id="addClipBtn" class="btn-transport btn-create-clip" disabled title="បង្កើត Clip ថ្មីទៅក្នុងបញ្ជី (Shortcut: A)">
+                                    ➕ Create Clip [A]
+                                </button>
+                                <button id="trimmerSplitClipBtn" class="btn-transport btn-split-action" onclick="window.splitSelectedClip && window.splitSelectedClip()" title="ពុះ Clip ជាពីរ (Shortcut: S)">
+                                    ✂️ Split Clip
+                                </button>
+                            </div>
+
+                            <!-- Export / Proceed Actions -->
+                            <div class="transport-group-right">
+                                <button id="btnProceedToEditFromBottom" class="btn btn-primary btn-sm" onclick="window.switchScreen && window.switchScreen(3)" style="font-weight:700; background:linear-gradient(135deg, #10b981, #059669); border:none;" title="បន្តទៅតុបតែងម៉ូដអក្សរ">
+                                    👉 ទៅ Edit តុបតែងម៉ូដ
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- ==========================================================
+                         B. SCREEN 3 TIMELINE: DEDICATED ACTIVE CLIP TIMELINE
+                         ========================================================== -->
+                    <div id="screen3TimelineControls" class="timeline-controls-view hidden">
+                        <!-- Clip Timeline Track with Draggable Playhead & Progress -->
+                        <div class="timeline-track-container studio-timeline-container">
+                            <div class="timeline-info-row studio-info-row">
+                                <div class="timeline-times">
+                                    <span class="badge-timestamp badge-clip-title" title="Clip ដែលកំពុងកែសម្រួល">
+                                        🎬 <span id="studioTimelineClipName">Clip #1</span>
+                                    </span>
+                                    <span class="badge-timestamp badge-duration studio-time-badge" title="ពេលវេលាកំពុងចាក់ក្នុង Clip / រយៈពេលសរុបនៃ Clip">
+                                        ⏱️ <span id="studioTimelineTimeDisplay">00:00.00 / 00:00.00</span>
+                                    </span>
+                                    <span class="badge-timestamp badge-range" title="ចន្លោះពេល Clip ក្នុងវីដេអូមេ">
+                                        📍 <span id="studioTimelineRangeDisplay">00:00 - 00:00</span>
+                                    </span>
+                                </div>
+                                <div style="font-size:0.76rem; color:var(--text-muted);">
+                                    Timeline របស់ Clip: <strong>Space</strong> (Play/Pause) | <strong>S</strong> (Split ពុះ) | អូសដើម្បីរំកិល
+                                </div>
+                            </div>
+
+                            <!-- Dedicated Clip Scrubber Track -->
+                            <div id="studioScrubberTrackBox" class="scrubber-track-box studio-track-box">
+                                <div id="studioTimelineTrack" class="timeline-track studio-track">
+                                    <div id="studioProgressFill" class="studio-progress-fill" style="width: 0%;"></div>
+                                    <div id="studioPlayhead" class="playhead studio-playhead" style="left: 0%;"></div>
+                                </div>
+                                <input type="range" id="studioClipScrubber" class="timeline-native-slider studio-slider" min="0" max="100" value="0" step="0.05" title="អូសដើម្បីរំកិលក្នុង Clip នេះ">
+                            </div>
+                        </div>
+
+                        <!-- Transport Action Buttons Row for Studio Clip -->
+                        <div class="transport-actions-row studio-actions-row">
+                            <!-- Playback Controls -->
+                            <div class="transport-group-left">
+                                <button id="studioSeekBackBtn" class="btn-transport" title="ថយក្រោយ ៣ វិនាទី">⏪ -3s</button>
+                                <button id="studioPlayPauseBtn" class="btn-transport btn-play-pause studio-btn-play" title="ចាក់ / ផ្អាក Clip (Shortcut: Space)">▶ Play</button>
+                                <button id="studioSeekForwardBtn" class="btn-transport" title="ទៅមុខ ៣ វិនាទី">⏩ +3s</button>
+                                <button id="studioReplayBtn" class="btn-transport" title="ចាក់សារឡើងវិញពីក្បាល Clip">🔄 Replay</button>
+                            </div>
+
+                            <!-- Studio Clip Actions -->
+                            <div class="transport-group-center">
+                                <button id="studioSplitClipBtn" class="btn-transport btn-split-action" title="ពុះ Clip នេះជាពីរត្រង់ចំនុចនេះ (Shortcut: S)">
+                                    ✂️ Split Clip [S]
+                                </button>
+                                <button id="studioTrimHeadBtn" class="btn-transport" style="background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.4); color:#93c5fd;" title="កាត់ចោលផ្នែកខាងមុខមកត្រង់ចំនុចកំពុងចាក់នេះ">
+                                    🚩 Trim ក្បាល
+                                </button>
+                                <button id="studioTrimTailBtn" class="btn-transport" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;" title="កាត់ចោលផ្នែកខាងក្រោយត្រឹមចំនុចកំពុងចាក់នេះ">
+                                    🏁 Trim កន្ទុយ
+                                </button>
+                            </div>
+
+                            <!-- Export Actions -->
+                            <div class="transport-group-right">
+                                <button id="exportActiveClipBtn" class="btn btn-primary btn-sm" style="font-weight:700;" title="ទាញយក Clip ដែលកំពុងកែសម្រួលនេះ">
+                                    ⚡ Export Clip
+                                </button>
+                                <button id="exportAllClipsStudioBtn" class="btn btn-success btn-sm" style="font-weight:700;" title="ទាញយក Clips ទាំងអស់ក្នុងបញ្ជីជាបាច់">
+                                    📦 Export All
+                                </button>
+                            </div>
+
+                            <!-- Backward compatibility hidden aliases -->
+                            <div style="display:none;">
+                                <button id="studioSetInBtn"></button>
+                                <button id="studioSetOutBtn"></button>
+                                <button id="splitTrimBtn"></button>
+                                <button id="undoTrimBtn"></button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
-            <aside class="sidebar right-sidebar">
-                <div class="sidebar-global-actions" style="padding: 10px 12px 4px 12px;">
-                    <button id="applyToAllClipsBtn" class="btn btn-primary btn-block btn-apply-all" onclick="applyStyleToAllClips()">
-                        📋 អនុវត្តម៉ូដទៅ Clips ទាំងអស់
-                    </button>
-                </div>
-
-                <div class="sidebar-tabs">
-                    <button class="tab-btn active" data-tab="textTab">✍️ អក្សរ</button>
-                    <button class="tab-btn" data-tab="colorFontTab">🎨 ពណ៌ & Font</button>
-                    <button class="tab-btn" data-tab="layoutTab">🖼️ Layout</button>
-                </div>
-
-                <div class="tab-contents">
-
-                    <div id="textTab" class="tab-content active">
-                        <div class="control-card">
-                            <div class="card-header-flex">
-                                <h4 class="card-title">🏷️ ចំណងជើង Clip (Clip Title)</h4>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <input type="text" id="activeClipTitleInput" class="form-control" placeholder="វាយចំណងជើង Clip ទីនេះ...">
-                            </div>
+            <!-- ----------------------------------------------------------------------
+                 3.3 RIGHT SIDEBAR: COLLAPSIBLE ACCORDION INSPECTOR
+                 ---------------------------------------------------------------------- -->
+            <aside class="sidebar-right">
+                <!-- SCREEN 2 RIGHT PANEL: TRIMMER OVERVIEW & PROCEED CTA -->
+                <div id="screen2TrimmerPanel" class="screen2-trimmer-panel hidden">
+                    <div class="right-panel-header">
+                        <div class="panel-title-group">
+                            <span style="font-size:1.1rem;">✂️</span>
+                            <h3 class="panel-title">របៀបស្រង់ Clip</h3>
                         </div>
+                        <span class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; font-size:0.75rem; padding:2px 8px; border-radius:12px; font-weight:700;">ជំហានទី ២</span>
+                    </div>
 
-                        <div class="control-card">
-                            <div class="card-header-flex">
-                                <h4 class="card-title">📌 អក្សរខាងលើ</h4>
-                                <button class="btn btn-outline btn-xs" onclick="clearTopText()">🗑️ លុប</button>
-                            </div>
-                            <div id="topTextSingleGroup" class="form-group hidden">
-                                <input type="text" id="topTextInput" class="form-control" value="អក្សរខាងលើ" placeholder="អក្សរខាងលើ...">
-                            </div>
-                            <div id="topTextDualGroup" class="dual-text-stack">
-                                <div class="form-group">
-                                    <label id="topPart1Label" style="color:#FFE600;">&#9654; ពាក្យទី១ (លឿង):</label>
-                                    <input type="text" id="topTextPart1Input" class="form-control" value="ដើម" placeholder="ពាក្យទី១...">
-                                </div>
-                                <div class="form-group">
-                                    <label id="topPart2Label" style="color:#FF5722;">&#9654; ពាក្យទី២ (ក្រហម):</label>
-                                    <input type="text" id="topTextPart2Input" class="form-control" value="ត្នោត" placeholder="ពាក្យទី២...">
-                                </div>
-                            </div>
-                            <div id="topWordChips" class="word-chips-container"></div>
+                    <!-- Trimmer Stats Box -->
+                    <div class="trimmer-stats-grid">
+                        <div class="trimmer-stat-card">
+                            <span class="stat-label">Clips បានស្រង់</span>
+                            <span id="screen2ClipsCount" class="stat-val">0</span>
                         </div>
-
-                        <div class="control-card">
-                            <div class="card-header-flex">
-                                <h4 class="card-title">📌 អក្សរខាងក្រោម</h4>
-                                <button class="btn btn-outline btn-xs" onclick="clearBottomText()">🗑️ លុប</button>
-                            </div>
-                            <div id="bottomTextSingleGroup" class="form-group hidden">
-                                <input type="text" id="bottomTextInput" class="form-control" value="អក្សរខាងក្រោម" placeholder="អក្សរខាងក្រោម...">
-                            </div>
-                            <div id="bottomTextDualGroup" class="dual-text-stack">
-                                <div class="form-group">
-                                    <label id="bottomPart1Label" style="color:#FFE600;">&#9654; ពាក្យទី១ (លឿង):</label>
-                                    <input type="text" id="bottomTextPart1Input" class="form-control" value="អក្សរ" placeholder="ពាក្យទី១...">
-                                </div>
-                                <div class="form-group">
-                                    <label id="bottomPart2Label" style="color:#FF5722;">&#9654; ពាក្យទី២ (ក្រហម):</label>
-                                    <input type="text" id="bottomTextPart2Input" class="form-control" value="ក្រោម" placeholder="ពាក្យទី២...">
-                                </div>
-                            </div>
-                            <div id="bottomWordChips" class="word-chips-container"></div>
+                        <div class="trimmer-stat-card">
+                            <span class="stat-label">រយៈពេលសរុប</span>
+                            <span id="screen2TotalDuration" class="stat-val">00:00</span>
                         </div>
                     </div>
 
-                    <div id="colorFontTab" class="tab-content">
-                        <div class="control-card">
-                            <h4 class="card-title">🎨 របៀបពណ៌អក្សរ (Color Mode)</h4>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <select id="colorModeSelect" class="form-control">
-                                    <option value="dual" selected>🎨 ពណ៌២ខ្ទង់ (Dual 2-Color)</option>
-                                    <option value="single">🖌️ ពណ៌តែមួយ (Single Color)</option>
-                                    <option value="gradient">🌈 Gradient</option>
-                                </select>
+                    <!-- Step-by-Step Guide -->
+                    <div class="trimmer-guide-card">
+                        <h4 class="guide-title">💡 គន្លឹះស្រង់ Clip រហ័ស:</h4>
+                        <ul class="guide-steps-list">
+                            <li>
+                                <span class="key-badge">S</span>
+                                <span>ចុច <strong>Set Start</strong> កំណត់ក្បាល Clip</span>
+                            </li>
+                            <li>
+                                <span class="key-badge">E</span>
+                                <span>ចុច <strong>Set End</strong> កំណត់កន្ទុយ Clip</span>
+                            </li>
+                            <li>
+                                <span class="key-badge">A</span>
+                                <span>ចុច <strong>Create Clip</strong> ស្រង់ចូលបញ្ជី</span>
+                            </li>
+                            <li>
+                                <span class="key-badge">✂️</span>
+                                <span>អាច <strong>Split</strong> ឬ Drag ផ្គុំ Clips តាមចិត្ត</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Proceed to Edit Primary Action -->
+                    <div class="proceed-action-box">
+                        <button id="btnProceedToEdit" type="button" class="btn btn-primary btn-lg btn-proceed-edit" onclick="window.switchScreen && window.switchScreen(3)" title="បន្តទៅតុបតែងម៉ូដអក្សរខ្មែរ">
+                            <span>👉 បន្តទៅ Edit តុបតែងម៉ូដ</span>
+                            <span class="btn-subtext">រៀបចំម៉ូដអក្សរ ក្បាល-កន្ទុយ &amp; Canvas</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SCREEN 3 RIGHT PANEL: CANVAS STYLING & ACCORDION INSPECTOR -->
+                <div id="screen3Inspector" class="screen3-inspector-wrapper">
+                    <!-- Panel Header -->
+                    <div class="right-panel-header">
+                        <div class="panel-title-group">
+                            <span style="font-size:1.1rem;">🎨</span>
+                            <h3 class="panel-title">ការកំណត់ម៉ូដ Clip</h3>
+                        </div>
+                        <button id="applyToAllClipsBtn" class="btn btn-secondary btn-xs" onclick="window.applyStyleToAllClips && window.applyStyleToAllClips()" title="អនុវត្តម៉ូដអក្សរ និងពណ៌នេះទៅកាន់ Clips ទាំងអស់ក្នុងបញ្ជី">
+                            📋 ម៉ូដទៅទាំងអស់
+                        </button>
+                    </div>
+
+                    <!-- Accordion Container -->
+                    <div class="accordion-container">
+
+                    <!-- Hidden elements for backward-compatibility -->
+                    <div style="display:none;">
+                        <input type="hidden" id="activeClipTitleInput">
+                        <input type="hidden" id="clipTitleInput">
+                        <div id="activeClipNameBadge"></div>
+                    </div>
+
+                    <!-- ACCORDION SECTION 1: YouTube Multi-Layer Studio (Visible in YouTube Mode) -->
+                    <div class="accordion-item hidden" id="youtubeStudioAccordionItem" data-section="youtube-studio">
+                        <button class="accordion-header" type="button">
+                            <div class="accordion-title-box">
+                                <span>📺</span>
+                                <span>YouTube Multi-Layer Studio</span>
+                            </div>
+                            <span class="accordion-chevron">▲</span>
+                        </button>
+                        <div class="accordion-body">
+                            <!-- Preset Layouts for Side-by-side & Multi-layer -->
+                            <label style="font-size:0.78rem; font-weight:700; color:var(--text-secondary); font-family:var(--font-khmer-kantumruy);">
+                                📐 ប្លង់រៀបចំ (Layout Presets):
+                            </label>
+                            <div class="youtube-layout-presets-grid">
+                                <button type="button" class="yt-layout-btn active" data-layout="split-right" title="វីដេអូស្តាំ (Host Right) + រូបភាពឆ្វេង (Images Left)">
+                                    <div class="yt-layout-icon-preview">
+                                        <div class="preview-img-side">IMG</div>
+                                        <div class="preview-vdo-side">VDO</div>
+                                    </div>
+                                    <span class="yt-layout-name">វីដេអូស្តាំ + រូបឆ្វេង</span>
+                                </button>
+                                <button type="button" class="yt-layout-btn" data-layout="split-left" title="វីដេអូឆ្វេង (Host Left) + រូបភាពស្តាំ (Images Right)">
+                                    <div class="yt-layout-icon-preview">
+                                        <div class="preview-vdo-side">VDO</div>
+                                        <div class="preview-img-side">IMG</div>
+                                    </div>
+                                    <span class="yt-layout-name">វីដេអូឆ្វេង + រូបស្តាំ</span>
+                                </button>
+                                <button type="button" class="yt-layout-btn" data-layout="pip" title="រូបភាពធំពេញផ្ទៃ + វីដេអូតូចនៅជ្រុង (Picture in Picture)">
+                                    <div class="yt-layout-icon-preview">
+                                        <div class="preview-pip-main">IMG FULL</div>
+                                        <div class="preview-pip-vdo">VDO</div>
+                                    </div>
+                                    <span class="yt-layout-name">Picture in Picture</span>
+                                </button>
+                                <button type="button" class="yt-layout-btn" data-layout="full" title="វីដេអូពេញអេក្រង់ 16:9 Full Screen">
+                                    <div class="yt-layout-icon-preview">
+                                        <div class="preview-vdo-side" style="width:100%;">VDO FULL 16:9</div>
+                                    </div>
+                                    <span class="yt-layout-name">Full 16:9</span>
+                                </button>
+                            </div>
+
+                            <!-- Host Video Placement & Soft Blend Controls -->
+                            <div class="dual-text-stack" style="margin-top:4px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:0.78rem; font-weight:700; color:#fff;">📹 កំណត់ទីតាំងវីដេអូមេ (Host Video):</span>
+                                    <label style="display:flex; align-items:center; gap:4px; font-size:0.72rem; color:var(--text-muted); cursor:pointer;">
+                                        <input type="checkbox" id="ytVideoFeatherCheckbox" checked>
+                                        <span>Soft Edge Blend (រលាយគែម)</span>
+                                    </label>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col">
+                                        <div class="range-header">
+                                            <label for="ytVideoWidthInput">ទទឹងវីដេអូ (%):</label>
+                                            <span id="ytVideoWidthVal" class="val-badge">50%</span>
+                                        </div>
+                                        <input type="range" id="ytVideoWidthInput" min="30" max="100" value="50">
+                                    </div>
+                                    <div class="form-group col">
+                                        <div class="range-header">
+                                            <label for="ytVideoFeatherInput">កម្រិត Blend គែម:</label>
+                                            <span id="ytVideoFeatherVal" class="val-badge">40px</span>
+                                        </div>
+                                        <input type="range" id="ytVideoFeatherInput" min="0" max="100" value="40">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Multi-Image Media Layers Section -->
+                            <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+                                <div style="display:flex; align-items:center; justify-content:space-between;">
+                                    <label style="font-size:0.78rem; font-weight:700; color:var(--text-secondary); font-family:var(--font-khmer-kantumruy);">
+                                        🖼️ ស្រទាប់រូបភាព (Image Layers):
+                                    </label>
+                                    <div style="display:flex; gap:6px;">
+                                        <button type="button" id="ytLoadSampleCollageBtn" class="btn btn-secondary btn-xs" title="ដាក់រូបភាពគំរូព័ត៌មាន (Collage Sample)">
+                                            📰 ដាក់រូបគំរូ
+                                        </button>
+                                        <button type="button" id="ytAddImageLayerBtn" class="btn btn-primary btn-xs" title="Upload រូបភាពថ្មី (JPG, PNG, WebP)">
+                                            ➕ បន្ថែមរូបភាព
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="file" id="ytImageLayerUploadInput" accept="image/*" multiple hidden>
+                                <div id="ytStudioLayersList" class="studio-layers-list">
+                                    <!-- Dynamic Layers Rendered Here -->
+                                </div>
+                            </div>
+
+                            <!-- Lower-Third News Headline Banner Section -->
+                            <div class="dual-text-stack" style="margin-top:6px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:0.78rem; font-weight:700; color:var(--accent-gold);">🏷️ បដាព័ត៌មានខាងក្រោម (Lower-Third Banner):</span>
+                                    <label style="display:flex; align-items:center; gap:4px; font-size:0.72rem; color:var(--text-muted); cursor:pointer;">
+                                        <input type="checkbox" id="ytBannerEnabledCheckbox" checked>
+                                        <span>បើកដំណើរការបដា</span>
+                                    </label>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="ytBannerTextInput">អក្សរបដា (Headline Text):</label>
+                                    <input type="text" id="ytBannerTextInput" class="form-control" value="ហួសពេលហើយអូន ! ត្រង់ថាខ្មែរនិងសៀមជាមនុស្សស្អាតបាត" placeholder="បញ្ចូលចំណងជើងព័ត៌មាន..." style="font-family:var(--font-khmer-moul); color:#FFE600; font-size:0.92rem;">
+                                </div>
+
+                                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;">
+                                    <span style="font-size:0.72rem; color:var(--text-muted); align-self:center;">គំរូ:</span>
+                                    <span class="badge-headline-sample" data-text="ហួសពេលហើយអូន !">ហួសពេលហើយអូន !</span>
+                                    <span class="badge-headline-sample" data-text="ត្រង់ថាខ្មែរសៀមជាមនុស្សស្អាតបាត">ខ្មែរសៀមស្អាតបាត</span>
+                                    <span class="badge-headline-sample" data-text="តិត សារ៉ាត់ទ្រាំនិងពួកអាលុញពងមិនបាន">តិត សារ៉ាត់</span>
+                                </div>
+
+                                <div class="form-row" style="margin-top:4px;">
+                                    <div class="form-group col">
+                                        <div class="range-header">
+                                            <label for="ytBannerFontSizeInput">ទំហំអក្សរ:</label>
+                                            <span id="ytBannerFontSizeVal" class="val-badge">42px</span>
+                                        </div>
+                                        <input type="range" id="ytBannerFontSizeInput" min="20" max="80" value="42">
+                                    </div>
+                                    <div class="form-group col">
+                                        <div class="range-header">
+                                            <label for="ytBannerHeightInput">កម្ពស់បដា:</label>
+                                            <span id="ytBannerHeightVal" class="val-badge">120px</span>
+                                        </div>
+                                        <input type="range" id="ytBannerHeightInput" min="60" max="220" value="120">
+                                    </div>
+                                </div>
+
+                                <div class="form-row" style="align-items:center; margin-top:4px;">
+                                    <div class="form-group col">
+                                        <label>ពណ៌បដា (Banner BG):</label>
+                                        <div style="display:flex; gap:6px; align-items:center; margin-top:2px;">
+                                            <button type="button" class="banner-color-btn active" data-color="#005f73" style="background:#005f73;" title="Dark Teal"></button>
+                                            <button type="button" class="banner-color-btn" data-color="#0a369d" style="background:#0a369d;" title="Deep Blue"></button>
+                                            <button type="button" class="banner-color-btn" data-color="#8b0000" style="background:#8b0000;" title="Crimson Red"></button>
+                                            <button type="button" class="banner-color-btn" data-color="#1b4332" style="background:#1b4332;" title="Forest Green"></button>
+                                            <button type="button" class="banner-color-btn" data-color="#000000" style="background:#000000;" title="Pitch Black"></button>
+                                            <input type="color" id="ytBannerBgColorInput" value="#005f73" style="width:24px; height:24px; border:none; padding:0; background:none; cursor:pointer;" title="ជ្រើសពណ៌តាមចិត្ត">
+                                        </div>
+                                    </div>
+                                    <div class="form-group col">
+                                        <label>ពណ៌អក្សរ (Text Color):</label>
+                                        <div style="display:flex; gap:6px; align-items:center; margin-top:2px;">
+                                            <button type="button" class="banner-text-color-btn" data-color="#FFE600" style="width:20px; height:20px; border-radius:50%; background:#FFE600; border:2px solid #fff; cursor:pointer;" title="Yellow"></button>
+                                            <button type="button" class="banner-text-color-btn" data-color="#FFFFFF" style="width:20px; height:20px; border-radius:50%; background:#FFFFFF; border:1px solid #888; cursor:pointer;" title="White"></button>
+                                            <button type="button" class="banner-text-color-btn" data-color="#38BDF8" style="width:20px; height:20px; border-radius:50%; background:#38BDF8; border:1px solid #888; cursor:pointer;" title="Cyan"></button>
+                                            <input type="color" id="ytBannerTextColorInput" value="#FFE600" style="width:24px; height:24px; border:none; padding:0; background:none; cursor:pointer;" title="ជ្រើសពណ៌តាមចិត្ត">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="control-card">
-                            <h4 class="card-title">📌 ពណ៌អក្សរខាងលើ (Top Text Colors)</h4>
-                            <div class="form-row">
-                                <div class="form-group col">
-                                    <label>ពណ៌ទី១ (ពាក្យទី១):</label>
-                                    <div class="color-picker-swatch-box" data-target="topTextColor1" id="topTextColor1Box">
-                                        <span class="swatch-circle" id="topTextColor1Swatch" style="background:#FFE600;"></span>
-                                        <span id="topTextColor1Val" class="color-val">#FFE600</span>
+                    <!-- ACCORDION SECTION 2: Captions & Text -->
+                    <div class="accordion-item active" data-section="captions">
+                        <button class="accordion-header" type="button">
+                            <div class="accordion-title-box">
+                                <span>💬</span>
+                                <span>អក្សររត់ &amp; Captions</span>
+                            </div>
+                            <span class="accordion-chevron">▲</span>
+                        </button>
+                        <div class="accordion-body">
+                            <!-- Dynamic Caption Fields Container -->
+                            <div id="captionFieldsContainer" class="caption-fields-container">
+                                <!-- Top Text Card -->
+                                <div class="caption-field-card" data-field-id="top">
+                                    <div class="caption-input-wrapper">
+                                        <input type="text" id="topTextInput" class="form-control caption-text-input" value="បុណ្យផ្កាប្រាក់សាមគ្គី (ភាគ១)" placeholder="បញ្ចូលអក្សរនៅទីនេះ...">
+                                    </div>
+                                    
+                                    <!-- Highlight & Color Toolbar -->
+                                    <div class="caption-highlight-bar" id="topHighlightBar">
+                                        <div class="swatch-row" data-target="top">
+                                            <button type="button" class="color-swatch-btn" data-color="#FFE600" style="background:#FFE600;" title="លឿង (Yellow)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#FF5722" style="background:#FF5722;" title="ក្រហម (Red)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#FFFFFF" style="background:#FFFFFF;" title="ស (White)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#38BDF8" style="background:#38BDF8;" title="ផ្ទៃមេឃ (Sky Blue)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#22C55E" style="background:#22C55E;" title="បៃតង (Green)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#A855F7" style="background:#A855F7;" title="ស្វាយ (Purple)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#F97316" style="background:#F97316;" title="ទឹកក្រូច (Orange)"></button>
+                                            <label class="color-custom-btn" title="ជ្រើសពណ៌តាមចិត្ត">
+                                                <input type="color" class="custom-color-input" data-target="top" value="#FFE600">
+                                                <span class="custom-color-dot" id="topCustomColorDot" style="background:#FFE600;"></span>
+                                                <span>Custom</span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
-                                <div id="topColor2Group" class="form-group col">
-                                    <label>ពណ៌ទី២ (ពាក្យទី២):</label>
-                                    <div class="color-picker-swatch-box" data-target="topTextColor2" id="topTextColor2Box">
-                                        <span class="swatch-circle" id="topTextColor2Swatch" style="background:#FF5722;"></span>
-                                        <span id="topTextColor2Val" class="color-val">#FF5722</span>
+
+                                <!-- Bottom Text Card -->
+                                <div class="caption-field-card" data-field-id="bottom">
+                                    <div class="caption-input-wrapper">
+                                        <input type="text" id="bottomTextInput" class="form-control caption-text-input" value="អង់អាច ក្លាហាន" placeholder="បញ្ចូលអក្សរនៅទីនេះ...">
                                     </div>
+                                    
+                                    <!-- Highlight & Color Toolbar -->
+                                    <div class="caption-highlight-bar" id="bottomHighlightBar">
+                                        <div class="swatch-row" data-target="bottom">
+                                            <button type="button" class="color-swatch-btn" data-color="#FFE600" style="background:#FFE600;" title="លឿង (Yellow)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#FF5722" style="background:#FF5722;" title="ក្រហម (Red)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#FFFFFF" style="background:#FFFFFF;" title="ស (White)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#38BDF8" style="background:#38BDF8;" title="ផ្ទៃមេឃ (Sky Blue)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#22C55E" style="background:#22C55E;" title="បៃតង (Green)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#A855F7" style="background:#A855F7;" title="ស្វាយ (Purple)"></button>
+                                            <button type="button" class="color-swatch-btn" data-color="#F97316" style="background:#F97316;" title="ទឹកក្រូច (Orange)"></button>
+                                            <label class="color-custom-btn" title="ជ្រើសពណ៌តាមចិត្ត">
+                                                <input type="color" class="custom-color-input" data-target="bottom" value="#FFE600">
+                                                <span class="custom-color-dot" id="bottomCustomColorDot" style="background:#FFE600;"></span>
+                                                <span>Custom</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Dynamic Extra Lines Container -->
+                                <div id="extraCaptionLinesContainer"></div>
+                            </div>
+
+                            <!-- Add Caption Field Button -->
+                            <button type="button" id="btnAddCaptionField" class="btn-add-caption-field">
+                                <span>➕</span>
+                                <span>បន្ថែមប្រអប់អក្សរ (+ Add Field)</span>
+                            </button>
+
+                            <!-- Hidden backward-compatibility elements -->
+                            <input type="hidden" id="topTextPart1Input" value="អំពើហិង្សា">
+                            <input type="hidden" id="topTextPart2Input" value="ជាអំពើ">
+                            <input type="hidden" id="bottomTextPart1Input" value="អង់អាច">
+                            <input type="hidden" id="bottomTextPart2Input" value="ក្លាហាន">
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION SECTION 3: Visual Presets & Text Style -->
+                    <div class="accordion-item" data-section="presets">
+                        <button class="accordion-header" type="button">
+                            <div class="accordion-title-box">
+                                <span>🎨</span>
+                                <span>ម៉ូដអក្សរ &amp; Presets ស្អាតៗ</span>
+                            </div>
+                            <span class="accordion-chevron">▼</span>
+                        </button>
+                        <div class="accordion-body">
+                            <!-- 5 Instant Visual Style Presets -->
+                            <label style="font-size:0.78rem; font-weight:700; color:var(--text-secondary); font-family:var(--font-khmer-kantumruy);">
+                                🌟 ជ្រើសម៉ូដរហ័ស (Visual Presets):
+                            </label>
+                            <div class="presets-grid">
+                                <div id="presetClassicKhmer" class="preset-card active" title="ម៉ូដ Moul ខ្មែរបុរាណ លឿង+ក្រហម ស៊ុមស">
+                                    <div class="preset-preview-pill preset-classic-khmer">ខ្មែរម៉ូល</div>
+                                    <span class="preset-name">Classic Khmer</span>
+                                </div>
+                                <div id="presetModernYellow" class="preset-card" title="ម៉ូដ Modern Kantumruy Pro លឿង+ស ស៊ុមខ្មៅ">
+                                    <div class="preset-preview-pill preset-modern-yellow">Modern</div>
+                                    <span class="preset-name">Modern Yellow</span>
+                                </div>
+                                <div id="presetBoldSocial" class="preset-card" title="ម៉ូដ Social Battambang 900 ខៀវ+ផ្កាឈូក">
+                                    <div class="preset-preview-pill preset-bold-social">Social 🔥</div>
+                                    <span class="preset-name">Bold Social</span>
+                                </div>
+                                <div id="presetCleanWhite" class="preset-card" title="ម៉ូដសស្អាត មានស្រមោលទន់">
+                                    <div class="preset-preview-pill preset-clean-white">White ⚪</div>
+                                    <span class="preset-name">Clean White</span>
+                                </div>
+                                <div id="presetNewsStyle" class="preset-card" style="grid-column: span 2;" title="ម៉ូដព័ត៌មាន News ប្លង់ក្រហម">
+                                    <div class="preset-preview-pill preset-news-style">BREAKING NEWS 📰</div>
+                                    <span class="preset-name">News Banner Style</span>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="control-card">
-                            <h4 class="card-title">📌 ពណ៌អក្សរខាងក្រោម (Bottom Text Colors)</h4>
-                            <div class="form-row">
-                                <div class="form-group col">
-                                    <label>ពណ៌ទី១ (ពាក្យទី១):</label>
-                                    <div class="color-picker-swatch-box" data-target="bottomTextColor1" id="bottomTextColor1Box">
-                                        <span class="swatch-circle" id="bottomTextColor1Swatch" style="background:#FFE600;"></span>
-                                        <span id="bottomTextColor1Val" class="color-val">#FFE600</span>
-                                    </div>
-                                </div>
-                                <div id="bottomColor2Group" class="form-group col">
-                                    <label>ពណ៌ទី២ (ពាក្យទី២):</label>
-                                    <div class="color-picker-swatch-box" data-target="bottomTextColor2" id="bottomTextColor2Box">
-                                        <span class="swatch-circle" id="bottomTextColor2Swatch" style="background:#FF5722;"></span>
-                                        <span id="bottomTextColor2Val" class="color-val">#FF5722</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="control-card">
-                            <h4 class="card-title">🎨 ម៉ូដស៊ុម & Font</h4>
+                            <!-- Font Selector -->
                             <div class="form-group">
-                                <label>Font ខ្មែរ:</label>
+                                <label for="fontFamilySelect">Font ខ្មែរ:</label>
                                 <select id="fontFamilySelect" class="form-control">
                                     <option value="Moul" selected>Moul (ម៉ូល)</option>
                                     <option value="Kantumruy Pro">Kantumruy Pro</option>
@@ -350,6 +938,26 @@
                                     <option value="sans-serif">System Default</option>
                                 </select>
                             </div>
+
+                            <!-- Font Size Controls -->
+                            <div class="form-row">
+                                <div class="form-group col">
+                                    <div class="range-header">
+                                        <label for="topFontSizeInput">ទំហំលើ:</label>
+                                        <span id="topFontSizeVal" class="val-badge">65px</span>
+                                    </div>
+                                    <input type="range" id="topFontSizeInput" min="20" max="150" value="65">
+                                </div>
+                                <div class="form-group col">
+                                    <div class="range-header">
+                                        <label for="bottomFontSizeInput">ទំហំក្រោម:</label>
+                                        <span id="bottomFontSizeVal" class="val-badge">65px</span>
+                                    </div>
+                                    <input type="range" id="bottomFontSizeInput" min="20" max="150" value="65">
+                                </div>
+                            </div>
+
+                            <!-- Stroke & Shadow -->
                             <div class="form-row">
                                 <div class="form-group col">
                                     <label>ពណ៌ស៊ុម:</label>
@@ -359,77 +967,669 @@
                                     </div>
                                 </div>
                                 <div class="form-group col">
-                                    <label>កម្រាស់ស៊ុម:</label>
+                                    <div class="range-header">
+                                        <label for="strokeWidthInput">កម្រាស់ស៊ុម:</label>
+                                        <span id="strokeWidthVal" class="val-badge">12px</span>
+                                    </div>
                                     <input type="range" id="strokeWidthInput" min="0" max="30" value="12">
-                                    <span id="strokeWidthVal" class="val-badge">12px</span>
                                 </div>
                             </div>
+
                             <div class="form-group">
-                                <label>Glow Shadow:</label>
+                                <div class="range-header">
+                                    <label for="shadowBlurInput">Glow Shadow Blur:</label>
+                                    <span id="shadowBlurVal" class="val-badge">10px</span>
+                                </div>
                                 <input type="range" id="shadowBlurInput" min="0" max="30" value="10">
-                                <span id="shadowBlurVal" class="val-badge">10px</span>
                             </div>
+
+                            <!-- Hidden Y-pos inputs for drag/drop text positioning sync -->
+                            <input type="range" id="topPosYInput" min="50" max="1850" value="160" style="display:none;">
+                            <span id="topPosYVal" style="display:none;">160px</span>
+                            <input type="range" id="bottomPosYInput" min="50" max="1850" value="1750" style="display:none;">
+                            <span id="bottomPosYVal" style="display:none;">1750px</span>
+                            <input type="text" id="strokeColorInput" style="display:none;" value="#FFFFFF">
                         </div>
                     </div>
 
-                    <div id="layoutTab" class="tab-content">
-                        <div class="control-card">
-                            <h4 class="card-title">🖼️ ផ្ទៃខាងក្រោយ</h4>
+                    <!-- Hidden compatibility elements for Colors -->
+                    <div style="display:none;">
+                        <select id="colorModeSelect">
+                            <option value="dual" selected>Dual</option>
+                            <option value="single">Single</option>
+                        </select>
+                        <div id="topTextColor1Box"><span id="topTextColor1Swatch"></span><span id="topTextColor1Val"></span></div>
+                        <div id="topColor2Group"><div id="topTextColor2Box"><span id="topTextColor2Swatch"></span><span id="topTextColor2Val"></span></div></div>
+                        <div id="bottomTextColor1Box"><span id="bottomTextColor1Swatch"></span><span id="bottomTextColor1Val"></span></div>
+                        <div id="bottomColor2Group"><div id="bottomTextColor2Box"><span id="bottomTextColor2Swatch"></span><span id="bottomTextColor2Val"></span></div></div>
+                    </div>
+
+                    <!-- ACCORDION SECTION 5: Layout & Background -->
+                    <div class="accordion-item" data-section="layout">
+                        <button class="accordion-header" type="button">
+                            <div class="accordion-title-box">
+                                <span>🖼️</span>
+                                <span>ប្លង់ &amp; ផ្ទៃខាងក្រោយ</span>
+                            </div>
+                            <span class="accordion-chevron">▼</span>
+                        </button>
+                        <div class="accordion-body">
                             <div class="form-group">
-                                <label>របៀបផ្ទៃ:</label>
+                                <label for="bgModeSelect">របៀបផ្ទៃខាងក្រោយ:</label>
                                 <select id="bgModeSelect" class="form-control">
                                     <option value="blur" selected>✨ Blur Video</option>
-                                    <option value="color">🎨 ពណ៌ផ្ទៃ</option>
+                                    <option value="color">🎨 ពណ៌ផ្ទៃទោល</option>
                                     <option value="gradient">🌈 Gradient</option>
                                 </select>
                             </div>
+
                             <div id="blurConfig" class="form-group">
-                                <label>កម្រិត Blur:</label>
+                                <div class="range-header">
+                                    <label for="blurRadiusInput">កម្រិត Blur:</label>
+                                    <span id="blurRadiusVal" class="val-badge">25px</span>
+                                </div>
                                 <input type="range" id="blurRadiusInput" min="5" max="50" value="25">
-                                <span id="blurRadiusVal" class="val-badge">25px</span>
                             </div>
+
                             <div id="bgColorConfig" class="form-group hidden">
                                 <label>ជ្រើសពណ៌ផ្ទៃ:</label>
                                 <div class="color-picker-swatch-box" data-target="bgColor" id="bgColorBox">
                                     <span class="swatch-circle" id="bgColorSwatch" style="background:#111827;"></span>
                                     <span id="bgColorVal" class="color-val">#111827</span>
                                 </div>
+                                <input type="text" id="bgColorInput" value="#111827" style="display:none;">
                             </div>
-                        </div>
 
-                        <div class="control-card">
-                            <h4 class="card-title">📐 ទំហំ & ទីតាំងវីដេអូ</h4>
                             <div class="form-group">
-                                <label>ទំហំ (Scale %):</label>
+                                <div class="range-header">
+                                    <label for="videoScaleInput">ទំហំវីដេអូ (Scale %):</label>
+                                    <span id="videoScaleVal" class="val-badge">100%</span>
+                                </div>
                                 <input type="range" id="videoScaleInput" min="50" max="150" value="100">
-                                <span id="videoScaleVal" class="val-badge">100%</span>
                             </div>
+
                             <div class="form-group">
-                                <label>ទីតាំង Y Offset:</label>
+                                <div class="range-header">
+                                    <label for="videoOffsetYInput">ទីតាំងកម្ពស់ (Y Offset):</label>
+                                    <span id="videoOffsetYVal" class="val-badge">0px</span>
+                                </div>
                                 <input type="range" id="videoOffsetYInput" min="-300" max="300" value="0">
-                                <span id="videoOffsetYVal" class="val-badge">0px</span>
                             </div>
                         </div>
                     </div>
 
+                    <!-- ACCORDION SECTION 6: Export Settings -->
+                    <div class="accordion-item" data-section="export">
+                        <button class="accordion-header" type="button">
+                            <div class="accordion-title-box">
+                                <span>⚙️</span>
+                                <span>ការកំណត់ Export</span>
+                            </div>
+                            <span class="accordion-chevron">▼</span>
+                        </button>
+                        <div class="accordion-body">
+                            <div class="form-group">
+                                <label>គុណភាពវីដេអូ (Resolution):</label>
+                                <select class="form-control" id="exportResolutionSelect">
+                                    <option value="1080" selected>🌟 1080p Full HD (ច្បាស់បំផុតសម្រាប់ TikTok/Reels)</option>
+                                    <option value="720">⚡ 720p HD (លឿន &amp; សន្សំទំហំ)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>ទម្រង់ File:</label>
+                                <select class="form-control" id="exportFormatSelect">
+                                    <option value="mp4" selected>🎥 MP4 (H.264 - គាំទ្រគ្រប់ទូរស័ព្ទ &amp; PC)</option>
+                                    <option value="webm">🌐 WebM</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+                                <button class="btn btn-primary btn-block" onclick="document.getElementById('exportActiveClipBtn').click()">
+                                    ⚡ Export Clip នេះ
+                                </button>
+                                <button class="btn btn-success btn-block" onclick="document.getElementById('exportAllClipsStudioBtn').click()">
+                                    📦 Export Clips ទាំងអស់
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </aside>
-        </main>
+            </div>
+        </aside>
     </div>
 
-    <video id="hiddenVideo" playsinline style="display:none;"></video>
+        <!-- ==========================================================================
+             3.5 WONDERSHARE FILMORA 11 PRO WORKSPACE (YouTube 16:9 NLE Editor)
+             ========================================================================== -->
+        <div id="filmoraProWorkspace" class="filmora-pro-workspace hidden">
+            <!-- 1. FILMORA WINDOW TITLEBAR -->
+            <div class="filmora-window-titlebar">
+                <div class="filmora-titlebar-left">
+                    <div class="filmora-logo-mark" title="Wondershare Filmora 11">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 19.5H22L12 2Z" fill="#55E5C5" opacity="0.9"/>
+                            <path d="M12 7L6 17.5H18L12 7Z" fill="#1D262F"/>
+                            <path d="M12 11L9 16H15L12 11Z" fill="#55E5C5"/>
+                        </svg>
+                        <span class="filmora-app-name">Wondershare Filmora</span>
+                    </div>
+                    <nav class="filmora-menubar">
+                        <span class="filmora-menu-item">File</span>
+                        <span class="filmora-menu-item">Edit</span>
+                        <span class="filmora-menu-item">Tools</span>
+                        <span class="filmora-menu-item">View</span>
+                        <span class="filmora-menu-item">Export</span>
+                        <span class="filmora-menu-item">Help</span>
+                    </nav>
+                </div>
+                <div class="filmora-titlebar-center">
+                    <span id="filmoraProjectTitle" class="filmora-project-name">Untitled : 00:00:00:00</span>
+                </div>
+                <div class="filmora-titlebar-right">
+                    <button class="titlebar-icon-btn" title="Cloud Project">☁️</button>
+                    <button class="titlebar-icon-btn" title="Tips &amp; Tutorials">💡</button>
+                    <button class="titlebar-icon-btn" title="Account">👤</button>
+                    <button class="titlebar-icon-btn" title="Support">🎧</button>
+                    <button class="titlebar-icon-btn" title="Notifications">🔔</button>
+                    <div class="titlebar-window-controls">
+                        <button class="win-btn win-min" title="Minimize">—</button>
+                        <button class="win-btn win-max" title="Maximize">口</button>
+                        <button class="win-btn win-close" title="Close">✕</button>
+                    </div>
+                </div>
+            </div>
 
+            <!-- 2. FILMORA MAIN RIBBON TABS -->
+            <div class="filmora-ribbon-bar">
+                <nav class="filmora-ribbon-tabs" id="filmoraMainTabs">
+                    <button class="filmora-ribbon-tab active" data-tab="media">
+                        <span class="ribbon-icon">📁</span> Media
+                    </button>
+                    <button class="filmora-ribbon-tab" data-tab="stockMedia">
+                        <span class="ribbon-icon">🖼️</span> Stock Media
+                    </button>
+                    <button class="filmora-ribbon-tab" data-tab="audio">
+                        <span class="ribbon-icon">🎵</span> Audio
+                    </button>
+                    <button class="filmora-ribbon-tab" data-tab="titles">
+                        <span class="ribbon-icon">🔤</span> Titles
+                    </button>
+                    <button class="filmora-ribbon-tab" data-tab="transitions">
+                        <span class="ribbon-icon">🔀</span> Transitions
+                    </button>
+                    <button class="filmora-ribbon-tab" data-tab="effects">
+                        <span class="ribbon-icon">✨</span> Effects
+                    </button>
+                    <button class="filmora-ribbon-tab" data-tab="elements">
+                        <span class="ribbon-icon">🎨</span> Elements
+                    </button>
+                    <button class="filmora-ribbon-tab" data-tab="splitScreen">
+                        <span class="ribbon-icon">🖥️</span> Split Screen
+                    </button>
+                </nav>
+                <div class="filmora-ribbon-actions">
+                    <button id="filmoraExportClipBtn" class="filmora-btn-export-pill" title="Export Widescreen Video">
+                        Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. FILMORA UPPER DECK: EXACT 2-COLUMN SPLIT (50% Media Browser | 50% 16:9 Video Monitor) -->
+            <div class="filmora-upper-deck">
+                <!-- 3.1 LEFT COLUMN (50%): MEDIA BROWSER -->
+                <div class="filmora-panel filmora-media-browser-panel" id="filmoraMediaBrowserPanel">
+                    <!-- Left Sub-Sidebar: Tree Navigation -->
+                    <aside class="filmora-tree-sidebar">
+                        <div class="tree-item active" data-tree="project">
+                            <span class="tree-arrow">▶</span>
+                            <span class="tree-label">Project Media</span>
+                            <span class="tree-count" id="filmoraTreeProjectCount">(0)</span>
+                        </div>
+                        <div class="tree-item" data-tree="global">
+                            <span class="tree-arrow">▶</span>
+                            <span class="tree-label">Global Media</span>
+                            <span class="tree-count">(67)</span>
+                        </div>
+                        <div class="tree-item" data-tree="sample">
+                            <span class="tree-arrow">▶</span>
+                            <span class="tree-label">Sample Media</span>
+                            <span class="tree-count">(101)</span>
+                        </div>
+                        <div class="tree-category-group">
+                            <div class="tree-category-header">
+                                <span class="tree-arrow">▼</span>
+                                <span class="tree-label">Preset Templates</span>
+                            </div>
+                            <div class="tree-sub-list">
+                                <div class="tree-sub-item active" data-sub="custom">Custom <span class="sub-count">(0)</span></div>
+                                <div class="tree-sub-item" data-sub="all">All Templates <span class="sub-count">(1302)</span></div>
+                                <div class="tree-sub-item" data-sub="cinematic"><span class="badge-hot">HOT</span> Cinematic <span class="sub-count">(101)</span></div>
+                                <div class="tree-sub-item" data-sub="wedding"><span class="badge-hot">HOT</span> Wedding <span class="sub-count">(88)</span></div>
+                                <div class="tree-sub-item" data-sub="logo">Logo Reveal <span class="sub-count">(60)</span></div>
+                                <div class="tree-sub-item" data-sub="slideshow">Slideshow <span class="sub-count">(87)</span></div>
+                                <div class="tree-sub-item" data-sub="travel">Travel <span class="sub-count">(117)</span></div>
+                                <div class="tree-sub-item" data-sub="fashion">Fashion &amp; Beauty <span class="sub-count">(106)</span></div>
+                                <div class="tree-sub-item" data-sub="year2023">2023 <span class="sub-count">(39)</span></div>
+                                <div class="tree-sub-item" data-sub="sports">Sports &amp; Fitness <span class="sub-count">(113)</span></div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Right Sub-Column: Media Bin Content View -->
+                    <main class="filmora-media-content-area">
+                        <!-- Toolbar -->
+                        <div class="filmora-media-toolbar">
+                            <div class="media-tool-left">
+                                <div class="dropdown-btn-wrap">
+                                    <button id="filmoraImportBtn" class="filmora-drop-btn" onclick="document.getElementById('studioImageUploadInput').click()">
+                                        Import <span class="drop-caret">▾</span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-btn-wrap">
+                                    <button id="filmoraRecordBtn" class="filmora-drop-btn">
+                                        Record <span class="drop-caret">▾</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="media-tool-right">
+                                <div class="filmora-search-box">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" id="filmoraMediaSearch" placeholder="Search media">
+                                </div>
+                                <button class="media-view-icon-btn" title="Filter by format">
+                                    <span style="font-size:13px;">Y</span>
+                                </button>
+                                <button class="media-view-icon-btn active" title="Grid View">
+                                    <span>:::</span>
+                                </button>
+                                <button class="media-view-icon-btn" title="List View">
+                                    <span>≡</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Media Display Viewport -->
+                        <div class="filmora-media-viewport" id="filmoraMediaViewport">
+                            <!-- Empty Dropzone State (matching Image 2) -->
+                            <div id="filmoraEmptyDropzone" class="filmora-empty-dropzone" onclick="document.getElementById('studioImageUploadInput').click()">
+                                <div class="dropzone-icon-tray">
+                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#55E5C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                </div>
+                                <p class="dropzone-main-text">Drop your video clips, images, or audio here! Or,</p>
+                                <p class="dropzone-link-text">Click here to import media.</p>
+                            </div>
+
+                            <!-- Dynamic Media Items Grid (populated by Tab or Import) -->
+                            <div id="filmoraItemsGrid" class="filmora-items-grid hidden">
+                                <!-- Cards injected dynamically via JS for Titles, Stock Media, Effects, Split Screen -->
+                            </div>
+                        </div>
+                    </main>
+                </div>
+
+                <!-- 3.2 RIGHT COLUMN (50%): 16:9 VIDEO MONITOR PLAYER -->
+                <div class="filmora-panel filmora-monitor-panel" id="filmoraMonitorPanel">
+                    <!-- Monitor Canvas Viewport -->
+                    <div class="filmora-monitor-screen" id="filmoraMonitorScreen">
+                        <div id="filmoraCanvasSlot" class="filmora-canvas-slot">
+                            <!-- canvasWrapper mounts here -->
+                        </div>
+                    </div>
+
+                    <!-- Monitor Scrubber / Progress Bar -->
+                    <div class="filmora-monitor-scrubber-row">
+                        <div class="filmora-monitor-progress-track" id="filmoraMonitorProgressTrack">
+                            <div class="filmora-monitor-progress-bar" id="filmoraMonitorProgressBar"></div>
+                        </div>
+                    </div>
+
+                    <!-- Monitor Transport Toolbar (Matching Image 2 exactly) -->
+                    <div class="filmora-monitor-transport-bar">
+                        <!-- Left Transport Buttons -->
+                        <div class="monitor-transport-left">
+                            <button id="filmoraBtnFirstFrame" class="transport-btn" title="First Frame [|◀]">|◀</button>
+                            <button id="filmoraBtnStepBack" class="transport-btn" title="Previous Frame / 1s [◀]">◀</button>
+                            <button id="filmoraBtnPlayPause" class="transport-btn play-pause-btn" title="Play / Pause (Space)">▶</button>
+                            <button id="filmoraBtnStepForward" class="transport-btn" title="Next Frame / 1s [▶]">▶|</button>
+                            <button id="filmoraBtnStop" class="transport-btn" title="Stop [⏹]">⏹</button>
+                        </div>
+
+                        <!-- Right Controls -->
+                        <div class="monitor-transport-right">
+                            <button id="filmoraBtnMarkIn" class="transport-icon-btn" title="Mark In ({)">{</button>
+                            <button id="filmoraBtnMarkOut" class="transport-icon-btn" title="Mark Out (})">}</button>
+                            <span id="filmoraMonitorTimecode" class="monitor-timecode-display">00:00:00:00</span>
+                            <div class="monitor-dropdown-select">
+                                <select id="filmoraQualitySelect" class="filmora-select-dark">
+                                    <option value="full" selected>Full</option>
+                                    <option value="half">1/2</option>
+                                    <option value="quarter">1/4</option>
+                                </select>
+                            </div>
+                            <button id="filmoraZoomBtn" class="transport-icon-btn" title="Display Zoom / Safe Zone">[ ]</button>
+                            <button id="filmoraSnapshotBtn" class="transport-icon-btn" title="Take Snapshot (📷)">📷</button>
+                            <div class="monitor-vol-control">
+                                <button id="filmoraMuteBtn" class="transport-icon-btn" title="Mute / Unmute">🔊</button>
+                                <input type="range" id="filmoraMonitorVol" class="filmora-thin-slider" min="0" max="100" value="100">
+                            </div>
+                            <button id="filmoraFullscreenBtn" class="transport-icon-btn" title="Fullscreen (⛶)">⛶</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3.3 SLIDE-OVER FILMORA PROPERTY INSPECTOR DRAWER (Toggled by Color Match or double-click) -->
+                <div id="filmoraInspectorDrawer" class="filmora-inspector-drawer closed">
+                    <div class="inspector-drawer-header">
+                        <div class="inspector-drawer-tabs">
+                            <button class="insp-tab active" data-tab="video">Video</button>
+                            <button class="insp-tab" data-tab="banner">Banner (Moul)</button>
+                            <button class="insp-tab" data-tab="collage">Collage</button>
+                            <button class="insp-tab" data-tab="audio">Audio</button>
+                        </div>
+                        <button id="filmoraCloseInspectorBtn" class="btn-close-drawer" title="Close Inspector">✕</button>
+                    </div>
+                    <div class="inspector-drawer-body">
+                        <!-- Panel Video Transform & Split Layout -->
+                        <div id="inspPaneVideo" class="insp-pane active">
+                            <div class="insp-section">
+                                <span class="insp-section-title">📐 Split Screen Presets</span>
+                                <div class="filmora-layout-grid">
+                                    <button class="fl-preset-btn active" data-layout="split-right">
+                                        <div class="fl-preset-preview"><span class="img-box"></span><span class="vdo-box"></span></div>
+                                        <span>ស្តាំ + រូបឆ្វេង</span>
+                                    </button>
+                                    <button class="fl-preset-btn" data-layout="split-left">
+                                        <div class="fl-preset-preview"><span class="vdo-box"></span><span class="img-box"></span></div>
+                                        <span>ឆ្វេង + រូបស្តាំ</span>
+                                    </button>
+                                    <button class="fl-preset-btn" data-layout="pip">
+                                        <div class="fl-preset-preview"><span class="full-img"></span><span class="pip-vdo"></span></div>
+                                        <span>PiP កណ្តែត</span>
+                                    </button>
+                                    <button class="fl-preset-btn" data-layout="full">
+                                        <div class="fl-preset-preview"><span class="full-vdo"></span></div>
+                                        <span>ពេញ 16:9</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="insp-section">
+                                <span class="insp-section-title">✨ Soft Edge Blend (Feathering)</span>
+                                <div class="insp-param-row">
+                                    <label>កម្រិត Feathering:</label>
+                                    <span id="filmoraFeatherVal" class="insp-val">40px</span>
+                                </div>
+                                <input type="range" id="filmoraFeatherInput" class="filmora-slider" min="0" max="120" value="40">
+                            </div>
+                            <div class="insp-section">
+                                <span class="insp-section-title">↔️ Host Video Width %</span>
+                                <div class="insp-param-row">
+                                    <label>ទទឹងវីដេអូ:</label>
+                                    <span id="filmoraWidthPctVal" class="insp-val">50%</span>
+                                </div>
+                                <input type="range" id="filmoraWidthPctInput" class="filmora-slider" min="30" max="80" value="50">
+                            </div>
+                        </div>
+
+                        <!-- Panel Banner (Khmer Moul) -->
+                        <div id="inspPaneBanner" class="insp-pane hidden">
+                            <div class="insp-section">
+                                <div class="insp-param-row">
+                                    <span class="insp-section-title">📰 បដាចំណងជើង (Khmer Moul)</span>
+                                    <input type="checkbox" id="filmoraBannerToggle" checked>
+                                </div>
+                                <textarea id="filmoraBannerTextInput" class="filmora-dark-textarea" rows="3" placeholder="វាយចំណងជើងព័ត៌មានខ្មែរ..."></textarea>
+                            </div>
+                            <div class="insp-section">
+                                <div class="insp-param-row">
+                                    <label>ទំហំអក្សរ:</label>
+                                    <span id="filmoraBannerFontSizeVal" class="insp-val">42px</span>
+                                </div>
+                                <input type="range" id="filmoraBannerFontSizeInput" class="filmora-slider" min="26" max="68" value="42">
+                            </div>
+                            <div class="insp-section">
+                                <div class="insp-param-row">
+                                    <label>កម្ពស់បដា:</label>
+                                    <span id="filmoraBannerHeightVal" class="insp-val">120px</span>
+                                </div>
+                                <input type="range" id="filmoraBannerHeightInput" class="filmora-slider" min="80" max="220" value="120">
+                            </div>
+                            <div class="insp-section">
+                                <label>ពណ៌ផ្ទៃបដា:</label>
+                                <div class="filmora-color-swatches" id="filmoraBannerColorSwatches">
+                                    <button class="color-swatch active" style="background:#005f73;" data-color="#005f73" title="Dark Teal"></button>
+                                    <button class="color-swatch" style="background:#0f3460;" data-color="#0f3460" title="Deep Blue"></button>
+                                    <button class="color-swatch" style="background:#780000;" data-color="#780000" title="Crimson Red"></button>
+                                    <button class="color-swatch" style="background:#14532d;" data-color="#14532d" title="Forest Green"></button>
+                                    <button class="color-swatch" style="background:#0f172a;" data-color="#0f172a" title="Midnight Black"></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Collage Layers -->
+                        <div id="inspPaneCollage" class="insp-pane hidden">
+                            <div class="insp-section">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <span class="insp-section-title">ស្រទាប់រូបភាព (<span id="filmoraLayerCount">0</span>)</span>
+                                    <button id="filmoraBtnAddLayer" class="filmora-btn-teal-xs" onclick="document.getElementById('studioImageUploadInput').click()">➕ បន្ថែមរូប</button>
+                                </div>
+                                <div id="filmoraLayersList" class="filmora-layers-list"></div>
+                                <button id="filmoraBtnLoadSampleCollage" class="filmora-btn-outline-sm" style="width:100%; margin-top:8px;">
+                                    📰 ដាក់រូបគំរូព័ត៌មាន (3 រូប)
+                                </button>
+                            </div>
+
+                            <!-- Selected Layer Properties -->
+                            <div id="filmoraActiveLayerControls" class="insp-section hidden" style="border-top: 1px solid var(--fl-border); margin-top: 10px; padding-top: 10px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <span class="insp-section-title" style="color:var(--fl-teal);">✨ កែសម្រួលរូបភាព</span>
+                                    <span id="filmoraActiveLayerName" style="font-size:0.75rem; color:#94a3b8; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+                                </div>
+                                
+                                <label style="font-size:0.72rem; color:#94a3b8; display:block; margin-bottom:4px;">ទីតាំងរហ័សលើវីដេអូ (Presets):</label>
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-bottom:10px;">
+                                    <button type="button" class="filmora-btn-outline-sm btn-layer-preset" data-preset="center-video">🎥 កណ្តាល VDO</button>
+                                    <button type="button" class="filmora-btn-outline-sm btn-layer-preset" data-preset="top-right">📌 ជ្រុងលើស្តាំ</button>
+                                    <button type="button" class="filmora-btn-outline-sm btn-layer-preset" data-preset="lower-third">📰 លើបដាព័ត៌មាន</button>
+                                    <button type="button" class="filmora-btn-outline-sm btn-layer-preset" data-preset="left-side">📐 ខាងឆ្វេង</button>
+                                </div>
+
+                                <div class="insp-param-row">
+                                    <label>ទំហំរូប (Scale):</label>
+                                    <span id="filmoraLayerScaleVal" class="insp-val">100%</span>
+                                </div>
+                                <input type="range" id="filmoraLayerScaleInput" class="filmora-slider" min="20" max="250" value="100">
+
+                                <div class="insp-param-row" style="margin-top:8px;">
+                                    <label>ភាពច្បាស់ (Opacity):</label>
+                                    <span id="filmoraLayerOpacityVal" class="insp-val">100%</span>
+                                </div>
+                                <input type="range" id="filmoraLayerOpacityInput" class="filmora-slider" min="10" max="100" value="100">
+
+                                <div style="display:flex; gap:6px; margin-top:10px;">
+                                    <button type="button" id="btnLayerBringForward" class="filmora-btn-outline-sm" style="flex:1;">⬆️ លើគេ</button>
+                                    <button type="button" id="btnLayerSendBackward" class="filmora-btn-outline-sm" style="flex:1;">⬇️ ក្រោមគេ</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Audio Master -->
+                        <div id="inspPaneAudio" class="insp-pane hidden">
+                            <div class="insp-section">
+                                <span class="insp-section-title">🔊 Master Audio Settings</span>
+                                <div class="insp-param-row">
+                                    <label>កម្រិតសំឡេង:</label>
+                                    <span id="filmoraMasterVolVal" class="insp-val">100%</span>
+                                </div>
+                                <input type="range" id="filmoraMasterVolInput" class="filmora-slider" min="0" max="200" value="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. FILMORA TIMELINE TOOLBAR (Matching Image 2) -->
+            <div class="filmora-timeline-toolbar">
+                <div class="tl-toolbar-left">
+                    <button id="filmoraToolUndo" class="filmora-tl-btn" title="Undo (Ctrl+Z)">↩️</button>
+                    <button id="filmoraToolRedo" class="filmora-tl-btn" title="Redo (Ctrl+Y)">↪️</button>
+                    <button id="filmoraToolDelete" class="filmora-tl-btn" title="Delete (Del)">🗑️</button>
+                    <button id="filmoraToolSplit" class="filmora-tl-btn btn-razor-filmora" title="Split at Playhead (S)">
+                        <span class="razor-icon">✂️</span>
+                    </button>
+                    <button id="filmoraToolCrop" class="filmora-tl-btn" title="Crop &amp; Zoom">📐</button>
+                    <button id="filmoraToolSpeed" class="filmora-tl-btn" title="Speed">⏱️</button>
+                    <button id="filmoraToolInspectorToggle" class="filmora-tl-btn active-accent" title="Color Tuning / Inspector Settings">🎨</button>
+                    <button id="filmoraToolChroma" class="filmora-tl-btn" title="Green Screen / Chroma Key">🟢</button>
+                </div>
+                <div class="tl-toolbar-right">
+                    <button class="filmora-tl-btn" title="Audio Keyframe">📊</button>
+                    <button class="filmora-tl-btn" title="Voiceover Record">🎙️</button>
+                    <button class="filmora-tl-btn" title="Add Marker">🏷️</button>
+                    <div class="tl-zoom-container">
+                        <span class="zoom-icon-minus">[-]</span>
+                        <input type="range" id="filmoraTimelineZoom" class="filmora-zoom-range" min="15" max="90" value="35" title="Zoom Timeline">
+                        <span class="zoom-icon-plus">[+]</span>
+                    </div>
+                    <button id="filmoraToolFit" class="filmora-tl-btn" title="Fit to Timeline (↔)">[↔]</button>
+                </div>
+            </div>
+
+            <!-- 5. FILMORA MULTI-TRACK NLE TIMELINE (Matching Image 2) -->
+            <div class="filmora-timeline-container" id="filmoraTimelineContainer">
+                <div class="filmora-tracks-scroll-area" id="filmoraTracksScrollArea">
+                    <div class="filmora-timeline-grid">
+                        <!-- TIME RULER ROW -->
+                        <div class="filmora-ruler-row">
+                            <div class="filmora-track-header-corner">
+                                <button class="btn-add-track" title="Add Video or Audio Track">+</button>
+                                <span class="track-corner-timecode" id="filmoraCornerTimecode">00:00:00:00</span>
+                            </div>
+                            <div class="filmora-ruler-track" id="filmoraRulerTrack">
+                                <canvas id="filmoraRulerCanvas" height="26"></canvas>
+                                <!-- Filmora Red Needle Playhead -->
+                                <div id="filmoraPlayheadMarker" class="filmora-playhead-marker">
+                                    <div class="playhead-flag" id="filmoraPlayheadFlag">00:00</div>
+                                    <div class="playhead-line"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MULTI-TRACK ROWS -->
+                        <div class="filmora-tracks-body" id="filmoraTracksBody">
+                            <!-- Track 1 (T: Titles) -->
+                            <div class="filmora-track-lane-row" data-track="titles">
+                                <div class="filmora-track-lane-header">
+                                    <button class="track-vis-btn" title="Hide/Show Track">👁️</button>
+                                    <button class="track-lock-btn" title="Lock Track">🔒</button>
+                                    <span class="track-badge badge-title">T</span>
+                                    <span class="track-title-name">Titles</span>
+                                </div>
+                                <div class="filmora-track-lane-content" id="laneTitles">
+                                    <div id="filmoraBlockTitles" class="filmora-clip-block block-titles">
+                                        <span class="clip-icon">📰</span>
+                                        <span id="filmoraBlockTitlesLabel" class="clip-text">បដាចំណងជើងព័ត៌មាន (Khmer Moul)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Track 2 (V2: Overlay / Collage) -->
+                            <div class="filmora-track-lane-row" data-track="overlays">
+                                <div class="filmora-track-lane-header">
+                                    <button class="track-vis-btn" title="Hide/Show Track">👁️</button>
+                                    <button class="track-lock-btn" title="Lock Track">🔒</button>
+                                    <span class="track-badge badge-v2">V2</span>
+                                    <span class="track-title-name">Collage</span>
+                                </div>
+                                <div class="filmora-track-lane-content" id="laneOverlays">
+                                    <!-- Populated dynamically with overlay collage blocks -->
+                                </div>
+                            </div>
+
+                            <!-- Track 3 (V1: Master Video) -->
+                            <div class="filmora-track-lane-row" data-track="video">
+                                <div class="filmora-track-lane-header">
+                                    <button class="track-vis-btn" title="Hide/Show Track">👁️</button>
+                                    <button class="track-lock-btn" title="Lock Track">🔒</button>
+                                    <span class="track-badge badge-v1">🎥 1</span>
+                                    <span class="track-title-name">Host Video</span>
+                                </div>
+                                <div class="filmora-track-lane-content" id="laneVideo">
+                                    <div id="filmoraBlockVideo" class="filmora-clip-block block-video">
+                                        <div class="filmstrip-mini-frames"></div>
+                                        <span class="clip-icon">🎬</span>
+                                        <span id="filmoraBlockVideoLabel" class="clip-text">Master Video Clip</span>
+                                        <div class="clip-trim-handle left-handle"></div>
+                                        <div class="clip-trim-handle right-handle"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Track 4 (A1: Master Audio Wave) -->
+                            <div class="filmora-track-lane-row" data-track="audio">
+                                <div class="filmora-track-lane-header">
+                                    <button class="track-mute-btn" title="Mute Track">🔊</button>
+                                    <button class="track-lock-btn" title="Lock Track">🔒</button>
+                                    <span class="track-badge badge-a1">🎵 1</span>
+                                    <span class="track-title-name">Audio Wave</span>
+                                </div>
+                                <div class="filmora-track-lane-content" id="laneAudio">
+                                    <div id="filmoraBlockAudio" class="filmora-clip-block block-audio">
+                                        <canvas id="filmoraWaveformCanvas" class="audio-wave-canvas" height="34"></canvas>
+                                        <span class="clip-text">🎵 Audio Track (Dhamma Sermon Master)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================================================
+             4. BOTTOM STATUS BAR (Hidden Across All Screens)
+             ========================================================================== -->
+        <footer class="app-bottom-bar hidden" style="display: none !important;">
+            <div class="bottom-info-group">
+                <div class="active-clip-pill">
+                    <span>🎬</span>
+                    <span id="activeClipStatusBadge">មិនទាន់មាន Clip ជ្រើសរើស</span>
+                </div>
+                <div id="studioClipTimeDisplay" style="font-family:monospace; font-size:0.82rem; color:var(--text-muted);">
+                    00:00.00 / 00:00.00
+                </div>
+            </div>
+
+            <div class="bottom-export-btns">
+                <button class="btn btn-secondary btn-xs" onclick="window.seekRelative && window.seekRelative(-10)" title="ថយក្រោយ ១០វិនាទី">
+                    ⏮ -10s
+                </button>
+                <button class="btn btn-secondary btn-xs" onclick="window.seekRelative && window.seekRelative(10)" title="ទៅមុខ ១០វិនាទី">
+                    +10s ⏭
+                </button>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ==========================================================================
+         5. MODALS, POPOVERS & TOASTS
+         ========================================================================== -->
+
+    <!-- Export Progress Modal -->
     <div id="exportModal" class="modal-overlay hidden">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>⚡ កំពុង Export...</h3>
+                <h3>⚡ កំពុងដំណើរការ Export...</h3>
             </div>
             <div class="modal-body">
                 <div class="progress-bar-container">
                     <div id="exportProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
                 </div>
                 <div class="progress-stats">
-                    <span id="exportStatusText">រៀបចំ...</span>
+                    <span id="exportStatusText">រៀបចំដំណើរការ...</span>
                     <span id="exportPercentText">0%</span>
                 </div>
             </div>
@@ -437,16 +1637,129 @@
                 <button id="cancelExportBtn" class="btn btn-danger btn-sm">❌ បោះបង់</button>
             </div>
         </div>
+    <!-- Cloud Projects & Firestore Sync Modal -->
+    <div id="cloudProjectsModal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 650px; width: 95%;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:1.4rem;">☁️</span>
+                    <div>
+                        <h3 style="margin:0; font-size:1.1rem; color:#fff;">គម្រោង និង Clips លើ Firebase Firestore</h3>
+                        <span id="cloudModalUserEmail" style="font-size:0.78rem; color:#38bdf8;">ចូលគណនីរួចរាល់</span>
+                    </div>
+                </div>
+                <button id="closeCloudProjectsModalBtn" class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Save Current Work Action Box -->
+                <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:10px; padding:14px; margin-bottom:18px;">
+                    <label style="display:block; font-size:0.85rem; font-weight:600; color:#e2e8f0; margin-bottom:6px;">
+                        💾 រក្សាទុកគម្រោងបច្ចុប្បន្នទៅ Cloud Firestore:
+                    </label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="cloudProjectNameInput" class="form-control" placeholder="ដាក់ឈ្មោះគម្រោង (ឧ. រឿងភាគភាគ ០១ - Short Clips)..." style="flex:1; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); color:#fff; border-radius:6px; padding:8px 12px; font-size:0.88rem;">
+                        <button id="confirmSaveToCloudBtn" class="btn btn-primary btn-sm" style="background:linear-gradient(135deg, #0284c7, #2563eb); white-space:nowrap; padding:8px 16px;">
+                            ☁️ Save ឥឡូវនេះ
+                        </button>
+                    </div>
+                    <div id="cloudSaveNotice" style="display:none; font-size:0.8rem; margin-top:8px;"></div>
+                </div>
+
+                <!-- Saved Projects List Header -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="font-size:0.95rem; color:#f1f5f9; margin:0;">📁 បញ្ជីគម្រោងដែលបាន Save លើ Cloud (<span id="cloudProjectsCount">0</span>)</h4>
+                    <button id="refreshCloudProjectsBtn" class="btn btn-secondary btn-xs" title="ទាញយកបញ្ជីថ្មី">
+                        🔄 Refresh
+                    </button>
+                </div>
+
+                <!-- Projects List Container -->
+                <div id="cloudProjectsList" style="display:flex; flex-direction:column; gap:10px; min-height:120px;">
+                    <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.88rem;">
+                        កំពុងទាញយកទិន្នន័យពី Firebase...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+                <small style="color:var(--text-muted); font-size:0.75rem;">🔒 រាល់ទិន្នន័យត្រូវបានរក្សាទុកដោយសុវត្ថិភាពក្រោមគណនីផ្ទាល់ខ្លួនរបស់អ្នក</small>
+                <button id="closeCloudProjectsModalFooterBtn" class="btn btn-secondary btn-sm">បិទផ្ទាំង</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Custom In-DOM Color Picker Popover (Guaranteed Anchored Layout - Never jumps to top-left (0,0)) -->
+    <!-- Delete Clip Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 style="color:#f87171;">🗑️ បញ្ជាក់ការលុប Clip</h3>
+                <button id="closeDeleteModalBtn" class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:0.9rem; color:var(--text-secondary); line-height:1.6;">
+                    តើអ្នកពិតជាចង់លុប <strong id="deleteTargetClipName" style="color:#fff;">Clip នេះ</strong> មែនទេ?
+                </p>
+                <small style="color:var(--text-muted);">* អ្នកអាចចុច <strong>Ctrl + Z</strong> ដើម្បី Undo ត្រឡប់មកវិញបានគ្រប់ពេល។</small>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelDeleteClipBtn" class="btn btn-secondary btn-sm">បោះបង់</button>
+                <button id="confirmDeleteClipBtn" class="btn btn-danger btn-sm">🗑️ លុបចេញ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Help Modal -->
+    <div id="helpShortcutsModal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>⌨️ គ្រាប់ចុចកាត់ (Keyboard Shortcuts)</h3>
+                <button id="closeHelpModalBtn" class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; justify-content:space-between; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px;">
+                        <span>ចាក់ / ផ្អាក វីដេអូ</span>
+                        <kbd style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:bold;">Space</kbd>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px;">
+                        <span>កំណត់ពេលចាប់ផ្តើម (Set In)</span>
+                        <kbd style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:bold;">S</kbd>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px;">
+                        <span>កំណត់ពេលបញ្ចប់ (Set Out)</span>
+                        <kbd style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:bold;">E</kbd>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px;">
+                        <span>បង្កើត Clip ថ្មី (Add Clip)</span>
+                        <kbd style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:bold;">A</kbd>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px;">
+                        <span>ពុះ Clip ជាពីរ (Split)</span>
+                        <kbd style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:bold;">S (ក្នុង Studio)</kbd>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px;">
+                        <span>ត្រឡប់ថយក្រោយ (Undo)</span>
+                        <kbd style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:bold;">Ctrl + Z</kbd>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:6px;">
+                        <span>ទៅមុខវិញ (Redo)</span>
+                        <kbd style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:bold;">Ctrl + Y</kbd>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="closeHelpModalOkBtn" class="btn btn-primary btn-sm">យល់ព្រម</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom In-DOM Color Picker Popover -->
     <div id="customColorPopover" class="custom-color-popover hidden">
         <div class="popover-header">
             <span id="popoverTitle" class="popover-title">🎨 ជ្រើសរើសពណ៌</span>
             <button id="closePopoverBtn" class="popover-close-btn">&times;</button>
         </div>
         <div class="popover-body">
-            <div class="preset-label">ពណ៌ប្រៀបរៀប (Quick Palette):</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px;">ពណ៌រហ័ស (Quick Palette):</div>
             <div class="preset-grid">
                 <button class="preset-chip" data-color="#FFE600" style="background:#FFE600;" title="លឿង (Gold)"></button>
                 <button class="preset-chip" data-color="#FF5722" style="background:#FF5722;" title="ក្រហម (Red)"></button>
@@ -461,28 +1774,29 @@
                 <button class="preset-chip" data-color="#F97316" style="background:#F97316;" title="ទឹកក្រូច (Orange)"></button>
                 <button class="preset-chip" data-color="#EAB308" style="background:#EAB308;" title="លឿងចាស់ (Amber)"></button>
             </div>
-            <div class="popover-input-row">
+            <div class="popover-input-row" style="margin-top:8px;">
                 <span id="popoverPreviewSwatch" class="popover-preview-swatch"></span>
                 <input type="text" id="popoverHexInput" class="form-control popover-hex-input" maxlength="7" placeholder="#HEX">
                 <label for="popoverNativeColorInput" class="popover-native-btn" title="Custom Wheel">
-                    🎨 Color Wheel
+                    🎨 Wheel
                     <input type="color" id="popoverNativeColorInput" class="popover-native-picker">
                 </label>
             </div>
         </div>
     </div>
 
+    <!-- Toast Notification -->
     <div id="toastNotification" class="toast-notification hidden"></div>
 
-    <!-- AI Smart Assistant Modal (Khmer AI Clip Recommender & Voice Listener) -->
+    <!-- AI Smart Assistant Modal -->
     <div id="aiAssistantModal" class="modal-overlay hidden">
         <div class="modal-card ai-modal-card">
-            <div class="modal-header ai-modal-header">
-                <div class="ai-title-group">
-                    <span class="ai-header-icon">✨</span>
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.4rem;">✨</span>
                     <div>
                         <h3>Khmer AI Smart Clipper</h3>
-                        <span class="ai-header-sub">ប្រព័ន្ធ AI ស្ដាប់សំឡេងខ្មែរ &amp; ណែនាំ Clip ល្អៗពី Video ពេញ</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">ស្ដាប់សំឡេងខ្មែរ &amp; ណែនាំ Clips ល្អៗពី Video ពេញ</span>
                     </div>
                 </div>
                 <button id="closeAiModalBtn" class="modal-close-btn">&times;</button>
@@ -491,214 +1805,477 @@
             <div class="ai-modal-tabs">
                 <button class="ai-tab-btn active" data-aitab="aiRecommendTab">🤖 ណែនាំ Clip (AI Highlights)</button>
                 <button class="ai-tab-btn" data-aitab="aiVoiceTab">🎤 បញ្ជាសំឡេងខ្មែរ (Voice Command)</button>
-                <button class="ai-tab-btn" data-aitab="aiConfigTab">⚙️ កំណត់ Gemini API Key</button>
+                <button class="ai-tab-btn" data-aitab="aiConfigTab">⚙️ ម៉ូឌែល AI &amp; API Key</button>
             </div>
 
-            <div class="modal-body ai-modal-body">
+            <div class="modal-body">
                 <!-- TAB 1: AI Recommend -->
                 <div id="aiRecommendTab" class="ai-tab-content active">
-                    <div class="ai-control-banner">
-                        <div class="ai-banner-info">
-                            <h4>🎯 ស្កែន &amp; វិភាគសំឡេង full video រក Clip ដែលទាក់ទាញបំផុត</h4>
-                            <p>AI នឹងស្ដាប់សំឡេង វិភាគចំនុចក្តៅ (High Energy), ឈុតនិយាយសំខាន់, និងបង្កើតចំណងជើងខ្មែរទាក់ទាញ auto!</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.35); padding:12px 16px; border-radius:12px; margin-bottom:12px; gap:12px; flex-wrap:wrap;">
+                        <div style="flex:1;">
+                            <h4 style="color:#fff; margin:0 0 4px 0; font-size:0.95rem;">🎯 ស្វែងរក Clip ដែលទាក់ទាញបំផុត</h4>
+                            <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">AI ស្ដាប់សំឡេង វិភាគ High Energy, ឈុតទេសនាសំខាន់ និងបង្កើតចំណងជើងខ្មែរទាក់ទាញអូតូ!</p>
                         </div>
-                        <button id="startAiAnalysisBtn" class="btn btn-ai-sparkle btn-lg" disabled>
-                            🚀 ចាប់ផ្តើម AI វិភាគ (Scan Video)
+                        <button id="startAiAnalysisBtn" class="btn btn-primary" style="background: linear-gradient(135deg, #a855f7, #ec4899); font-weight:700; box-shadow:0 4px 14px rgba(168,85,247,0.4);">
+                            🚀 ចាប់ផ្តើម AI វិភាគ
                         </button>
                     </div>
 
-                    <!-- Mandatory Ollama Installation Alert Box -->
-                    <div id="ollamaRequiredAlert" class="hidden" style="background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.4); border-radius:12px; padding:16px; margin-bottom:16px;">
-                        <div style="display:flex; align-items:flex-start; gap:12px;">
-                            <span style="font-size:1.8rem;">⚠️</span>
-                            <div style="flex:1;">
-                                <h4 style="color:#f87171; margin:0 0 6px 0; font-size:1.05rem;">តម្រូវឱ្យដំឡើង Ollama (Local AI) ជាមុនសិន!</h4>
-                                <p style="color:#e2e8f0; font-size:0.88rem; margin:0 0 12px 0; line-height:1.5;">
-                                    កម្មវិធីនេះតម្រូវឱ្យមាន <strong>Ollama (Local Gemma 3 Model)</strong> លើម៉ាស៊ីន PC របស់អ្នក ដើម្បីស្ដាប់សំឡេងខ្មែរ និងបង្កើត Clip ដោយឥតគិតថ្លៃ មិនបាច់ប្រើ API Key!
-                                </p>
-                                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                                    <a href="https://ollama.com/download" target="_blank" class="btn btn-primary" style="background:#ef4444; border-color:#dc2626; text-decoration:none; padding:8px 16px; font-weight:bold; display:inline-flex; align-items:center; gap:6px;">
-                                        📥 Download &amp; Install Ollama (ollama.com)
-                                    </a>
-                                    <button type="button" id="recheckOllamaBtn" class="btn btn-secondary" style="padding:8px 14px;">
-                                        🔄 ពិនិត្យការដំឡើងឡើងវិញ
-                                    </button>
+                    <!-- AI Engine & Model Selector Toolbar -->
+                    <div class="ai-config-panel">
+                        <!-- Row 1: AI Engine + Model Selection + Live Status -->
+                        <div class="ai-control-row">
+                            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <!-- AI Engine Selector -->
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <label for="aiEngineSelect" style="font-size:0.82rem; font-weight:700; color:#c084fc;">🤖 AI Engine:</label>
+                                    <select id="aiEngineSelect" class="ai-select-styled">
+                                        <option value="omniroute" selected>🚀 OmniRoute Local AI Gateway (localhost — Real Multi-Model!)</option>
+                                        <option value="groq">🆓 Groq API (FREE - Llama 3 / Gemma — គ្មាន Visa Card!)</option>
+                                        <option value="puter">✨ Puter AI (Gemini/Claude/GPT-4o - ត្រូវ Balance)</option>
+                                        <option value="gemini">🔑 Google Gemini API (Google AI Studio Key)</option>
+                                        <option value="ollama">🦙 Ollama Local AI (Gemma 3 / Llama)</option>
+                                        <option value="local">🎯 Local Audio Waveform Peak Analyzer (Offline)</option>
+                                    </select>
                                 </div>
-                                <small style="color:#94a3b8; display:block; margin-top:8px;">
-                                    * ក្រោយពេល Download និង Install រួច សូមចុចប៊ូតុង "ពិនិត្យការដំឡើងឡើងវិញ" ដើម្បីចាប់ផ្តើមប្រើ AI!
-                                </small>
+
+                                <!-- Gemini / AI Model Selector -->
+                                <div id="geminiModelContainer" style="display:flex; align-items:center; gap:6px;">
+                                    <label for="geminiModelSelect" style="font-size:0.82rem; font-weight:700; color:#38bdf8;">🧠 ម៉ូឌែល AI:</label>
+                                    <select id="geminiModelSelect" class="ai-select-styled" style="border-color: rgba(56,189,248,0.4);">
+                                        <option value="multi-ai-consensus" selected>🤝 Multi-AI Consensus (Gemini Scout ➔ Claude Auditor — មិនដាច់ក្បាលដាច់កន្ទុយ) ★★★★★</option>
+                                        <option value="gemini-3.8-flash">⚡ Gemini 3.8 Flash (ជំនាន់ចុងក្រោយ)</option>
+                                        <option value="gemini-3.6-flash">⚡ Gemini 3.6 Flash (មានស្ថេរភាពខ្ពស់ - Recommended)</option>
+                                        <option value="gemini-flash-latest">🚀 Gemini Flash Latest</option>
+                                        <option value="gemini-2.0-flash">🚀 Gemini 2.0 Flash (Puter Free)</option>
+                                        <option value="gemini-1.5-flash">⚡ Gemini 1.5 Flash</option>
+                                        <option value="gemini-1.5-pro">🧠 Gemini 1.5 Pro (វិភាគស៊ីជម្រៅ)</option>
+                                        <option value="claude-3-5-sonnet">🎭 Claude 3.5 Sonnet (Puter)</option>
+                                        <option value="gpt-4o">🌐 GPT-4o (OpenAI Puter)</option>
+                                        <option value="gpt-4o-mini">🌐 GPT-4o mini (Puter)</option>
+                                        <option value="deepseek-chat">🐋 DeepSeek Chat V3 (Puter)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <span id="aiEngineStatusBadge" style="font-size:0.75rem; padding:3px 10px; border-radius:20px; font-weight:700; border:1px solid rgba(34,197,94,0.4); background:rgba(34,197,94,0.15); color:#4ade80;">
+                                ✨ Free Gemini AI Active (មិនបាច់ Visa Card)
+                            </span>
+                        </div>
+
+                        <!-- Puter Free Banner -->
+                        <div id="puterGeminiBanner" style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.25); border-radius:8px; padding:6px 12px; font-size:0.78rem;">
+                            <span style="color:#86efac;">
+                                💡 ប្រើសេវា Google Gemini AI ឥតគិតថ្លៃ ១០០% តាមរយៈ Puter.js (Free Unlimited, មិនបាច់ដាក់ Visa Card)
+                            </span>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <button type="button" id="testPuterGeminiBtn" class="btn btn-secondary btn-xs" style="color:#4ade80; border-color:rgba(34,197,94,0.4); font-size:0.75rem;">
+                                    🧪 តេស្ត Gemini
+                                </button>
+                                <button type="button" id="connectPuterBtn" class="btn btn-secondary btn-xs" style="color:#38bdf8; border-color:rgba(56,189,248,0.4); font-size:0.75rem;">
+                                    🌐 ភ្ជាប់ Puter
+                                </button>
                             </div>
                         </div>
-                    </div>
+                        <div id="puterGeminiTestResult" class="hidden" style="font-size:0.78rem; padding:4px 8px; border-radius:6px; background:rgba(0,0,0,0.4);"></div>
 
-                    <div class="ai-config-bar-inline" style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px; background:rgba(15,23,42,0.75); padding:14px 16px; border-radius:10px; border:1px solid rgba(139, 92, 246, 0.35);">
-                        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <label style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">⏱️ រយៈពេល Clip:</label>
-                                <select id="aiDurationModeSelect" class="form-control" style="width:auto; padding:5px 10px; font-size:0.85rem;">
-                                    <option value="dynamic" selected>✨ តាមសាច់ធម៌អូតូ (២mn, ២.៥mn, ៣mn, ៣.៥mn... ឌីណាមិក)</option>
+                        <!-- OmniRoute Local Gateway Container -->
+                        <div id="omniRouteContainer" class="hidden" style="background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.4); border-radius:10px; padding:10px 14px;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                                <span style="font-size:1.2rem;">🚀</span>
+                                <div>
+                                    <div style="font-weight:700; color:#a5b4fc; font-size:0.85rem;">OmniRoute — AI Gateway ក្នុងផ្ទះ</div>
+                                    <div style="font-size:0.73rem; color:#94a3b8;">ប្រើ Real AI Models ស្ថិតនៅ localhost — ល្អបំផុត មិនបាច់ Internet Key!</div>
+                                </div>
+                            </div>
+                            <!-- OmniRoute Model Selector with Real AI Achievements -->
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">
+                                <label style="font-size:0.8rem; color:#c7d2fe; font-weight:700; white-space:nowrap;">🧠 ជ្រើស Model:</label>
+                                <select id="omniRouteModelSelect" class="ai-select-styled" style="border-color:rgba(99,102,241,0.5); flex:1; min-width:240px;">
+                                    <optgroup label="🌟 កំពូលប្រព័ន្ធសហការ Multi-AI (Recommended)">
+                                        <option value="multi-ai-consensus" selected>🤝 Multi-AI Consensus (Gemini Scout ➔ Claude Auditor — មិនដាច់ក្បាលដាច់កន្ទុយ) ★★★★★</option>
+                                    </optgroup>
+                                    <optgroup label="🚀 OmniRoute Auto Smart Routers (ស្វ័យប្រវត្តិ)">
+                                        <option value="auto/best-fast">⚡ auto/best-fast — រើសយកម៉ូឌែលលឿនបំផុតដោយស្វ័យប្រវត្តិ ★★★★★</option>
+                                        <option value="auto/claude-sonnet">🎭 auto/claude-sonnet — រើសយក Claude Sonnet ល្អបំផុត ★★★★★</option>
+                                        <option value="auto/claude-opus">👑 auto/claude-opus — រើសយក Claude Opus Flagship ★★★★★</option>
+                                        <option value="auto/gemini">🔮 auto/gemini — រើសយក Gemini Pro/Flash ★★★★★</option>
+                                        <option value="auto/best-reasoning">🐋 auto/best-reasoning — រើសយកកំពូលម៉ូឌែលគិតស៊ីជម្រៅ ★★★★★</option>
+                                        <option value="auto/best-coding">💻 auto/best-coding — រើសយកកំពូលម៉ូឌែល Coding/Logic ★★★★★</option>
+                                    </optgroup>
+                                    <optgroup label="🏆 ម៉ូឌែលល្អបំផុត (Top Tier)">
+                                        <option value="claude-sonnet-4-5">🎭 Claude Sonnet 4.5 — ឆ្លាតបំផុតពី Anthropic (2025) ★★★★★</option>
+                                        <option value="claude-opus-4">👑 Claude Opus 4 — Flagship Anthropic, ល្អបំផុត (Jun 2025) ★★★★★</option>
+                                        <option value="gpt-4o">🌐 GPT-4o — OpenAI Multimodal ល្អ, Score 88.7% MMLU ★★★★★</option>
+                                        <option value="gemini-2.5-pro">🔮 Gemini 2.5 Pro — Google DeepMind, #1 Coding Benchmark ★★★★★</option>
+                                    </optgroup>
+                                    <optgroup label="⚡ ម៉ូឌែលលឿន (Fast Models)">
+                                        <option value="gemini-2.5-flash">⚡ Gemini 2.5 Flash — Google លឿន ប្រើ Production Best ★★★★☆</option>
+                                        <option value="claude-haiku-3-5">🌸 Claude Haiku 3.5 — Anthropic លឿន ★★★★☆</option>
+                                        <option value="gpt-4o-mini">💨 GPT-4o mini — OpenAI ថ្លៃទាប លឿន ★★★★☆</option>
+                                        <option value="llama-3.3-70b">🦙 Llama 3.3 70B — Meta Open Source, FREE ★★★★☆</option>
+                                    </optgroup>
+                                    <optgroup label="🔬 ម៉ូឌែលវិភាគ (Reasoning)">
+                                        <option value="deepseek-r1">🐋 DeepSeek R1 — Chain-of-Thought Reasoning #1 ★★★★★</option>
+                                        <option value="o3-mini">🤔 o3-mini — OpenAI Reasoning Model ★★★★☆</option>
+                                        <option value="qwen-2.5-72b">🌏 Qwen 2.5 72B — Alibaba Cloud, Multilingual ★★★★☆</option>
+                                        <option value="mistral-large">🌊 Mistral Large — European AI, Code ★★★★☆</option>
+                                    </optgroup>
+                                    <optgroup label="🆓 Open Source FREE">
+                                        <option value="llama-3.1-405b">🦙 Llama 3.1 405B — Meta លំដាប់ TOP 5 ★★★★☆</option>
+                                        <option value="gemma-3-27b">💎 Gemma 3 27B — Google Gemma Open ★★★☆☆</option>
+                                        <option value="phi-4">🔷 Phi-4 — Microsoft Small Model Smart ★★★☆☆</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <!-- OmniRoute URL Config -->
+                            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                                <label style="font-size:0.78rem; color:#94a3b8; white-space:nowrap;">🔗 URL:</label>
+                                <input type="text" id="omniRouteUrlInput" class="form-control" value="http://localhost:20128" placeholder="http://localhost:20128" style="font-size:0.78rem; font-family:monospace; flex:1; min-width:180px; background:rgba(0,0,0,0.4); color:#c7d2fe; border-color:rgba(99,102,241,0.4);">
+                                <input type="password" id="omniRouteApiKeyInput" class="form-control" placeholder="OmniRoute API Key (ប្រសិនបើត្រូវការ)" style="font-size:0.78rem; font-family:monospace; flex:1; min-width:150px; background:rgba(0,0,0,0.4); color:#c7d2fe; border-color:rgba(99,102,241,0.4);">
+                                <button type="button" id="testOmniRouteBtn" class="btn btn-secondary btn-xs" style="color:#a5b4fc; border-color:rgba(99,102,241,0.5); font-size:0.75rem; white-space:nowrap;">
+                                    🧪 តេស្ត OmniRoute
+                                </button>
+                            </div>
+                            <div id="omniRouteTestResult" class="hidden" style="font-size:0.78rem; margin-top:6px; padding:4px 8px; border-radius:6px; background:rgba(0,0,0,0.4);"></div>
+                            <!-- Real AI Achievement Badges -->
+                            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+                                <span style="font-size:0.7rem; background:rgba(99,102,241,0.2); color:#a5b4fc; border:1px solid rgba(99,102,241,0.3); padding:2px 8px; border-radius:20px;">🏆 MMLU 90%+</span>
+                                <span style="font-size:0.7rem; background:rgba(16,185,129,0.15); color:#6ee7b7; border:1px solid rgba(16,185,129,0.3); padding:2px 8px; border-radius:20px;">⚡ Real-Time Streaming</span>
+                                <span style="font-size:0.7rem; background:rgba(251,191,36,0.15); color:#fde68a; border:1px solid rgba(251,191,36,0.3); padding:2px 8px; border-radius:20px;">🔒 100% Local Privacy</span>
+                                <span style="font-size:0.7rem; background:rgba(239,68,68,0.15); color:#fca5a5; border:1px solid rgba(239,68,68,0.3); padding:2px 8px; border-radius:20px;">🚀 No Rate Limits</span>
+                            </div>
+                        </div>
+
+                        <!-- Groq API Key Container (FREE - No Visa Card) -->
+                        <div id="groqApiKeyContainer" style="display:flex; align-items:center; gap:8px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.35); border-radius:8px; padding:8px 12px; flex-wrap:wrap;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:1.1rem;">🆓</span>
+                                <label style="font-size:0.8rem; color:#34d399; font-weight:700; white-space:nowrap;">
+                                    Groq API Key: <span style="color:#6ee7b7; font-weight:400;">(FREE — គ្មាន Visa Card)</span>
+                                </label>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:220px;">
+                                <input type="password" id="groqApiKeyInput" class="form-control" placeholder="gsk_... (ដាក់ Key ពី console.groq.com)" style="font-size:0.8rem; font-family:monospace; background:rgba(0,0,0,0.3); color:#d1fae5; padding:4px 8px; border-color:rgba(16,185,129,0.4);">
+                                <button type="button" id="toggleGroqKeyBtn" class="btn btn-secondary btn-xs" style="padding:4px 8px;" title="បង្ហាញ/លាក់ Key">👁️</button>
+                            </div>
+                            <a href="https://console.groq.com/keys" target="_blank" class="btn btn-xs" style="text-decoration:none; padding:4px 10px; font-size:0.75rem; font-weight:700; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border-radius:6px; border:none;">
+                                🔗 យក Groq Key FREE
+                            </a>
+                            <span id="groqKeyStatusBadge" style="font-size:0.75rem; background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); padding:2px 8px; border-radius:4px; white-space:nowrap;">
+                                💡 មិនទាន់ដាក់ Key
+                            </span>
+                        </div>
+
+                        <!-- Gemini API Key Container (Shown when Gemini engine selected) -->
+                        <div id="geminiApiKeyContainer" class="hidden" style="display:flex; align-items:center; gap:8px; background:rgba(167,139,250,0.08); border:1px dashed rgba(167,139,250,0.35); border-radius:8px; padding:8px 12px; flex-wrap:wrap;">
+                            <label style="font-size:0.8rem; color:#c084fc; font-weight:700; white-space:nowrap; display:flex; align-items:center; gap:4px;">
+                                🔑 Gemini API Key:
+                            </label>
+                            <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:220px;">
+                                <input type="password" id="geminiApiKeyInput" class="form-control" placeholder="AIzaSy... (ដាក់ Key ពី Google AI Studio)" style="font-size:0.8rem; font-family:monospace; background:rgba(0,0,0,0.3); color:#f3e8ff; padding:4px 8px;">
+                                <button type="button" id="toggleApiKeyVisibilityBtn" class="btn btn-secondary btn-xs" style="padding:4px 8px;" title="បង្ហាញ/លាក់ Key">👁️</button>
+                            </div>
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn btn-secondary btn-xs" style="text-decoration:none; padding:3px 8px; font-size:0.75rem; color:#a78bfa; border-color:rgba(167,139,250,0.4);">
+                                🔗 យក Gemini Key
+                            </a>
+                            <span id="geminiApiKeyStatusBadge" style="font-size:0.75rem; background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); padding:2px 8px; border-radius:4px; white-space:nowrap;">
+                                💡 មិនទាន់ដាក់ Key
+                            </span>
+                        </div>
+
+                        <!-- Ollama Alert Box (Shown when Ollama engine selected) -->
+                        <div id="ollamaRequiredAlert" class="hidden" style="background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.4); border-radius:8px; padding:10px 12px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                                <span style="color:#f87171; font-size:0.8rem;">
+                                    ⚠️ ត្រូវការដំឡើង Ollama (Gemma 3) លើកុំព្យូទ័ររបស់អ្នក
+                                </span>
+                                <div style="display:flex; gap:6px;">
+                                    <a href="https://ollama.com/download" target="_blank" class="btn btn-danger btn-xs" style="text-decoration:none; font-size:0.75rem;">
+                                        📥 Download Ollama
+                                    </a>
+                                    <button type="button" id="recheckOllamaBtn" class="btn btn-secondary btn-xs" style="font-size:0.75rem;">
+                                        🔄 ពិនិត្យឡើងវិញ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Duration, Dhamma Topic, Skip Intro, Auto Subtitles -->
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
+                            <!-- Duration -->
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label style="font-size:0.78rem; color:#cbd5e1; font-weight:700;">⏱️ រយៈពេល:</label>
+                                <select id="aiDurationModeSelect" class="form-control" style="width:auto; padding:4px 8px; font-size:0.78rem; background:rgba(30,41,59,0.9); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px;">
+                                    <option value="dynamic" selected>✨ តាមសាច់ធម៌អូតូ (ឌីណាមិក)</option>
+                                    <option value="short">⚡ ៣០វិ - ១នាទី (Shorts/Reels)</option>
                                     <option value="120">📜 ២ នាទី (120s)</option>
                                     <option value="150">📜 ២.៥ នាទី (150s)</option>
                                     <option value="180">📜 ៣ នាទី (180s)</option>
                                     <option value="210">📜 ៣.៥ នាទី (210s)</option>
                                     <option value="240">📜 ៤ នាទី (240s)</option>
                                     <option value="300">📜 ៥ នាទី (300s)</option>
-                                    <option value="short">⚡ ៣០ វិនាទី - ១ នាទី (Shorts / Reels)</option>
                                 </select>
                             </div>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <label style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">🪷 ប្រធានបទទេសនា:</label>
-                                <select id="aiCategorySelect" class="form-control" style="width:auto; padding:5px 10px; font-size:0.85rem;">
+
+                            <!-- Target Clip Count / Density -->
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label style="font-size:0.78rem; color:#cbd5e1; font-weight:700;">🎯 ចំនួន Clip:</label>
+                                <select id="aiClipCountSelect" class="form-control" style="width:auto; padding:4px 8px; font-size:0.78rem; background:rgba(30,41,59,0.9); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px;">
+                                    <option value="auto" selected>✨ អូតូតាមប្រវែងវីដេអូ (សមាមាត្រពេញ)</option>
+                                    <option value="dense">🚀 ស្រង់ឱ្យអស់/ញឹក (1 Clip / 2-3 នាទី)</option>
+                                    <option value="balanced">📊 មធ្យម (15-25 Clips)</option>
+                                    <option value="compact">⚡ តិចៗយកតែល្អបំផុត (8-12 Clips)</option>
+                                    <option value="custom">🔢 កំណត់ចំនួនផ្ទាល់ខ្លួន...</option>
+                                </select>
+                                <div id="aiCustomCountRow" class="hidden" style="display:inline-block;">
+                                    <input type="number" id="aiCustomCountInput" class="form-control" min="2" max="100" value="35" placeholder="ចំនួន..." style="width:65px; padding:3px 6px; font-size:0.78rem; background:rgba(0,0,0,0.3); color:#fff; border-radius:6px;">
+                                </div>
+                            </div>
+
+                            <!-- Topic / Category -->
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label style="font-size:0.78rem; color:#cbd5e1; font-weight:700;">🪷 ប្រធានបទ:</label>
+                                <select id="aiCategorySelect" class="form-control" style="width:auto; padding:4px 8px; font-size:0.78rem; background:rgba(30,41,59,0.9); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px;">
+                                    <option value="auto" selected>✨ AI វិភាគតាមសាច់ធម៌អូតូ (Auto Match)</option>
                                     <option value="phka_samaki">🌸 បុណ្យផ្កាប្រាក់សាមគ្គី &amp; បុណ្យភូមិ</option>
                                     <option value="dakkhina">🪷 បុណ្យទក្ខិណានុប្បទាន (អង្គ ៣ នៃបុណ្យ)</option>
                                     <option value="death">💀 សេចក្ដីស្លាប់ &amp; មរណស្សតិ</option>
                                     <option value="birth4">👶 កំណើតសត្វមាន ៤ ប្រភេទ</option>
                                     <option value="pchum_kathin">🪷 បុណ្យភ្ជុំបិណ្ឌ &amp; កឋិនទាន</option>
                                     <option value="education">💡 ធម៌អប់រំចិត្ត &amp; ទស្សនៈជីវិត</option>
-                                    <option value="auto" selected>✨ AI វិភាគតាមសាច់ធម៌អូតូ (Auto Match)</option>
-                                    <option value="custom">✍️ វាយប្រធានបទផ្ទាល់ខ្លួន (Custom)...</option>
+                                    <option value="custom">✍️ វាយប្រធានបទផ្ទាល់ខ្លួន...</option>
                                 </select>
+                                <div id="aiCustomTopicRow" class="hidden" style="display:inline-block;">
+                                    <input type="text" id="aiCustomTopicInput" class="form-control" placeholder="វាយប្រធានបទ..." style="width:140px; padding:3px 8px; font-size:0.78rem; background:rgba(0,0,0,0.3); color:#fff; border-radius:6px;">
+                                </div>
                             </div>
-                        </div>
 
-                        <div id="aiCustomTopicRow" class="hidden" style="display:flex; align-items:center; gap:8px;">
-                            <label style="font-size:0.82rem; color:#a78bfa; font-weight:700; white-space:nowrap;">✍️ ចំណងជើងប្រធានបទ:</label>
-                            <input type="text" id="aiCustomTopicInput" class="form-control" placeholder="ឧ. បុណ្យផ្កាប្រាក់សាមគ្គី ឬ កំណើតសត្វមាន៤..." style="font-size:0.85rem;">
-                        </div>
-
-                        <!-- Gemini API Key Input Row (Direct Browser-to-Gemini AI for Vercel) -->
-                        <div style="display:flex; align-items:center; gap:8px; background:rgba(167,139,250,0.08); border:1px dashed rgba(167,139,250,0.3); border-radius:8px; padding:8px 12px; flex-wrap:wrap;">
-                            <label style="font-size:0.82rem; color:#c084fc; font-weight:700; white-space:nowrap; display:flex; align-items:center; gap:4px;">
-                                🔑 Gemini API Key <span style="font-weight:400; color:#cbd5e1; font-size:0.75rem;">(យក Key ឥតគិតថ្លៃពី <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#a78bfa; text-decoration:underline;">aistudio.google.com</a>):</span>
-                            </label>
-                            <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:260px;">
-                                <input type="password" id="geminiApiKeyInput" class="form-control" placeholder="AIzaSy... (ប៉ះទីនេះដើម្បីដាក់ Key)" style="font-size:0.82rem; font-family:monospace; background:rgba(0,0,0,0.3); color:#f3e8ff;">
-                                <button type="button" id="toggleApiKeyVisibilityBtn" class="btn btn-secondary btn-sm" style="padding:3px 8px; font-size:0.78rem;" title="បង្ហាញ/លាក់ Key">👁️</button>
-                            </div>
-                            <span id="geminiApiKeyStatusBadge" style="font-size:0.75rem; background:rgba(251,191,36,0.15); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); padding:2px 8px; border-radius:4px; white-space:nowrap;">
-                                💡 មិនទាន់ដាក់ Key (ប្រើ Auto Preset)
-                            </span>
-                        </div>
-
-                        <div style="display:flex; align-items:center; gap:12px; border-top: 1px dotted rgba(255,255,255,0.1); padding-top: 8px; flex-wrap:wrap;">
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <input type="checkbox" id="aiSkipIntroChantCheck" checked style="width:16px; height:16px; cursor:pointer;">
-                                <label for="aiSkipIntroChantCheck" style="font-size:0.82rem; color:#fbbf24; cursor:pointer; font-weight:600;">
-                                    ⏩ រំលងបទនមសិការដើមវីដេអូ (នមោ តស្ស...)
+                            <!-- Skip Intro -->
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <input type="checkbox" id="aiSkipIntroChantCheck" checked style="width:14px; height:14px; cursor:pointer;">
+                                <label for="aiSkipIntroChantCheck" style="font-size:0.78rem; color:#cbd5e1; cursor:pointer;">
+                                    ⏭️ រំលងនមសិការដើម
                                 </label>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <label for="aiIntroSkipDurationSelect" style="font-size:0.82rem; color:#cbd5e1; font-weight:600;">រំលងដើមវីដេអូ:</label>
-                                <select id="aiIntroSkipDurationSelect" class="form-control" style="width:auto; padding:3px 8px; font-size:0.8rem;">
-                                    <option value="300" selected>៥ នាទី (ស្ដង់ដារទេសនាវែង)</option>
+                                <select id="aiIntroSkipDurationSelect" class="form-control" style="width:auto; padding:2px 6px; font-size:0.75rem; background:rgba(30,41,59,0.9); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px;">
+                                    <option value="300" selected>៥ នាទី</option>
                                     <option value="180">៣ នាទី</option>
                                     <option value="420">៧ នាទី</option>
-                                    <option value="600">១០ នាទី (បទនមសិការវែង)</option>
-                                    <option value="0">មិនរំលង (០ នាទី)</option>
+                                    <option value="600">១០ នាទី</option>
+                                    <option value="0">០ នាទី</option>
                                 </select>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <input type="checkbox" id="aiAutoBurnSubtitlesCheck" checked style="width:16px; height:16px; cursor:pointer;">
-                                <label for="aiAutoBurnSubtitlesCheck" style="font-size:0.82rem; color:#34d399; cursor:pointer; font-weight:600;">
-                                    🎙️ បង្កប់អក្សររត់ខ្មែរអូតូ (Auto Burn-in Captions)
+                            </div>
+
+                            <!-- Auto Subtitles -->
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <input type="checkbox" id="aiAutoBurnSubtitlesCheck" checked style="width:14px; height:14px; cursor:pointer;">
+                                <label for="aiAutoBurnSubtitlesCheck" style="font-size:0.78rem; color:#34d399; cursor:pointer; font-weight:600;">
+                                    🎙️ បង្កប់អក្សររត់ (Auto Subtitles)
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Scanning / Processing Visualizer -->
-                    <div id="aiScanProgressBox" class="ai-progress-box hidden">
-                        <div class="waveform-visualizer-container">
-                            <canvas id="aiWaveformCanvas" width="600" height="60"></canvas>
+                    <!-- Scan Progress Box -->
+                    <div id="aiScanProgressBox" class="hidden" style="margin-bottom:12px;">
+                        <div style="margin-bottom:6px;">
+                            <canvas id="aiWaveformCanvas" width="600" height="40" style="width:100%; height:40px; background:#000; border-radius:6px;"></canvas>
                         </div>
-                        <div class="ai-progress-bar-container">
-                            <div id="aiScanProgressBar" class="ai-progress-bar-fill" style="width: 0%;"></div>
+                        <div class="progress-bar-container">
+                            <div id="aiScanProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
                         </div>
-                        <div class="ai-scan-status">
-                            <span id="aiScanStatusText">🤖 កំពុងស្ដាប់សំឡេង &amp; វិភាគ Peaks...</span>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">
+                            <span id="aiScanStatusText">🤖 កំពុងស្ដាប់សំឡេង...</span>
                             <span id="aiScanPercentText">0%</span>
                         </div>
                     </div>
 
-                    <!-- Results Section -->
-                    <div id="aiResultsSection" class="ai-results-section">
-                        <div class="ai-results-header">
-                            <h4>🎬 Clips ដែរ AI ណែនាំ (<span id="aiResultsCount">0</span>)</h4>
-                            <button id="importAllAiClipsBtn" class="btn btn-success btn-sm hidden">
-                                ⚡ បញ្ចូល Clips ទាំងអស់ (<span id="importAllCount">0</span>)
-                            </button>
-                        </div>
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- NEW: Real Transcribe Pipeline Engine Selector       -->
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <div style="background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.35); border-radius:10px; padding:10px 14px; margin-bottom:10px;">
+                        <div style="font-size:0.78rem; color:#a5b4fc; font-weight:700; margin-bottom:8px;">⚡ Real AI Pipeline Settings</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
 
-                        <div id="aiClipsGrid" class="ai-clips-grid">
-                            <div class="ai-empty-placeholder">
-                                <span class="placeholder-icon">🎙️</span>
-                                <p>សូមចុចប៊ូតុង <strong>"🚀 ចាប់ផ្តើម AI វិភាគ"</strong> ដើម្បីឲ្យ AI ស្ដាប់ និងស្វែងរក Clip ល្អៗ!</p>
+                            <!-- Transcription Engine -->
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label style="font-size:0.75rem; color:#94a3b8; white-space:nowrap;">🎙️ Transcribe ជាមួយ:</label>
+                                <select id="transcribeEngineSelect" style="padding:3px 8px; font-size:0.78rem; background:rgba(15,23,42,0.9); color:#e2e8f0; border:1px solid rgba(99,102,241,0.4); border-radius:6px; cursor:pointer;">
+                                    <option value="gemini" selected>🔮 Gemini Audio (Cloud, Fast)</option>
+                                    <option value="whisper">🗣️ Whisper AI (Local CPU, Accurate)</option>
+                                </select>
+                            </div>
+
+                            <!-- LLM Clip Selector -->
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label style="font-size:0.75rem; color:#94a3b8; white-space:nowrap;">🧠 LLM ជ្រើស Clips:</label>
+                                <select id="clipLlmSelect" style="padding:3px 8px; font-size:0.78rem; background:rgba(15,23,42,0.9); color:#e2e8f0; border:1px solid rgba(99,102,241,0.4); border-radius:6px; cursor:pointer;">
+                                    <option value="auto" selected>⚡ Auto (Claude → Gemini → Fallback)</option>
+                                    <option value="claude">🎭 Claude Sonnet 4.5 (Puter.js)</option>
+                                    <option value="gemini">🔮 Gemini 2.5 Flash (API Key)</option>
+                                    <option value="puter">🌐 Puter.js Best Model</option>
+                                </select>
+                            </div>
+
+                            <!-- Pipeline info -->
+                            <div style="font-size:0.72rem; color:#64748b; flex-basis:100%;">
+                                📌 Real pipeline: Upload → FFmpeg Extract → Transcribe → LLM → Clips (ប្រសិន Upload file ពិត)
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Transcript Preview (shown after transcription) -->
+                    <div class="transcript-preview-wrap hidden" style="margin-bottom:10px;">
+                        <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:8px 12px;">
+                            <div style="font-size:0.73rem; color:#34d399; font-weight:700; margin-bottom:4px;">📝 Transcript Preview (Real Text):</div>
+                            <div id="transcriptPreviewBox" style="font-size:0.72rem; color:#94a3b8; line-height:1.5; max-height:80px; overflow-y:auto; white-space:pre-wrap; font-family:monospace;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Multi-AI Collaborative Pipeline Visualizer -->
+                    <div id="multiAiPipelineBox" class="hidden multi-ai-pipeline-card">
+                        <div class="pipeline-header">
+                            <div class="pipeline-title">
+                                <span class="pipeline-pulse-dot"></span>
+                                <strong>🤝 រចនាសម្ព័ន្ធសហការ Multi-AI (Gemini Scout ➔ Claude Auditor)</strong>
+                            </div>
+                            <span id="pipelineOverallBadge" class="pipeline-status-badge">ដំណាក់កាលត្រួតពិនិត្យ ៤ ជំហាន</span>
+                        </div>
+                        <div class="pipeline-steps-grid">
+                            <!-- Step 1: 3-Way Transcription -->
+                            <div id="pipeStep1" class="pipe-step-item active">
+                                <div class="pipe-icon-wrap gemini-glow">🎧</div>
+                                <div class="pipe-info">
+                                    <div class="pipe-step-name">1. 3-Way Parallel Audio Transcribe</div>
+                                    <div id="pipeStep1Desc" class="pipe-step-desc">ស្ដាប់ ៣ ដងដំណាលគ្នា (Key 1: Verbatim | Key 2: សន្ទនា | Key 3: ជួនណាត)...</div>
+                                </div>
+                                <span id="pipeStep1Status" class="pipe-step-state loading">⏳</span>
+                            </div>
+                            <!-- Step 2: Transcript Arbiter -->
+                            <div id="pipeStep2" class="pipe-step-item">
+                                <div class="pipe-icon-wrap claude-glow">⚖️</div>
+                                <div class="pipe-info">
+                                    <div class="pipe-step-name">2. Transcript Arbiter (ផ្ទៀងផ្ទាត់)</div>
+                                    <div id="pipeStep2Desc" class="pipe-step-desc">ពិភាក្សាផ្ទៀងផ្ទាត់ និងបង្កើត Khmer Super-Transcript លម្អិតបំផុត...</div>
+                                </div>
+                                <span id="pipeStep2Status" class="pipe-step-state">⏸️</span>
+                            </div>
+                            <!-- Step 3: 4-LLM Council Scouts -->
+                            <div id="pipeStep3" class="pipe-step-item">
+                                <div class="pipe-icon-wrap repair-glow">🤖</div>
+                                <div class="pipe-info">
+                                    <div class="pipe-step-name">3. 4-LLM Council Scouts (៤ មុំ)</div>
+                                    <div id="pipeStep3Desc" class="pipe-step-desc">Gemini Pro (ធម៌) + Claude 3.5 (កំប្លែង) + GPT-4o (វិវាទ) + Gemini Hook...</div>
+                                </div>
+                                <span id="pipeStep3Status" class="pipe-step-state">⏸️</span>
+                            </div>
+                            <!-- Step 4: The Grand Council Consensus -->
+                            <div id="pipeStep4" class="pipe-step-item">
+                                <div class="pipe-icon-wrap consensus-glow">👑</div>
+                                <div class="pipe-info">
+                                    <div class="pipe-step-name">4. The Grand Council Consensus</div>
+                                    <div id="pipeStep4Desc" class="pipe-step-desc">ផ្គុំ Clips ឯកភាពគ្នា &amp; Zero Cut-Off ធានាមិនដាច់ក្បាលដាច់កន្ទុយ (98-99%)!</div>
+                                </div>
+                                <span id="pipeStep4Status" class="pipe-step-state">⏸️</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Results List -->
+                    <div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <h4 style="font-size:0.88rem; color:#fff;">🎬 Clips ដែរ AI ណែនាំ (<span id="aiResultsCount">0</span>)</h4>
+                            <button id="importAllAiClipsBtn" class="btn btn-success btn-xs hidden">
+                                ⚡ បញ្ចូលទាំងអស់ (<span id="importAllCount">0</span>)
+                            </button>
+                        </div>
+                        <div id="aiClipsGrid" style="display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto;">
+                            <div style="text-align:center; padding:24px; color:var(--text-muted); font-size:0.85rem;">
+                                សូមចុចប៊ូតុង <strong>"🚀 ចាប់ផ្តើម AI វិភាគ"</strong> ដើម្បីឲ្យ AI ស្ដាប់ និងស្វែងរក Clip ល្អៗ!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden helper buttons for app.js backwards-compat -->
+                    <div style="display:none !important;">
+                        <button id="transcribeWithPuterBtn"></button>
                     </div>
                 </div>
 
                 <!-- TAB 2: Voice Commands -->
                 <div id="aiVoiceTab" class="ai-tab-content">
-                    <div class="voice-assistant-card">
-                        <div class="mic-status-box">
-                            <button id="toggleVoiceMicBtn" class="btn btn-mic-toggle">
-                                <span class="mic-icon">🎙️</span>
-                                <span id="micBtnText">បើកស្ដាប់សំឡេងខ្មែរ</span>
-                            </button>
-                            <span id="voiceStatusBadge" class="voice-badge offline">បិទ</span>
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                        <button id="toggleVoiceMicBtn" class="btn btn-primary btn-sm">
+                            🎙️ <span id="micBtnText">បើកស្ដាប់សំឡេងខ្មែរ</span>
+                        </button>
+                        <span id="voiceStatusBadge" class="badge" style="background:rgba(239,68,68,0.2); color:#f87171; padding:3px 8px; border-radius:4px;">បិទ</span>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; margin-bottom:12px;">
+                        <label style="font-size:0.75rem; color:var(--text-muted);">អក្សរដែល AI ស្ដាប់បាន:</label>
+                        <div id="liveSpeechTranscript" style="font-size:0.85rem; color:#fff; min-height:40px; margin-top:4px;">
+                            <em>ចុចប៊ូតុងខាងលើ រួចនិយាយភាសាខ្មែរ...</em>
                         </div>
-
-                        <div class="khmer-speech-box">
-                            <label>អក្សរដែល AI ស្ដាប់បាន (Live Transcription):</label>
-                            <div id="liveSpeechTranscript" class="speech-output-area">
-                                <em>ចុចប៊ូតុងខាងលើ រួចនិយាយភាសាខ្មែរ...</em>
-                            </div>
-                        </div>
-
-                        <div class="voice-commands-guide">
-                            <h5>💡 ពាក្យបញ្ជាសំឡេងខ្មែរដែលគាំទ្រ (Khmer Voice Commands):</h5>
-                            <div class="command-grid">
-                                <div class="cmd-item"><code>"កាត់ដើម"</code> ឬ <code>"Set In"</code> ➔ កំណត់ Set In</div>
-                                <div class="cmd-item"><code>"កាត់ចុង"</code> ឬ <code>"Set Out"</code> ➔ កំណត់ Set Out</div>
-                                <div class="cmd-item"><code>"បន្ថែម clip"</code> ➔ រក្សាទុក Clip</div>
-                                <div class="cmd-item"><code>"វិភាគ video"</code> ➔ បើក AI វិភាគ</div>
-                                <div class="cmd-item"><code>"ទៅកែអក្សរ"</code> ➔ ទៅកាន់ Studio Screen 2</div>
-                            </div>
-                        </div>
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.6;">
+                        <strong>💡 ពាក្យបញ្ជាដែលគាំទ្រ:</strong> "កាត់ដើម" (Set In), "កាត់ចុង" (Set Out), "បន្ថែម clip", "វិភាគ video", "ទៅកែអក្សរ"
                     </div>
                 </div>
 
-                <!-- TAB 3: AI Configuration / Gemini Key -->
+                <!-- TAB 3: AI Configuration & API Key -->
                 <div id="aiConfigTab" class="ai-tab-content">
-                    <div class="config-card">
-                        <h4>🔑 Google Gemini API Key (ជម្រើស advanced)</h4>
-                        <p class="help-text">អ្នកអាចដាក់ Gemini API Key ផ្ទាល់ខ្លួនដើម្បីអោយ AI វិភាគ context និង transcript សំឡេងខ្មែរកាន់តែសុក្រឹត និងវៃឆ្លាត!</p>
-                        
-                        <div class="form-group" style="margin-top: 14px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                                <label for="geminiApiKeyInput" style="margin-bottom:0;">Gemini API Key:</label>
-                                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn btn-secondary btn-xs" style="text-decoration:none; padding: 4px 10px; font-size: 0.78rem; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.4);">
-                                    🔗 យក API Key ឥតគិតថ្លៃនៅ Google AI Studio
-                                </a>
-                            </div>
-                            <div class="input-with-btn">
-                                <input type="password" id="geminiApiKeyInput" class="form-control" placeholder="AIzaSy...">
-                                <button id="saveGeminiKeyBtn" class="btn btn-primary btn-sm">💾 រក្សាទុក</button>
-                            </div>
+                    <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:10px; padding:14px; margin-bottom:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <h4 style="color:#4ade80; margin:0; font-size:0.95rem;">⚡ Google Gemini AI (Puter.js Free)</h4>
+                            <button type="button" id="tabTestGeminiBtn" class="btn btn-secondary btn-xs" style="color:#4ade80; border-color:#4ade80;">
+                                🧪 តេស្ត Gemini AI
+                            </button>
                         </div>
-                        <div id="geminiKeyStatus" class="key-status-msg"></div>
+                        <p style="color:var(--text-secondary); font-size:0.8rem; line-height:1.5; margin:0 0 8px 0;">
+                            មិនបាច់ប្រើ API Key និងមិនបាច់ដាក់ Visa Card ទេ អាចស្កែនរក Clips ភាសាខ្មែរដោយឥតគិតថ្លៃ ១០០%!
+                        </p>
+                        <div id="tabGeminiTestResult" class="hidden" style="margin-top:8px; font-size:0.8rem; color:#4ade80; padding:6px 10px; background:rgba(0,0,0,0.4); border-radius:6px;"></div>
+                    </div>
 
-                        <div class="engine-info-box" style="margin-top: 20px;">
-                            <h5>ℹ️ របៀបដំណើរការ default (ដោយមិនបាច់ប្រើ API Key):</h5>
-                            <p>ប្រសិនបើមិនមាន API Key ប្រព័ន្ធនឹងប្រើ <strong>Local Khmer Audio Waveform &amp; Speech Heuristic Engine</strong> ដើម្បីស្កែនរក dynamic loud speech, vocal energy peaks, និង speech breaks នៅក្នុងវីដេអូ ដើម្បីបង្កើត clips ដោយឥតគិតថ្លៃ!</p>
+                    <!-- Gemini API Key Setup Card -->
+                    <!-- Gemini API Key Setup Card (Multi-Account Cyclic Pool) -->
+                    <div style="background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.3); border-radius:10px; padding:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <h4 style="color:#c084fc; margin:0; font-size:0.95rem;">🔄 Google Gemini Multi-Key Pool (Auto-Cycle &amp; Cooldown Recovery)</h4>
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn btn-secondary btn-xs" style="text-decoration:none; padding:4px 10px; font-size:0.76rem; color:#a78bfa; border-color:rgba(168,85,247,0.4);">
+                                🔗 យក API Key ឥតគិតថ្លៃ
+                            </a>
                         </div>
+                        <p style="color:var(--text-secondary); font-size:0.8rem; line-height:1.5; margin:0 0 10px 0;">
+                            💡 <strong>ដាក់បានច្រើន Account (១ ជួរ = ១ Key ឬខណ្ឌដោយក្បៀស)៖</strong> ពេល Key មួយអស់ Quota (429) ប្រព័ន្ធនឹងប្ដូរទៅ Key បន្ទាប់ភ្លាមៗ។ ពេល Key ចាស់សម្រាកផុត ៦០វិនាទី (Quota ឡើងវិញ) វានឹងរត់ចូលក្នុង Cycle យកមកប្រើម្ដងទៀតដោយស្វ័យប្រវត្តិ!
+                        </p>
+                        <div style="margin-bottom:8px;">
+                            <textarea id="tabGeminiApiKeysArea" rows="3" class="form-control" placeholder="បញ្ចូល Gemini API Keys (១ ជួរ = ១ Key)&#10;AIzaSy... (Account 1)&#10;AIzaSy... (Account 2)&#10;AIzaSy... (Account 3)" style="font-size:0.82rem; font-family:monospace; background:rgba(0,0,0,0.3); color:#f3e8ff; line-height:1.4;"></textarea>
+                            <input type="hidden" id="tabGeminiApiKeyInput">
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <button type="button" id="saveGeminiKeyBtn" class="btn btn-primary btn-sm" style="background:linear-gradient(135deg, #a855f7, #6366f1); white-space:nowrap;">
+                                💾 រក្សាទុក Key Pool
+                            </button>
+                            <span id="keyPoolCountBadge" class="badge" style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:0.75rem; padding:4px 8px; border-radius:6px;">
+                                🔑 Pool: 1 Key
+                            </span>
+                        </div>
+                        <div id="keyPoolStatusList" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; font-size:0.76rem;"></div>
+                        <div id="geminiKeyStatus" style="font-size:0.8rem; margin-top:8px;"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Firebase SDK (Compat v10 for Vanilla JS) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="firebase_service.js?v=1.0"></script>
+
+    <!-- External Libraries & Core Application Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js?v=44.0"></script>
+    <script src="app.js?v=75.0"></script>
 </body>
 </html>

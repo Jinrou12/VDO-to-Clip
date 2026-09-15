@@ -1658,6 +1658,119 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.titleColor2Input.addEventListener('input', (e) => state.titleColor2 = e.target.value);
         elements.subTitleInput.addEventListener('input', (e) => state.subTitle = e.target.value);
 
+        // --- Puter.js AI: Token Authentication & Pre-check ---
+        async function initPuterAuth() {
+            if (!window.puter) return false;
+            let token = localStorage.getItem('puter.auth.token.v2') || localStorage.getItem('puter.auth.token');
+            if (!token) {
+                try {
+                    const resp = await fetch('/api/puter/token');
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.token) {
+                            token = data.token;
+                            try {
+                                localStorage.setItem('puter.auth.token.v2', token);
+                                localStorage.setItem('puter.auth.token.origin.v2', 'https://api.puter.com');
+                                localStorage.setItem('puter.auth.token', token);
+                            } catch (_) {}
+                        }
+                    }
+                } catch (_) {}
+            }
+            if (token) {
+                try {
+                    window.puter.setAuthToken(token);
+                    return true;
+                } catch (e) {
+                    console.warn('Set Puter token notice:', e);
+                }
+            }
+            return false;
+        }
+        initPuterAuth();
+
+        // --- Puter.js AI: Text-to-Image Background Generator ---
+        const generateAiBgBtn = document.getElementById('generateAiBgBtn');
+        const aiBgPromptInput = document.getElementById('aiBgPromptInput');
+        const aiBgLoadingIndicator = document.getElementById('aiBgLoadingIndicator');
+        const promptChips = document.querySelectorAll('.ai-prompt-chip');
+
+        promptChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                if (aiBgPromptInput) {
+                    aiBgPromptInput.value = chip.dataset.prompt || '';
+                }
+            });
+        });
+
+        generateAiBgBtn?.addEventListener('click', async () => {
+            const prompt = (aiBgPromptInput?.value || '').trim() || 'A peaceful Cambodian Buddhist pagoda with golden sunlight and lotus, cinematic wallpaper';
+            await initPuterAuth();
+            if (!window.puter || !window.puter.ai || !window.puter.ai.txt2img) {
+                showToast('⚠️ Puter.js កំពុងដំណើរការភ្ជាប់... សូមរង់ចាំបន្តិច!');
+                return;
+            }
+
+            try {
+                if (generateAiBgBtn) generateAiBgBtn.disabled = true;
+                if (aiBgLoadingIndicator) aiBgLoadingIndicator.classList.remove('hidden');
+                let imgResult;
+                try {
+                    imgResult = await window.puter.ai.txt2img(prompt, { model: 'flux-schnell' });
+                } catch (errFlux) {
+                    console.warn('flux-schnell failed, trying fallback model:', errFlux);
+                    imgResult = await window.puter.ai.txt2img(prompt);
+                }
+
+                let newImg = new Image();
+                newImg.crossOrigin = "anonymous";
+                newImg.onload = () => {
+                    state.bgImg = newImg;
+                    showToast('✅ បានបង្កើតរូបភាព Background តាម AI រួចរាល់!');
+                };
+                if (typeof imgResult === 'string') {
+                    newImg.src = imgResult;
+                } else if (imgResult && imgResult.src) {
+                    newImg.src = imgResult.src;
+                } else if (imgResult instanceof HTMLImageElement) {
+                    state.bgImg = imgResult;
+                    showToast('✅ បានបង្កើតរូបភាព Background តាម AI រួចរាល់!');
+                }
+            } catch (err) {
+                console.error('Puter txt2img error:', err);
+                showToast('❌ បរាជ័យក្នុងការបង្កើតរូបភាព AI: ' + (err.message || 'Error'));
+            } finally {
+                if (generateAiBgBtn) generateAiBgBtn.disabled = false;
+                if (aiBgLoadingIndicator) aiBgLoadingIndicator.classList.add('hidden');
+            }
+        });
+
+        // --- Puter.js AI: Text-to-Speech Voice Preview ---
+        const posterTtsBtn = document.getElementById('posterTtsBtn');
+        posterTtsBtn?.addEventListener('click', async () => {
+            const textToSpeak = (elements.mainTitleInput?.value || state.mainTitle || '').trim();
+            if (!textToSpeak) {
+                showToast('⚠️ សូមវាយអត្ថបទចំណងជើងជាមុនសិន!');
+                return;
+            }
+            await initPuterAuth();
+            if (!window.puter || !window.puter.ai || !window.puter.ai.txt2speech) {
+                showToast('⚠️ Puter.js កំពុងដំណើរការភ្ជាប់...');
+                return;
+            }
+            try {
+                showToast('🔊 AI កំពុងអានចំណងជើង: "' + textToSpeak + '"...');
+                const audio = await window.puter.ai.txt2speech(textToSpeak);
+                if (audio) {
+                    audio.play();
+                }
+            } catch (err) {
+                console.error('Puter TTS error:', err);
+                showToast('❌ មិនអាចចាក់សំឡេង AI បានទេ: ' + (err.message || 'Error'));
+            }
+        });
+
         elements.waveColorInput.addEventListener('input', (e) => state.waveColor = e.target.value);
         elements.waveHeightInput.addEventListener('input', (e) => state.waveHeight = parseInt(e.target.value));
         elements.waveYInput.addEventListener('input', (e) => state.waveY = parseInt(e.target.value));

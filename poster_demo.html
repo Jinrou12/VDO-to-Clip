@@ -8,6 +8,8 @@
     <!-- MediaPipe & ImgLy CDNs -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+    <!-- Puter.js AI SDK (Keyless, Serverless AI for txt2img and txt2speech) -->
+    <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
 
@@ -257,6 +259,28 @@
                                     <label class="form-label">Upload រូប Background:</label>
                                     <input type="file" id="bgPhotoInput" accept="image/*" class="form-control">
                                 </div>
+
+                                <!-- Puter AI Background Image Generator -->
+                                <div class="form-group" style="background:rgba(99, 102, 241, 0.12); border:1px solid rgba(139, 92, 246, 0.35); border-radius:8px; padding:10px; margin-top:8px;">
+                                    <label class="form-label" style="color:#c084fc; font-weight:bold; font-size:12px; display:flex; align-items:center; gap:5px;">
+                                        ✨ បង្កើត Background ដោយ AI (Puter Text-to-Image):
+                                    </label>
+                                    <div style="display:flex; gap:6px; margin-bottom:6px;">
+                                        <input type="text" id="aiBgPromptInput" class="form-control" placeholder="ឧ. វត្តអារាមខ្មែរ ពេលព្រលប់, Cambodian Buddhist pagoda golden hour..." style="font-size:12px; flex:1;">
+                                        <button type="button" class="btn btn-green btn-sm" id="generateAiBgBtn" style="white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">
+                                            🎨 បង្កើត
+                                        </button>
+                                    </div>
+                                    <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;">
+                                        <button type="button" class="btn btn-secondary btn-xs ai-prompt-chip" data-prompt="A peaceful Cambodian Buddhist pagoda temple with golden sunlight and lotus pond, cinematic 4k wallpaper">🪷 វត្តអារាម</button>
+                                        <button type="button" class="btn btn-secondary btn-xs ai-prompt-chip" data-prompt="Serene Cambodian rural countryside sunset, sugar palm trees, golden rice field, cinematic clouds">🌅 ទេសភាពថ្ងៃលិច</button>
+                                        <button type="button" class="btn btn-secondary btn-xs ai-prompt-chip" data-prompt="Luxurious golden bokeh glow background, deep dark gradient, cinematic poster background">✨ Glow អរូបី</button>
+                                    </div>
+                                    <div id="aiBgLoadingIndicator" class="hidden" style="margin-top:6px; font-size:11px; color:#38bdf8;">
+                                        ⏳ កំពុងដំណើរការ AI Generate រូបភាព... សូមរង់ចាំបន្តិច!
+                                    </div>
+                                </div>
+
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label class="form-label">ទំហំ (Scale): <span id="bgScaleVal">100%</span></label>
@@ -289,7 +313,12 @@
                             <div class="accordion-header">✍️ អត្ថបទចំណងជើងខ្មែរ (Text)</div>
                             <div class="accordion-body">
                                 <div class="form-group">
-                                    <label class="form-label">ចំណងជើងធំ (Main Title):</label>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                        <label class="form-label" style="margin-bottom:0;">ចំណងជើងធំ (Main Title):</label>
+                                        <button type="button" id="posterTtsBtn" class="btn btn-secondary btn-xs" style="padding:2px 8px; font-size:11px; color:#38bdf8; border-color:#38bdf8;" title="ស្តាប់សំឡេងអាន (Puter TTS)">
+                                            🔊 អានសំឡេង AI
+                                        </button>
+                                    </div>
                                     <input type="text" id="mainTitleInput" value="មនុស្សអត់ប្រយោជន៍" class="form-control">
                                 </div>
                                 <div class="form-row">

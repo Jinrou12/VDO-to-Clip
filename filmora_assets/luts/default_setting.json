@@ -1,0 +1,314 @@
+[
+    {
+        "type": 16,
+        "title": "007 Series",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/007 Series.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "B&W Film",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/B&W Film.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Batman",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Batman.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Cool Film",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Cool Film.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Dark Film",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Dark Film.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Game of Thrones",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Game of Thrones.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Gravity",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Gravity.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Harry Potter",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Harry Potter.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "House of Cards",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/House of Cards.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Mission Impossible",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Mission Impossible.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Reign",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Reign.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Sparta 300",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Sparta 300.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Star Wars",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Star Wars.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Walking Dead",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Walking Dead.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Warm Film",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Warm Film.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Cyberpunk 1",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Cyberpunk 1.CUBE"
+    },
+    {
+        "type": 16,
+        "title": "Cyberpunk 2",
+        "category": "3D LUT",
+        "config": "/CubeLUTFiles/Cyberpunk 2.CUBE"
+    },
+    {
+        "type": 8,
+        "title": "Cool",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Cool.conf"
+    },
+    {
+        "type": 8,
+        "title": "Warm",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Warm.conf"
+    },
+    {
+        "type": 8,
+        "title": "Cool Max",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Cool Max.conf"
+    },
+    {
+        "type": 8,
+        "title": "Warm Max",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Warm Max.conf"
+    },
+    {
+        "type": 8,
+        "title": "Boost Color",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Boost Color.conf"
+    },
+    {
+        "type": 8,
+        "title": "Shadow Details",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Shadow Details.conf"
+    },
+    {
+        "type": 8,
+        "title": "Elegant",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Elegant.conf"
+    },
+    {
+        "type": 8,
+        "title": "Brighten",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Brighten.conf"
+    },
+    {
+        "type": 8,
+        "title": "Darken",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Darken.conf"
+    },
+    {
+        "type": 8,
+        "title": "Fantasy",
+        "category": "Common",
+        "favorate": 0,
+        "config": "/Fantasy.conf"
+    },
+    {
+        "type": 8,
+        "title": "Epic",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Epic.conf"
+    },
+    {
+        "type": 8,
+        "title": "Polaroid",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Polaroid.conf"
+    },
+    {
+        "type": 8,
+        "title": "Black&White",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Black&White.conf"
+    },
+    {
+        "type": 8,
+        "title": "Old Film",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Old Film.conf"
+    },
+    {
+        "type": 8,
+        "title": "Blockbuster",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Blockbuster.conf"
+    },
+    {
+        "type": 8,
+        "title": "TV",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/TV.conf"
+    },
+    {
+        "type": 8,
+        "title": "Lomo",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Lomo.conf"
+    },
+    {
+        "type": 8,
+        "title": "Far East",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Far East.conf"
+    },
+    {
+        "type": 8,
+        "title": "Jungle",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Jungle.conf"
+    },
+    {
+        "type": 8,
+        "title": "Film Stock",
+        "category": "Film",
+        "favorate": 0,
+        "config": "/Film Stock.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette Classic",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette Classic.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 2",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 2.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 3",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 3.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 4",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 4.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 5",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 5.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 6",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 6.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 7",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 7.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 8",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 8.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 9",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 9.conf"
+    },
+    {
+        "type": 8,
+        "title": "Vignette 10",
+        "category": "Vignette",
+        "favorate": 0,
+        "config": "/Vignette 10.conf"
+    }
+]

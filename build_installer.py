@@ -17,7 +17,14 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
         pass
 
 def build_exe():
-    print("🔨 [Step 1/2] Building Khmer_Video_Clipper_Pro.exe with PyInstaller...")
+    print("📦 [Step 1/3] Compiling TypeScript source files (npm run build)...")
+    try:
+        subprocess.run(["npm", "run", "build"], shell=True, check=True)
+        print("✅ TypeScript compiled successfully into app.js and firebase_service.js!")
+    except Exception as e:
+        print(f"⚠️ Warning: TypeScript compilation failed or npm not found: {e}")
+
+    print("🔨 [Step 2/3] Building Khmer_Video_Clipper_Pro.exe with PyInstaller...")
 
     # Options for PyInstaller using sys.executable module call
     cmd = [
@@ -28,6 +35,7 @@ def build_exe():
         "--name", "Khmer_Video_Clipper_Pro",
         "--add-data", "index.html;.",
         "--add-data", "app.js;.",
+        "--add-data", "firebase_service.js;.",
         "--add-data", "styles.css;.",
         "--add-data", "poster_demo.css;.",
         "--add-data", "poster_demo.js;.",
@@ -37,7 +45,7 @@ def build_exe():
 
     result = subprocess.run(cmd)
     if result.returncode == 0:
-        print("✅ [Step 1/2] Executable built successfully in 'dist/Khmer_Video_Clipper_Pro/Khmer_Video_Clipper_Pro.exe'!")
+        print("✅ [Step 2/3] Executable built successfully in 'dist/Khmer_Video_Clipper_Pro/Khmer_Video_Clipper_Pro.exe'!")
     else:
         print("❌ Error building executable.")
         sys.exit(1)

@@ -1,7 +1,15 @@
 dist/
 build/
+node_modules/
+*.js.map
 *.spec
 *.wav
 *.mp4
+*.mp3
 *.log
 __pycache__/
+output_clips/
+gemini_config.json
+puter_token.json
+transcript.json
+gemini_multimodal_clips.json

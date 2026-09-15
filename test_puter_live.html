@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <title>Puter AI Live Diagnostic Test</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; max-width: 800px; margin: auto; }
+        .card { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+        h2 { margin-top: 0; color: #38bdf8; }
+        button { background: #6366f1; color: white; border: none; border-radius: 8px; padding: 10px 18px; font-weight: bold; cursor: pointer; margin-right: 8px; }
+        button:hover { background: #4f46e5; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        pre { background: #020617; border: 1px solid #1e293b; padding: 12px; border-radius: 8px; overflow-x: auto; color: #4ade80; max-height: 250px; }
+        img { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #475569; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Puter.js AI Live Test Suite</h1>
+    <p>Origin: <strong id="originText"></strong> | Status: <span id="authStatus">Checking...</span></p>
+
+    <div class="card">
+        <h2>1. 💬 Test AI Chat (Clip Highlights & Titles)</h2>
+        <button id="btnTestChat">🚀 Run AI Chat Test</button>
+        <pre id="logChat">Click button to test puter.ai.chat()...</pre>
+    </div>
+
+    <div class="card">
+        <h2>2. 🔊 Test Text-to-Speech (Khmer Audio)</h2>
+        <input type="text" id="ttsInput" value="សួស្តី! នេះគឺជាការសាកល្បងសំឡេង AI របស់ Puter.js" style="width:70%; padding:8px; border-radius:6px; border:1px solid #475569; background:#1e293b; color:#fff;">
+        <button id="btnTestTts">🔊 Play Audio</button>
+        <pre id="logTts">Click button to test puter.ai.txt2speech()...</pre>
+    </div>
+
+    <div class="card">
+        <h2>3. 🎨 Test Text-to-Image (AI Background Poster)</h2>
+        <input type="text" id="imgPrompt" value="A serene Cambodian Buddhist pagoda at golden hour, cinematic 4k wallpaper" style="width:70%; padding:8px; border-radius:6px; border:1px solid #475569; background:#1e293b; color:#fff;">
+        <button id="btnTestImg">🎨 Generate Image</button>
+        <div id="imgContainer"></div>
+        <pre id="logImg">Click button to test puter.ai.txt2img()...</pre>
+    </div>
+
+    <div class="card">
+        <h2>0. 📋 Available Puter AI Models</h2>
+        <button id="btnListModels">🔍 List All Models</button>
+        <pre id="logModels">Click to check available models...</pre>
+    </div>
+
+    <script>
+        document.getElementById('originText').textContent = window.location.origin || window.location.protocol;
+
+        if (window.puter) {
+            document.getElementById('authStatus').textContent = '✅ Puter.js SDK Loaded!';
+            document.getElementById('authStatus').style.color = '#4ade80';
+        } else {
+            document.getElementById('authStatus').textContent = '❌ Puter.js not found';
+            document.getElementById('authStatus').style.color = '#f87171';
+        }
+
+        // List Models
+        document.getElementById('btnListModels').addEventListener('click', async () => {
+            const log = document.getElementById('logModels');
+            log.textContent = '⏳ Listing models...';
+            try {
+                const models = await puter.ai.listModels();
+                log.textContent = JSON.stringify(models, null, 2);
+            } catch (err) {
+                log.textContent = '❌ Error listing models: ' + (err.message || err);
+            }
+        });
+
+        // Test 1: Chat (Default model or gpt-4o-mini)
+        document.getElementById('btnTestChat').addEventListener('click', async () => {
+            const log = document.getElementById('logChat');
+            log.textContent = '⏳ Calling puter.ai.chat()...';
+            try {
+                // Try default model first (keyless, serverless)
+                const res = await puter.ai.chat('វិភាគរកចំណងជើង Clip ខ្លីទាក់ទាញចំនួន ២ សម្រាប់ TikTok ពីប្រធានបទ "ការអប់រំចិត្ត" ជាទម្រង់ JSON array [ { "title": "..." } ]');
+                log.textContent = typeof res === 'string' ? res : (res?.message?.content || JSON.stringify(res, null, 2));
+            } catch (err) {
+                log.textContent = '❌ Default chat error: ' + (err.message || err);
+                try {
+                    log.textContent += '\n⏳ Trying gpt-4o-mini...';
+                    const res2 = await puter.ai.chat('Say Hello in Khmer', { model: 'gpt-4o-mini' });
+                    log.textContent += '\n' + (typeof res2 === 'string' ? res2 : (res2?.message?.content || JSON.stringify(res2, null, 2)));
+                } catch (e2) {
+                    log.textContent += '\n❌ gpt-4o-mini error: ' + (e2.message || e2);
+                }
+            }
+        });
+
+        // Test 2: TTS
+        document.getElementById('btnTestTts').addEventListener('click', async () => {
+            const log = document.getElementById('logTts');
+            const text = document.getElementById('ttsInput').value;
+            log.textContent = '⏳ Calling puter.ai.txt2speech()...';
+            try {
+                const audio = await puter.ai.txt2speech(text);
+                log.textContent = '✅ Audio generated! Playing now...';
+                if (audio && audio.play) {
+                    audio.play();
+                }
+            } catch (err) {
+                log.textContent = '❌ Error: ' + (err.message || err);
+            }
+        });
+
+        // Test 3: Image
+        document.getElementById('btnTestImg').addEventListener('click', async () => {
+            const log = document.getElementById('logImg');
+            const prompt = document.getElementById('imgPrompt').value;
+            log.textContent = '⏳ Calling puter.ai.txt2img()...';
+            
+            const modelsToTry = [
+                'flux-schnell',
+                'flux-dev',
+                'stable-diffusion-v1-5',
+                'dall-e-3',
+                undefined
+            ];
+
+            for (const m of modelsToTry) {
+                try {
+                    log.textContent = `⏳ Trying model: ${m || 'default'}...`;
+                    const options = m ? { model: m } : {};
+                    const img = await puter.ai.txt2img(prompt, options);
+                    log.textContent = `✅ Image successfully generated with model: ${m || 'default'}!`;
+                    const container = document.getElementById('imgContainer');
+                    container.innerHTML = '';
+                    if (typeof img === 'string') {
+                        const el = document.createElement('img');
+                        el.src = img;
+                        container.appendChild(el);
+                    } else if (img && img.src) {
+                        const el = document.createElement('img');
+                        el.src = img.src;
+                        container.appendChild(el);
+                    } else if (img instanceof HTMLElement) {
+                        container.appendChild(img);
+                    }
+                    return;
+                } catch (err) {
+                    log.textContent += `\n❌ Model ${m} failed: ${err.message || err}`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

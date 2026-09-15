@@ -70,8 +70,34 @@
 ---
 
 ### ⚙️ Technology Stack / បច្ចេកវិទ្យាដែលប្រើប្រាស់
-- **Frontend**: HTML5, Vanilla CSS3 (Modern Glassmorphism Design), JavaScript ES6+
-- **Backend API**: Python 3.14, Bottle HTTP Server
+- **Frontend Core**: **TypeScript (ES2020)**, HTML5, Vanilla CSS3 (Modern Glassmorphism Design)
+- **Bundler & Tooling**: esbuild (Ultra-fast build <50ms), TypeScript Compiler (`tsc`)
+- **Backend API**: Python 3.14, Bottle / HTTP Server
 - **AI Core**: OpenAI Whisper (`large-v3`), Google Gemini 2.5 Flash
 - **Video Engine**: FFmpeg (PCM 16kHz Audio Extractor, Subtitle Overlay Burner)
 - **Desktop Launcher**: PyWebView, PyInstaller, PowerShell Shortcuts
+
+---
+
+### 💻 TypeScript Development Workflow / ការអភិវឌ្ឍជាមួយ TypeScript
+
+គម្រោងនេះបច្ចុប្បន្នត្រូវបានរៀបចំជាមួយ TypeScript នៅក្នុង Folder `src/`៖
+- `src/app.ts` - Core Video Clipper Engine (TypeScript)
+- `src/firebase_service.ts` - Firebase Auth & Firestore Sync (TypeScript)
+- `src/types/` - Type definitions (`state.ts`, `clip.ts`, `firebase.ts`, `global.d.ts`)
+
+#### Command សម្រាប់ប្រើប្រាស់៖
+```bash
+# 1. Compile TypeScript ទៅជា app.js និង firebase_service.js
+npm run build
+
+# 2. Watch mode (Auto compile រាល់ពេល save file ក្នុង src/)
+npm run watch:app
+npm run watch:firebase
+# ឬ ដំណើរការទូទៅ
+npm run dev
+
+# 3. ពិនិត្យមើល Type Checking
+npm run check
+```
+

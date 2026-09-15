@@ -19,20 +19,33 @@ def start_backend_server(port=5000):
     except Exception as e:
         print(f"Backend server notice: {e}")
 
+def wait_for_server(port=5000, timeout=15):
+    """Waits until local HTTP server is listening and ready to accept connections."""
+    import socket
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            with socket.create_connection(('127.0.0.1', port), timeout=0.5):
+                return True
+        except (OSError, ConnectionRefusedError):
+            time.sleep(0.2)
+    return False
+
 def get_entry_url():
-    """Gets absolute path to index.html or local server URL."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    index_path = os.path.join(base_dir, "index.html")
-    if os.path.exists(index_path):
-        return f"file:///{index_path.replace('\\', '/')}"
-    return "http://localhost:5000"
+    """Returns local HTTP server entry URL."""
+    return "http://127.0.0.1:5000"
 
 def main():
     # Start backend HTTP API server on port 5000 in daemon thread
     server_thread = threading.Thread(target=start_backend_server, args=(5000,), daemon=True)
     server_thread.start()
     
-    time.sleep(0.5)
+    print("[INIT] Waiting for backend server to start...", flush=True)
+    ready = wait_for_server(5000, timeout=15)
+    if ready:
+        print("[INIT] Backend server is online and ready!", flush=True)
+    else:
+        print("[WARN] Backend server took longer than expected to start, launching window anyway...", flush=True)
 
     entry_url = get_entry_url()
     print(f"🚀 Launching Desktop App: {entry_url}")

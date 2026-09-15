@@ -1,0 +1,29 @@
+{
+  "name": "khmer-video-clipper-pro",
+  "version": "1.0.0",
+  "description": "Khmer Video Clipper Pro - TypeScript & AI Powered Video Clipping Engine",
+  "main": "app.js",
+  "scripts": {
+    "build:app": "esbuild src/app.ts --bundle --outfile=app.js --sourcemap --target=es2020",
+    "build:firebase": "esbuild src/firebase_service.ts --bundle --outfile=firebase_service.js --sourcemap --target=es2020",
+    "build": "npm run build:firebase && npm run build:app",
+    "watch:app": "esbuild src/app.ts --bundle --outfile=app.js --sourcemap --target=es2020 --watch",
+    "watch:firebase": "esbuild src/firebase_service.ts --bundle --outfile=firebase_service.js --sourcemap --target=es2020 --watch",
+    "dev": "npm run build && esbuild src/app.ts --bundle --outfile=app.js --sourcemap --target=es2020 --watch",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [
+    "video-clipper",
+    "khmer",
+    "ai",
+    "gemini",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0"
+  }
+}
