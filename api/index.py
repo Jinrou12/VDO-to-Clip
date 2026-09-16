@@ -200,12 +200,19 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         qs = parse_qs(parsed.query)
-        status, data = route("GET", parsed.path, "", qs)
+        # Check if original path is stored in headers by Vercel rewrite
+        raw_path = self.headers.get("x-matched-path") or self.headers.get("x-invoke-path") or parsed.path
+        if raw_path in ("/", "/api", "/api/index", "/api/index.py") and "path" in qs:
+            raw_path = "/api/" + qs["path"][0].lstrip("/")
+        status, data = route("GET", raw_path, "", qs)
         self._send(status, data)
 
     def do_POST(self):
         parsed = urlparse(self.path)
         qs = parse_qs(parsed.query)
+        raw_path = self.headers.get("x-matched-path") or self.headers.get("x-invoke-path") or parsed.path
+        if raw_path in ("/", "/api", "/api/index", "/api/index.py") and "path" in qs:
+            raw_path = "/api/" + qs["path"][0].lstrip("/")
         body = self._read_body()
-        status, data = route("POST", parsed.path, body, qs)
+        status, data = route("POST", raw_path, body, qs)
         self._send(status, data)
