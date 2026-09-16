@@ -593,10 +593,10 @@ def _process_audio_chunk_gemini(
         raise RuntimeError("Google GenAI SDK មិនទាន់តម្លើងទេ (google-genai)!")
 
     models_to_try = [
-        "gemini-3.8-flash",
         "gemini-3.6-flash",
-        "gemini-flash-latest",
         "gemini-3.7-flash",
+        "gemini-3.8-flash",
+        "gemini-flash-latest",
         "gemini-2.5-flash-lite"
     ]
 
@@ -912,10 +912,10 @@ Return ONLY a valid JSON array of objects with this schema:
 Do NOT wrap with markdown, do NOT write any introduction or notes. ONLY the JSON array."""
 
     models = [
-        "gemini-3.8-flash",
         "gemini-3.6-flash",
-        "gemini-flash-latest",
         "gemini-3.7-flash",
+        "gemini-3.8-flash",
+        "gemini-flash-latest",
         "gemini-2.5-flash-lite"
     ]
 
@@ -1212,7 +1212,7 @@ def _transcribe_pass_worker(
     cfg = PASS_CONFIGS.get(pass_key, PASS_CONFIGS["pass_a_verbatim"])
     pass_name = cfg["name"]
     prompt = cfg["prompt"]
-    models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"]
+    models = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash"]
     
     attempts = 0
     max_attempts = max(2, len(KEY_POOL.pool))
@@ -1354,7 +1354,7 @@ YOUR MANDATORY TASK:
 Do NOT wrap with markdown fences. ONLY return the JSON array."""
 
     active_key = KEY_POOL.get_active_key()
-    models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"]
+    models = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash"]
     try:
         client = google_genai.Client(api_key=active_key)
         for m in models:
@@ -1437,7 +1437,7 @@ def _transcribe_audio_chunk_3way(
     return reconciled
 
 
-def transcribe_with_gemini_3way(audio_path: str, api_key: str = "", video_duration: float = 0) -> List[Dict[str, Any]]:
+def transcribe_with_gemini_3way(audio_path: str, api_key: str = "", video_duration: float = 0, progress_callback = None) -> List[Dict[str, Any]]:
     """
     Full 3-Way Consensus Transcription:
     1. Splits long audio into chunks with 5s overlap.
@@ -1451,7 +1451,11 @@ def transcribe_with_gemini_3way(audio_path: str, api_key: str = "", video_durati
     CHUNK_THRESHOLD = 1500.0  # 25 mins
     if video_duration <= CHUNK_THRESHOLD:
         print(f"🎙️ [3-Way Transcribe] Audio duration {int(video_duration)}s <= 25 mins. Running single 3-Way Pass...")
+        if progress_callback:
+            progress_callback("3-Way Parallel Transcribe (Keys 1-3)", 28)
         segments = _transcribe_audio_chunk_3way(audio_path, 0.0, 1, 1)
+        if progress_callback:
+            progress_callback("Transcript Arbiter (Chuon Nath Reconciled)", 50)
     else:
         chunk_target_len = 1200.0  # 20 mins per chunk
         overlap_buffer = 5.0
@@ -1484,8 +1488,14 @@ def transcribe_with_gemini_3way(audio_path: str, api_key: str = "", video_durati
 
         segments = []
         for task in chunk_tasks:
+            if progress_callback:
+                chunk_pct = int(25 + ((task["chunk_idx"] - 1) / len(chunk_tasks)) * 25)
+                progress_callback(f"3-Way Transcribe (Part {task['chunk_idx']}/{len(chunk_tasks)})", chunk_pct)
             c_segs = _transcribe_audio_chunk_3way(task["file"], task["offset"], task["chunk_idx"], len(chunk_tasks))
             segments.extend(c_segs)
+
+        if progress_callback:
+            progress_callback("Transcript Arbiter (Chuon Nath Reconciled)", 50)
 
         for tf in temp_files:
             if os.path.exists(tf):
@@ -1569,7 +1579,7 @@ def _run_scout_worker(
 ) -> List[Dict[str, Any]]:
     """Runs a single council scout persona using a dedicated key from KEY_POOL."""
     scout = SCOUT_PROFILES[scout_key]
-    models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"]
+    models = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash"]
     
     # Format transcript context
     transcript_text = ""
@@ -1891,7 +1901,7 @@ def analyze_audio_with_consensus_council(
         progress_callback("3-Way Parallel Transcribe (Keys 1-3)", 25)
 
     # Step 1 & 2: 3-Way Transcription & Arbiter
-    super_transcript = transcribe_with_gemini_3way(audio_file, video_duration=video_dur)
+    super_transcript = transcribe_with_gemini_3way(audio_file, video_duration=video_dur, progress_callback=progress_callback)
 
     with open(f"audio_cache/super_transcript_{slug}.json", "w", encoding="utf-8") as f:
         json.dump(super_transcript, f, ensure_ascii=False, indent=2)
@@ -1941,7 +1951,7 @@ class BatchCouncilScanner:
     distributing the 13 Gemini API keys safely across videos without rate-limiting.
     """
     def __init__(self):
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.queue: List[Dict[str, Any]] = []
         self.max_workers: int = 2
         self.is_running: bool = False
@@ -2086,17 +2096,22 @@ class BatchCouncilScanner:
 
         with self.lock:
             self.is_running = False
-            # Save batch results
-            all_res = self.get_status()
-            try:
-                with open(self.results_file, "w", encoding="utf-8") as f:
-                    json.dump(all_res, f, ensure_ascii=False, indent=2)
-            except Exception as e:
-                print(f"Failed to write {self.results_file}: {e}")
+        all_res = self.get_status()
+        try:
+            with open(self.results_file, "w", encoding="utf-8") as f:
+                json.dump(all_res, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Failed to write {self.results_file}: {e}")
         print(f"🎉 [Batch Council] Completed batch processing for {len(self.queue)} videos!")
 
     def get_status(self) -> Dict[str, Any]:
         with self.lock:
+            if not self.queue and os.path.exists(self.results_file):
+                try:
+                    with open(self.results_file, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception:
+                    pass
             total = len(self.queue)
             completed = sum(1 for v in self.queue if v["status"] == "completed")
             errors = sum(1 for v in self.queue if v["status"] == "error")
