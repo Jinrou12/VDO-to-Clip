@@ -147,8 +147,8 @@ def scout_candidates(
     if not api_key:
         raise ValueError("No Gemini API key available.")
 
-    # Enforce free-only model list
-    preferred = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-lite-preview-02-05"]
+    # Enforce free-only model list with active working models
+    preferred = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.0-flash"]
     models = cost_controller.filter_allowed_models(preferred)
 
     guidance = get_vocabulary_prompt_guidance(vocab_mode)
@@ -219,8 +219,8 @@ def specialist_review(
     if not clustered_candidates:
         return []
 
-    # Filter allowed models according to cost policy
-    models = cost_controller.filter_allowed_models(["gemini-2.0-flash", "gemini-1.5-flash"])
+    # Filter allowed models according to cost policy (using active working models)
+    models = cost_controller.filter_allowed_models(["gemini-3.6-flash", "gemini-2.5-flash"])
     api_key = get_saved_gemini_key()
     client = genai.Client(api_key=api_key) if api_key else None
 
