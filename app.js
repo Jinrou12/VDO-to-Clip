@@ -4256,8 +4256,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         topTextColor1: state.topTextColor1,
         topTextColor2: state.topTextColor2,
         bottomTextColor1: state.bottomTextColor1,
-        bottomTextColor2: state.bottomTextColor2,
-        topText: `${clip.top1} ${clip.top2}`,
+        topText: clip.title || `${clip.top1} ${clip.top2}`,
         topTextPart1: clip.top1,
         topTextPart2: clip.top2,
         topFontSize: state.topFontSize,
@@ -5646,19 +5645,64 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         const clip = state.clips.find((c) => c.id === state.activeClipId);
         if (clip) {
           clip[key] = val;
-          if (key === "topTextPart1" || key === "topTextPart2" || key === "topText") {
+          if (key === "topText") {
+            clip.topText = val;
+            state.topText = val;
+            const parts = (val || "").trim().split(/\s+/);
+            clip.topTextPart1 = parts[0] || "";
+            clip.topTextPart2 = parts.slice(1).join(" ") || "";
+            state.topTextPart1 = clip.topTextPart1;
+            state.topTextPart2 = clip.topTextPart2;
+            if (elements.topTextPart1Input) elements.topTextPart1Input.value = clip.topTextPart1;
+            if (elements.topTextPart2Input) elements.topTextPart2Input.value = clip.topTextPart2;
+            if (val && val.trim().length > 0) {
+              clip.name = val.trim();
+              if (elements.activeClipNameBadge) {
+                elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
+              }
+              if (elements.activeClipTitleInput) {
+                elements.activeClipTitleInput.value = clip.name;
+              }
+            }
+          } else if (key === "topTextPart1" || key === "topTextPart2") {
             clip.topTextPart1 = state.topTextPart1;
             clip.topTextPart2 = state.topTextPart2;
             clip.topText = `${state.topTextPart1 || ""} ${state.topTextPart2 || ""}`.trim();
             state.topText = clip.topText;
-          }
-          if (key === "bottomTextPart1" || key === "bottomTextPart2" || key === "bottomText") {
+            if (elements.topTextInput) elements.topTextInput.value = clip.topText;
+            if (clip.topText && clip.topText.trim().length > 0) {
+              clip.name = clip.topText.trim();
+              if (elements.activeClipNameBadge) {
+                elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
+              }
+              if (elements.activeClipTitleInput) {
+                elements.activeClipTitleInput.value = clip.name;
+              }
+            }
+          } else if (key === "bottomText") {
+            clip.bottomText = val;
+            state.bottomText = val;
+            const parts = (val || "").trim().split(/\s+/);
+            clip.bottomTextPart1 = parts[0] || "";
+            clip.bottomTextPart2 = parts.slice(1).join(" ") || "";
+            state.bottomTextPart1 = clip.bottomTextPart1;
+            state.bottomTextPart2 = clip.bottomTextPart2;
+            if (elements.bottomTextPart1Input) elements.bottomTextPart1Input.value = clip.bottomTextPart1;
+            if (elements.bottomTextPart2Input) elements.bottomTextPart2Input.value = clip.bottomTextPart2;
+          } else if (key === "bottomTextPart1" || key === "bottomTextPart2") {
             clip.bottomTextPart1 = state.bottomTextPart1;
             clip.bottomTextPart2 = state.bottomTextPart2;
             clip.bottomText = `${state.bottomTextPart1 || ""} ${state.bottomTextPart2 || ""}`.trim();
             state.bottomText = clip.bottomText;
+            if (elements.bottomTextInput) elements.bottomTextInput.value = clip.bottomText;
+          } else if (key === "name") {
+            clip.name = val;
+            clip.topText = val;
+            state.topText = val;
+            if (elements.topTextInput) elements.topTextInput.value = val;
           }
           renderClipsList();
+          renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
         }
       }
       renderWordColorChips();
@@ -7448,10 +7492,12 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         startTime: c.startTime,
         endTime: c.endTime,
         duration: c.duration,
-        topText1: c.top1,
-        topText2: c.top2,
-        bottomText1: c.bot1,
-        bottomText2: c.bot2,
+        topText: c.title,
+        topTextPart1: c.top1 || c.title,
+        topTextPart2: c.top2 || "",
+        bottomText: `${c.bot1 || ""} ${c.bot2 || ""}`.trim(),
+        bottomTextPart1: c.bot1,
+        bottomTextPart2: c.bot2,
         captionLines: []
       }));
       state.activeClipId = 1;
