@@ -23,3 +23,6 @@ test_*.py
 list_models.py
 print_clips.py
 batch_council_results.json
+.session_token
+cache/
+jobs.db*

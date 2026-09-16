@@ -543,7 +543,7 @@
       if (addImgBtn && imgUpload) {
         addImgBtn.addEventListener("click", () => imgUpload.click());
         imgUpload.addEventListener("change", (e) => {
-          const files = Array.from(e.target.files || []);
+          const files = Array.from(e.target?.files || []);
           files.forEach((file) => {
             const reader = new FileReader();
             reader.onload = (evt) => {
@@ -945,7 +945,7 @@
         swatch.classList.toggle("active", swatch.dataset.color.toLowerCase() === (state.headlineBanner.bgColor || "").toLowerCase());
       });
       const layerCount = document.getElementById("filmoraLayerCount");
-      if (layerCount) layerCount.textContent = state.studioLayers.length;
+      if (layerCount) layerCount.textContent = String(state.studioLayers.length);
       const layersList = document.getElementById("filmoraLayersList");
       if (layersList) {
         layersList.innerHTML = "";
@@ -1214,7 +1214,7 @@
       const studioImgInput = document.getElementById("studioImageUploadInput");
       if (studioImgInput) {
         studioImgInput.addEventListener("change", (e) => {
-          const files = Array.from(e.target.files || []);
+          const files = Array.from(e.target?.files || []);
           files.forEach((file) => {
             const reader = new FileReader();
             reader.onload = (evt) => {
@@ -4400,11 +4400,11 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         if (btn) btn.classList.toggle("active", idx + 1 === screenNum);
       });
       const badge2 = document.getElementById("step2Badge");
-      if (badge2) badge2.textContent = state.clips.length;
+      if (badge2) badge2.textContent = String(state.clips.length);
       const clipCountEl = document.getElementById("clipCount");
-      if (clipCountEl) clipCountEl.textContent = state.clips.length;
+      if (clipCountEl) clipCountEl.textContent = String(state.clips.length);
       const s2ClipsCount = document.getElementById("screen2ClipsCount");
-      if (s2ClipsCount) s2ClipsCount.textContent = state.clips.length;
+      if (s2ClipsCount) s2ClipsCount.textContent = String(state.clips.length);
       const filmoraWorkspace = document.getElementById("filmoraProWorkspace");
       const filmoraSlot = document.getElementById("filmoraCanvasSlot");
       const defaultCanvasViewport = document.querySelector(".stage-center .canvas-viewport");
@@ -4455,7 +4455,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             filmoraSlot.appendChild(canvasWrapper);
           }
           canvasWrapper?.classList.remove("hidden");
-          updateAspectDimensions("16:9");
+          state.aspectRatio = "16:9";
+          updateAspectDimensions();
           syncFilmoraInspectorUI();
           renderFilmoraMediaBin();
           renderFilmoraTimeline();
@@ -4473,7 +4474,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
           screen3Inspector?.classList.remove("hidden");
           document.getElementById("viewModeTrimmerBtn")?.classList.remove("active");
           document.getElementById("viewModeStudioBtn")?.classList.add("active");
-          updateAspectDimensions(state.aspectRatio || "9:16");
+          state.aspectRatio = state.aspectRatio || "9:16";
+          updateAspectDimensions();
         }
         elements.step1TabBtn?.classList.remove("active");
         elements.step2TabBtn?.classList.add("active");
@@ -4497,7 +4499,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         updateFilmoraPlayhead();
         updateStudioTimelineUI();
       } else if (screenNum === 4) {
-        toggleExportChoicePopover(true);
+        const toggleFn = window.toggleExportChoicePopover;
+        if (typeof toggleFn === "function") toggleFn(true);
       }
     }
     function updatePlayPauseBtn() {
@@ -4516,7 +4519,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       document.getElementById("stepBtn1")?.addEventListener("click", () => switchScreen(1));
       document.getElementById("stepBtn2")?.addEventListener("click", () => switchScreen(2));
       document.getElementById("stepBtn3")?.addEventListener("click", () => switchScreen(3));
-      function toggleExportChoicePopover2(forceState) {
+      function toggleExportChoicePopover(forceState) {
         const popover = document.getElementById("exportChoicePopover");
         if (!popover) return;
         const willShow = typeof forceState === "boolean" ? forceState : popover.classList.contains("hidden");
@@ -4534,14 +4537,14 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
           }
         }
       }
-      window.toggleExportChoicePopover = toggleExportChoicePopover2;
+      window.toggleExportChoicePopover = toggleExportChoicePopover;
       document.getElementById("stepBtn4")?.addEventListener("click", (e) => {
         e.stopPropagation();
-        toggleExportChoicePopover2();
+        toggleExportChoicePopover();
       });
       document.getElementById("popoverExportClipBtn")?.addEventListener("click", (e) => {
         e.stopPropagation();
-        toggleExportChoicePopover2(false);
+        toggleExportChoicePopover(false);
         if (state.activeClipId) {
           exportSingleClip(state.activeClipId);
         } else if (state.clips.length > 0) {
@@ -4552,7 +4555,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       });
       document.getElementById("popoverExportAllBtn")?.addEventListener("click", (e) => {
         e.stopPropagation();
-        toggleExportChoicePopover2(false);
+        toggleExportChoicePopover(false);
         if (state.clips.length > 0) {
           exportAllClips();
         } else {
@@ -4564,13 +4567,13 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         const stepBtn4 = document.getElementById("stepBtn4");
         if (popover && !popover.classList.contains("hidden")) {
           if (!popover.contains(e.target) && !stepBtn4?.contains(e.target)) {
-            toggleExportChoicePopover2(false);
+            toggleExportChoicePopover(false);
           }
         }
       });
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
-          toggleExportChoicePopover2(false);
+          toggleExportChoicePopover(false);
         }
       });
       elements.step1TabBtn?.addEventListener("click", () => switchScreen(1));
@@ -5031,7 +5034,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       deleteModal?.addEventListener("click", (e) => {
         if (e.target === deleteModal) closeDeleteModal();
       });
-      function renderExtraCaptionInputs2() {
+      function renderExtraCaptionInputs() {
+        window.renderExtraCaptionInputs = renderExtraCaptionInputs;
         const container = document.getElementById("extraCaptionLinesContainer");
         if (!container) return;
         container.innerHTML = "";
@@ -5081,7 +5085,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             pushStateToHistory();
             state.extraCaptions = state.extraCaptions.filter((item) => item.id !== cap.id);
             syncActiveClipProperty("extraCaptions", state.extraCaptions);
-            renderExtraCaptionInputs2();
+            renderExtraCaptionInputs();
             renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
             showToast("\u{1F5D1}\uFE0F \u1794\u17B6\u1793\u179B\u17BB\u1794\u1794\u17D2\u179A\u17A2\u1794\u17CB\u17A2\u1780\u17D2\u179F\u179A\u1794\u1793\u17D2\u1790\u17C2\u1798!");
           });
@@ -5092,7 +5096,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
               pushStateToHistory();
               cap.color = c;
               syncActiveClipProperty("extraCaptions", state.extraCaptions);
-              renderExtraCaptionInputs2();
+              renderExtraCaptionInputs();
               renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
             });
           });
@@ -5128,7 +5132,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
           posY: defaultY
         });
         syncActiveClipProperty("extraCaptions", state.extraCaptions);
-        renderExtraCaptionInputs2();
+        renderExtraCaptionInputs();
         renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
         showToast("\u2795 \u1794\u17B6\u1793\u1794\u1793\u17D2\u1790\u17C2\u1798\u1794\u17D2\u179A\u17A2\u1794\u17CB\u17A2\u1780\u17D2\u179F\u179A\u1790\u17D2\u1798\u17B8!");
       });
@@ -5381,13 +5385,13 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         const target = hitTestText(x, y) || (y < state.canvasHeight / 2 ? "top" : "bottom");
         const step = e.deltaY < 0 ? 4 : -4;
         if (target === "top") {
-          let newSize = Math.max(20, Math.min(150, parseFloat(state.topFontSize) + step));
+          let newSize = Math.max(20, Math.min(150, Number(state.topFontSize) + step));
           state.topFontSize = newSize;
           if (elements.topFontSizeInput) elements.topFontSizeInput.value = newSize;
           if (elements.topFontSizeVal) elements.topFontSizeVal.textContent = newSize + "px";
           syncActiveClipProperty("topFontSize", newSize);
         } else if (target === "bottom") {
-          let newSize = Math.max(20, Math.min(150, parseFloat(state.bottomFontSize) + step));
+          let newSize = Math.max(20, Math.min(150, Number(state.bottomFontSize) + step));
           state.bottomFontSize = newSize;
           if (elements.bottomFontSizeInput) elements.bottomFontSizeInput.value = newSize;
           if (elements.bottomFontSizeVal) elements.bottomFontSizeVal.textContent = newSize + "px";
@@ -5442,7 +5446,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
           state.resizeHandle = cornerHit.handle;
           dragStartMouseX = x;
           dragStartMouseY = y;
-          dragStartFontSize = cornerHit.target === "top" ? parseFloat(state.topFontSize) : parseFloat(state.bottomFontSize);
+          dragStartFontSize = cornerHit.target === "top" ? Number(state.topFontSize) : Number(state.bottomFontSize);
           elements.mainCanvas.style.cursor = cornerHit.handle === "TL" || cornerHit.handle === "BR" ? "nwse-resize" : "nesw-resize";
           return;
         }
@@ -5456,11 +5460,11 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             state.hoveredTextTarget = target;
             dragStartCanvasY = y;
             if (target === "top") {
-              dragStartTextPosY = parseFloat(state.topPosY);
+              dragStartTextPosY = Number(state.topPosY);
               const inputEl = state.colorMode === "dual" ? elements.topTextPart1Input : elements.topTextInput;
               inputEl?.focus();
             } else if (target === "bottom") {
-              dragStartTextPosY = parseFloat(state.bottomPosY);
+              dragStartTextPosY = Number(state.bottomPosY);
               const inputEl = state.colorMode === "dual" ? elements.bottomTextPart1Input : elements.bottomTextInput;
               inputEl?.focus();
             } else if (typeof target === "string" && target.startsWith("extra_")) {
@@ -5950,7 +5954,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       });
     }
     function handleVideoUpload(e) {
-      const files = Array.from(e.target.files || []);
+      const files = Array.from(e.target?.files || []);
       if (files.length === 0) return;
       addFilesToBatchQueue(files);
       if (elements.dropzoneOverlay) elements.dropzoneOverlay.classList.add("hidden");
@@ -6201,7 +6205,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                   title: c.title || `Clip \u179F\u17C6\u1781\u17B6\u1793\u17CB \u1797\u17B6\u1782 ${idx + 1}`,
                   inTime: parseFloat(c.start_time || c.inTime || 0),
                   outTime: parseFloat(c.end_time || c.outTime || 120),
-                  duration: parseFloat((c.end_time || c.outTime || 120) - (c.start_time || c.inTime || 0)),
+                  duration: Number((c.end_time || c.outTime || 120) - (c.start_time || c.inTime || 0)),
                   viralScore: parseFloat(c.viral_score || 98),
                   consensusBadge: c.consensus_badge || "\u{1F3C6} Grand Council Consensus",
                   topicSummary: c.topic_summary || "",
@@ -6815,7 +6819,9 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       pushStateToHistory();
       const customTitleInput = document.getElementById("clipTitleInput");
       const customTitle = customTitleInput ? customTitleInput.value.trim() : "";
-      const clipName = customTitle || `Clip #${state.clipCounter++}`;
+      const clipCountNum = Number(state.clipCounter) || 1;
+      state.clipCounter = clipCountNum + 1;
+      const clipName = customTitle || `Clip #${clipCountNum}`;
       const clip = {
         id: Date.now(),
         name: clipName,
@@ -6999,7 +7005,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         });
       }
       updateAspectDimensions();
-      renderExtraCaptionInputs();
+      if (typeof window.renderExtraCaptionInputs === "function") window.renderExtraCaptionInputs();
       if (elements.activeClipNameBadge) {
         elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
       }
@@ -7086,7 +7092,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         elements.videoOffsetYInput.value = state.videoOffsetY;
         if (elements.videoOffsetYVal) elements.videoOffsetYVal.textContent = state.videoOffsetY + "px";
       }
-      renderExtraCaptionInputs();
+      if (typeof window.renderExtraCaptionInputs === "function") window.renderExtraCaptionInputs();
     }
     function renderLoop() {
       if (state.currentScreen === 3 || state.currentScreen === 2 || state.isExporting) {
@@ -7382,7 +7388,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         let targetW = width * scaleFactor;
         let targetH = width / vAspect * scaleFactor;
         let targetX = (width - targetW) / 2;
-        let targetY = (height - targetH) / 2 + parseFloat(state.videoOffsetY);
+        let targetY = (height - targetH) / 2 + Number(state.videoOffsetY);
         ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
         ctx.shadowBlur = 20;
         ctx.drawImage(video, targetX, targetY, targetW, targetH);
@@ -7480,14 +7486,14 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
       ctx.textBaseline = "middle";
       ctx.strokeStyle = state.strokeColor || "#000000";
-      ctx.lineWidth = parseFloat(state.strokeWidth) || 12;
+      ctx.lineWidth = Number(state.strokeWidth) || 12;
       ctx.lineJoin = "round";
       ctx.miterLimit = 2;
       const maxAllowedW = canvasWidth - 60;
       const color = ec.color || "#FFE600";
       if (state.shadowBlur > 0) {
         ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-        ctx.shadowBlur = parseFloat(state.shadowBlur);
+        ctx.shadowBlur = Number(state.shadowBlur);
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 4;
       }
@@ -7578,7 +7584,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
       ctx.textBaseline = "middle";
       ctx.strokeStyle = state.strokeColor || "#000000";
-      ctx.lineWidth = parseFloat(state.strokeWidth) || 12;
+      ctx.lineWidth = Number(state.strokeWidth) || 12;
       ctx.lineJoin = "round";
       ctx.miterLimit = 2;
       const maxAllowedW = canvasWidth - 60;
@@ -7586,7 +7592,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       const color2 = state.colorMode === "dual" ? targetName === "top" ? state.topTextColor2 : state.bottomTextColor2 : color1;
       if (state.shadowBlur > 0) {
         ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-        ctx.shadowBlur = parseFloat(state.shadowBlur);
+        ctx.shadowBlur = Number(state.shadowBlur);
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 4;
       }

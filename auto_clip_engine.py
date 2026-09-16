@@ -2998,7 +2998,9 @@ def main():
     args = parser.parse_args()
 
     if args.server:
-        run_server(args.port)
+        import uvicorn
+        print(f"Starting FastAPI Server on Port {args.port}...")
+        uvicorn.run("api:app", host="127.0.0.1", port=args.port, reload=True)
         return
 
     if not args.video:

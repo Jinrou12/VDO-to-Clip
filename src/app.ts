@@ -628,11 +628,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const addImgBtn = document.getElementById('ytAddImageLayerBtn');
         if (addImgBtn && imgUpload) {
             addImgBtn.addEventListener('click', () => imgUpload.click());
-            imgUpload.addEventListener('change', (e) => {
-                const files = Array.from(e.target.files || []);
-                files.forEach(file => {
+            imgUpload.addEventListener('change', (e: any) => {
+                const files = Array.from(e.target?.files || []) as File[];
+                files.forEach((file: File) => {
                     const reader = new FileReader();
-                    reader.onload = (evt) => {
+                    reader.onload = (evt: any) => {
                         addStudioImageLayer(evt.target.result, file.name.replace(/\.[^/.]+$/, ''));
                     };
                     reader.readAsDataURL(file);
@@ -1088,7 +1088,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Layer list
         const layerCount = document.getElementById('filmoraLayerCount');
-        if (layerCount) layerCount.textContent = state.studioLayers.length;
+        if (layerCount) layerCount.textContent = String(state.studioLayers.length);
         const layersList = document.getElementById('filmoraLayersList');
         if (layersList) {
             layersList.innerHTML = '';
@@ -1259,7 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
             blockVideo.style.left = '0px';
             blockVideo.style.width = timelineWidth + 'px';
             if (blockVideoLabel) {
-                blockVideoLabel.textContent = clip.name || clip.title || 'Master Video Clip';
+                blockVideoLabel.textContent = (clip as any).name || clip.title || 'Master Video Clip';
             }
             blockVideo.onclick = () => toggleFilmoraInspector('video');
         }
@@ -1409,11 +1409,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2.5 Media Import via studioImageUploadInput
         const studioImgInput = document.getElementById('studioImageUploadInput');
         if (studioImgInput) {
-            studioImgInput.addEventListener('change', (e) => {
-                const files = Array.from(e.target.files || []);
-                files.forEach((file) => {
+            studioImgInput.addEventListener('change', (e: any) => {
+                const files = Array.from(e.target?.files || []) as File[];
+                files.forEach((file: File) => {
                     const reader = new FileReader();
-                    reader.onload = (evt) => {
+                    reader.onload = (evt: any) => {
                         addStudioImageLayer(evt.target.result, file.name.replace(/\.[^/.]+$/, ''));
                     };
                     reader.readAsDataURL(file);
@@ -3332,7 +3332,7 @@ Return ONLY a valid JSON array starting with [ and ending with ]. Do NOT include
             let serverDuration = state.duration;
 
             try {
-                const uploadResult = await uploadVideoToBackend(state.videoFile, (pct) => {
+                const uploadResult: any = await uploadVideoToBackend(state.videoFile, (pct) => {
                     setProgress(Math.round(pct * 0.25), `📤 Upload ${pct}%...`);
                 });
                 if (uploadResult?.success) {
@@ -4809,11 +4809,11 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
 
         // Update badge count on Step 2
         const badge2 = document.getElementById('step2Badge');
-        if (badge2) badge2.textContent = state.clips.length;
+        if (badge2) badge2.textContent = String(state.clips.length);
         const clipCountEl = document.getElementById('clipCount');
-        if (clipCountEl) clipCountEl.textContent = state.clips.length;
+        if (clipCountEl) clipCountEl.textContent = String(state.clips.length);
         const s2ClipsCount = document.getElementById('screen2ClipsCount');
-        if (s2ClipsCount) s2ClipsCount.textContent = state.clips.length;
+        if (s2ClipsCount) s2ClipsCount.textContent = String(state.clips.length);
 
         const filmoraWorkspace = document.getElementById('filmoraProWorkspace');
         const filmoraSlot = document.getElementById('filmoraCanvasSlot');
@@ -4883,7 +4883,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                 canvasWrapper?.classList.remove('hidden');
 
                 // Ensure 16:9 full widescreen
-                updateAspectDimensions('16:9');
+                state.aspectRatio = '16:9';
+                updateAspectDimensions();
 
                 syncFilmoraInspectorUI();
                 renderFilmoraMediaBin();
@@ -4908,7 +4909,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                 document.getElementById('viewModeTrimmerBtn')?.classList.remove('active');
                 document.getElementById('viewModeStudioBtn')?.classList.add('active');
 
-                updateAspectDimensions(state.aspectRatio || '9:16');
+                state.aspectRatio = state.aspectRatio || '9:16';
+                updateAspectDimensions();
             }
 
             elements.step1TabBtn?.classList.remove('active');
@@ -4940,7 +4942,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             updateStudioTimelineUI();
         } else if (screenNum === 4) {
             // STEP 4: Export Choices Popover
-            toggleExportChoicePopover(true);
+            const toggleFn = (window as any).toggleExportChoicePopover;
+            if (typeof toggleFn === 'function') toggleFn(true);
         }
     }
 
@@ -5534,6 +5537,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         });
 
         function renderExtraCaptionInputs() {
+            (window as any).renderExtraCaptionInputs = renderExtraCaptionInputs;
             const container = document.getElementById('extraCaptionLinesContainer');
             if (!container) return;
             container.innerHTML = '';
@@ -5943,13 +5947,13 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             const step = e.deltaY < 0 ? 4 : -4;
 
             if (target === 'top') {
-                let newSize = Math.max(20, Math.min(150, parseFloat(state.topFontSize) + step));
+                let newSize = Math.max(20, Math.min(150, Number(state.topFontSize) + step));
                 state.topFontSize = newSize;
                 if (elements.topFontSizeInput) elements.topFontSizeInput.value = newSize;
                 if (elements.topFontSizeVal) elements.topFontSizeVal.textContent = newSize + 'px';
                 syncActiveClipProperty('topFontSize', newSize);
             } else if (target === 'bottom') {
-                let newSize = Math.max(20, Math.min(150, parseFloat(state.bottomFontSize) + step));
+                let newSize = Math.max(20, Math.min(150, Number(state.bottomFontSize) + step));
                 state.bottomFontSize = newSize;
                 if (elements.bottomFontSizeInput) elements.bottomFontSizeInput.value = newSize;
                 if (elements.bottomFontSizeVal) elements.bottomFontSizeVal.textContent = newSize + 'px';
@@ -6013,7 +6017,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                 state.resizeHandle = cornerHit.handle;
                 dragStartMouseX = x;
                 dragStartMouseY = y;
-                dragStartFontSize = cornerHit.target === 'top' ? parseFloat(state.topFontSize) : parseFloat(state.bottomFontSize);
+                dragStartFontSize = cornerHit.target === 'top' ? Number(state.topFontSize) : Number(state.bottomFontSize);
                 elements.mainCanvas.style.cursor = (cornerHit.handle === 'TL' || cornerHit.handle === 'BR') ? 'nwse-resize' : 'nesw-resize';
                 return;
             }
@@ -6030,11 +6034,11 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                     dragStartCanvasY = y;
 
                     if (target === 'top') {
-                        dragStartTextPosY = parseFloat(state.topPosY);
+                        dragStartTextPosY = Number(state.topPosY);
                         const inputEl = state.colorMode === 'dual' ? elements.topTextPart1Input : elements.topTextInput;
                         inputEl?.focus();
                     } else if (target === 'bottom') {
-                        dragStartTextPosY = parseFloat(state.bottomPosY);
+                        dragStartTextPosY = Number(state.bottomPosY);
                         const inputEl = state.colorMode === 'dual' ? elements.bottomTextPart1Input : elements.bottomTextInput;
                         inputEl?.focus();
                     } else if (typeof target === 'string' && target.startsWith('extra_')) {
@@ -6601,8 +6605,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
     }
 
     // --- Video Upload Handler & Batch Queue Support (វិធីទី ២) ---
-    function handleVideoUpload(e) {
-        const files = Array.from(e.target.files || []);
+    function handleVideoUpload(e: any) {
+        const files = Array.from(e.target?.files || []) as File[];
         if (files.length === 0) return;
 
         // Add all selected files to batch queue
@@ -6611,7 +6615,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         if (elements.dropzoneOverlay) elements.dropzoneOverlay.classList.add('hidden');
         if (elements.fileInfoBox) elements.fileInfoBox.classList.remove('empty');
 
-        const first = files[0];
+        const first = files[0] as File;
         state.videoFile = first;
         if (state.videoObjectURL) URL.revokeObjectURL(state.videoObjectURL);
         state.videoObjectURL = URL.createObjectURL(first);
@@ -6893,7 +6897,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                                 title: c.title || `Clip សំខាន់ ភាគ ${idx + 1}`,
                                 inTime: parseFloat(c.start_time || c.inTime || 0),
                                 outTime: parseFloat(c.end_time || c.outTime || 120),
-                                duration: parseFloat((c.end_time || c.outTime || 120) - (c.start_time || c.inTime || 0)),
+                                duration: Number((c.end_time || c.outTime || 120) - (c.start_time || c.inTime || 0)),
                                 viralScore: parseFloat(c.viral_score || 98.0),
                                 consensusBadge: c.consensus_badge || '🏆 Grand Council Consensus',
                                 topicSummary: c.topic_summary || '',
@@ -7581,10 +7585,11 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
 
         pushStateToHistory();
 
-        const customTitleInput = document.getElementById('clipTitleInput');
+        const customTitleInput = document.getElementById('clipTitleInput') as HTMLInputElement | null;
         const customTitle = customTitleInput ? customTitleInput.value.trim() : '';
-
-        const clipName = customTitle || `Clip #${state.clipCounter++}`;
+        const clipCountNum = Number(state.clipCounter) || 1;
+        state.clipCounter = clipCountNum + 1;
+        const clipName = customTitle || `Clip #${clipCountNum}`;
 
         const clip = {
             id: Date.now(),
@@ -7792,7 +7797,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             });
         }
         updateAspectDimensions();
-        renderExtraCaptionInputs();
+        if (typeof (window as any).renderExtraCaptionInputs === 'function') (window as any).renderExtraCaptionInputs();
 
         if (elements.activeClipNameBadge) {
             elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
@@ -7892,7 +7897,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             elements.videoOffsetYInput.value = state.videoOffsetY;
             if (elements.videoOffsetYVal) elements.videoOffsetYVal.textContent = state.videoOffsetY + 'px';
         }
-        renderExtraCaptionInputs();
+        if (typeof (window as any).renderExtraCaptionInputs === 'function') (window as any).renderExtraCaptionInputs();
     }
 
     // Note: window.deleteClip is defined above at line ~1904 with full undo support.
@@ -8262,7 +8267,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             let targetW = width * scaleFactor;
             let targetH = (width / vAspect) * scaleFactor;
             let targetX = (width - targetW) / 2;
-            let targetY = (height - targetH) / 2 + parseFloat(state.videoOffsetY);
+            let targetY = (height - targetH) / 2 + Number(state.videoOffsetY);
 
             ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
             ctx.shadowBlur = 20;
@@ -8380,7 +8385,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
         ctx.textBaseline = 'middle';
         ctx.strokeStyle = state.strokeColor || '#000000';
-        ctx.lineWidth = parseFloat(state.strokeWidth) || 12;
+        ctx.lineWidth = Number(state.strokeWidth) || 12;
         ctx.lineJoin = 'round';
         ctx.miterLimit = 2;
 
@@ -8389,7 +8394,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
 
         if (state.shadowBlur > 0) {
             ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-            ctx.shadowBlur = parseFloat(state.shadowBlur);
+            ctx.shadowBlur = Number(state.shadowBlur);
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 4;
         }
@@ -8492,7 +8497,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
         ctx.textBaseline = 'middle';
         ctx.strokeStyle = state.strokeColor || '#000000';
-        ctx.lineWidth = parseFloat(state.strokeWidth) || 12;
+        ctx.lineWidth = Number(state.strokeWidth) || 12;
         ctx.lineJoin = 'round';
         ctx.miterLimit = 2;
 
@@ -8505,7 +8510,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
 
         if (state.shadowBlur > 0) {
             ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-            ctx.shadowBlur = parseFloat(state.shadowBlur);
+            ctx.shadowBlur = Number(state.shadowBlur);
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 4;
         }
@@ -8716,7 +8721,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             const clip = queue[i];
             elements.exportStatusText.textContent = `កំពុង Export ${clip.name} (${i + 1}/${queue.length})...`;
             
-            const fileData = await processSingleClipExport(clip, (pct) => {
+            const fileData: any = await processSingleClipExport(clip, (pct) => {
                 const totalPct = Math.round(((i + pct / 100) / queue.length) * (isZipExport ? 80 : 100));
                 elements.exportProgressBar.style.width = `${totalPct}%`;
                 elements.exportPercentText.textContent = `${totalPct}%`;
@@ -8776,7 +8781,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             
             // 1. Seek video to clip start time and wait for seek to finish
             video.currentTime = clip.startTime;
-            await new Promise((res) => {
+            await new Promise<void>((res) => {
                 let resolved = false;
                 const done = () => {
                     if (!resolved) {

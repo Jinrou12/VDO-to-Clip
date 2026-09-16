@@ -108,7 +108,7 @@ export interface AppEngineState {
 
     // YouTube Multi-Layer Studio State
     studioLayers: StudioLayer[];
-    studioLayerCounter: number | string;
+    studioLayerCounter: number;
     activeLayerId: string | number | null;
     videoPlacement: VideoPlacement;
     headlineBanner: HeadlineBanner;
@@ -157,7 +157,7 @@ export interface AppEngineState {
 
     // Multi-Clip Queue
     clips: ClipItem[];
-    clipCounter: number | string;
+    clipCounter: number;
 
     // Batch Multi-Video Queue State
     batchVideos: BatchVideoItem[];
