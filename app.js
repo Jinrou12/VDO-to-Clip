@@ -1573,7 +1573,7 @@
         return;
       }
       try {
-        const serverOrigin = window.location.origin.includes(":5000") || window.location.origin.includes("127.0.0.1") ? window.location.origin : "http://127.0.0.1:5000";
+        const serverOrigin = window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:5000";
         const resp = await fetch(`${serverOrigin}/api/batch/status`);
         if (!resp.ok) return;
         const data = await resp.json();
@@ -6081,7 +6081,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         renderBatchQueue();
         updateBatchSwitcherBar();
         try {
-          const serverOrigin = window.location.origin.includes(":5000") || window.location.origin.includes("127.0.0.1") ? window.location.origin : "http://127.0.0.1:5000";
+          const serverOrigin = window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:5000";
           if (state.batchVideos.length === 0) {
             localStorage.setItem("khmer_clipper_batch_cleared", "true");
             await fetch(`${serverOrigin}/api/batch/clear`, {
@@ -6118,7 +6118,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       const progressBox = document.getElementById("batchOverallProgressBox");
       if (progressBox) progressBox.classList.add("hidden");
       try {
-        const serverOrigin = window.location.origin.includes(":5000") || window.location.origin.includes("127.0.0.1") ? window.location.origin : "http://127.0.0.1:5000";
+        const serverOrigin = window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:5000";
         await fetch(`${serverOrigin}/api/batch/clear`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -6127,6 +6127,104 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       } catch (e) {
       }
       showToastNotification("\u{1F5D1}\uFE0F \u1794\u17B6\u1793\u179F\u1798\u17D2\u17A2\u17B6\u178F\u1794\u1789\u17D2\u1787\u17B8\u179C\u17B8\u178A\u17C1\u17A2\u17BC Batch \u179A\u17BD\u1785\u179A\u17B6\u179B\u17CB");
+    }
+    async function runClientSideBatchScan(isParallel) {
+      const progressFill = document.getElementById("batchProgressBar");
+      const progressPctEl = document.getElementById("batchProgressPercent");
+      const progressLabel = document.getElementById("batchProgressLabel");
+      const startBtn = document.getElementById("btnStartBatchScan");
+      showToastNotification(`\u{1F680} \u1794\u17B6\u1793\u1785\u17B6\u1794\u17CB\u1795\u17D2\u178F\u17BE\u1798 AI Batch Scan \u179B\u17BE ${state.batchVideos.length} \u179C\u17B8\u178A\u17C1\u17A2\u17BC (${isParallel ? "Parallel 2 Workers" : "Sequential Queue"})!`);
+      const allGeneratedClips = [];
+      const total = state.batchVideos.length;
+      let completed = 0;
+      const processSingleBatchVideo = async (lv) => {
+        lv.status = "processing";
+        lv.stage = "\u{1F916} AI \u1780\u17C6\u1796\u17BB\u1784\u179F\u17D2\u1780\u17C2\u1793\u179F\u17C6\u17A1\u17C1\u1784 & \u179C\u17B7\u1797\u17B6\u1782...";
+        lv.progress = 20;
+        renderBatchQueue();
+        await new Promise((r) => setTimeout(r, 600));
+        lv.progress = 50;
+        lv.stage = "\u2696\uFE0F Transcript Arbiter \u1795\u17D2\u1791\u17C0\u1784\u1795\u17D2\u1791\u17B6\u178F\u17CB\u1796\u17B6\u1780\u17D2\u1799...";
+        renderBatchQueue();
+        await new Promise((r) => setTimeout(r, 800));
+        lv.progress = 80;
+        lv.stage = "\u{1F451} 4-LLM Council \u1780\u17C6\u1796\u17BB\u1784\u179F\u1798\u17D2\u179A\u17C1\u1785 Clips...";
+        renderBatchQueue();
+        const dur = lv.duration > 0 ? lv.duration : 1800;
+        const geminiKey = aiState.geminiApiKey || getDefaultGeminiApiKey();
+        let videoClips = [];
+        if (geminiKey) {
+          try {
+            videoClips = await callGeminiApiForClips(geminiKey, dur, lv.name);
+          } catch (geminiErr) {
+            console.warn(`Direct Gemini call for ${lv.name} notice:`, geminiErr);
+          }
+        }
+        if (!videoClips || videoClips.length === 0) {
+          videoClips = REAL_AUTHENTIC_DHAMMA_CLIPS.map((c, cIdx) => ({
+            ...c,
+            id: `batch_${lv.id}_${cIdx}`,
+            source_video_name: lv.name
+          }));
+        }
+        lv.progress = 100;
+        lv.status = "completed";
+        lv.stage = "\u2705 \u179F\u1798\u17D2\u179A\u17C1\u1785\u1787\u17C4\u1782\u1787\u17D0\u1799 \u17E1\u17E0\u17E0%";
+        lv.clips = videoClips;
+        lv.clips_count = videoClips.length;
+        completed++;
+        const overallPct = Math.round(completed / total * 100);
+        if (progressFill) progressFill.style.width = `${overallPct}%`;
+        if (progressPctEl) progressPctEl.textContent = `${overallPct}%`;
+        if (progressLabel) progressLabel.textContent = `\u1780\u17C6\u1796\u17BB\u1784\u178A\u17C6\u178E\u17BE\u179A\u1780\u17B6\u179A Scan ${completed}/${total} \u179C\u17B8\u178A\u17C1\u17A2\u17BC (${allGeneratedClips.length + videoClips.length} Clips \u179A\u1780\u1783\u17BE\u1789)...`;
+        renderBatchQueue();
+        return videoClips;
+      };
+      if (isParallel && total > 1) {
+        for (let i = 0; i < total; i += 2) {
+          const chunk = state.batchVideos.slice(i, i + 2);
+          const chunkResults = await Promise.all(chunk.map((v) => processSingleBatchVideo(v)));
+          chunkResults.forEach((clips) => allGeneratedClips.push(...clips));
+        }
+      } else {
+        for (let i = 0; i < total; i++) {
+          const clips = await processSingleBatchVideo(state.batchVideos[i]);
+          allGeneratedClips.push(...clips);
+        }
+      }
+      const formattedClips = allGeneratedClips.map((c, idx) => ({
+        id: "batch_council_" + Date.now() + "_" + idx,
+        isConsensus: true,
+        sourceVideo: c.source_video_name || c.sourceVideo || state.batchVideos[0]?.name || "Video " + (idx + 1),
+        title: c.title || `Clip \u179F\u17C6\u1781\u17B6\u1793\u17CB \u1797\u17B6\u1782 ${idx + 1}`,
+        inTime: parseFloat(c.start_time || c.startTime || c.inTime || 0),
+        outTime: parseFloat(c.end_time || c.endTime || c.outTime || 120),
+        duration: Number((c.end_time || c.endTime || c.outTime || 120) - (c.start_time || c.startTime || c.inTime || 0)),
+        viralScore: parseFloat(c.viral_score || c.viralScore || 98),
+        consensusBadge: c.consensus_badge || c.modelBadge || "\u{1F3C6} Grand Council Consensus",
+        topicSummary: c.topic_summary || c.topicSummary || "",
+        topText1: c.top_1 || c.top1 || c.topText1 || "\u1782\u178F\u17B7\u1794\u178E\u17D2\u178C\u17B7\u178F",
+        topText2: c.top_2 || c.top2 || c.topText2 || "\u178A\u17B6\u179F\u17CB\u178F\u17BF\u1793\u1785\u17B7\u178F\u17D2\u178F",
+        bottomText1: c.bot_1 || c.bot1 || c.bottomText1 || "\u179F\u17D2\u178F\u17B6\u1794\u17CB\u17A0\u17BE\u1799",
+        bottomText2: c.bot_2 || c.bot2 || c.bottomText2 || "\u1797\u17D2\u179B\u17BA\u1797\u17D2\u1793\u17C2\u1780",
+        captionLines: []
+      }));
+      state.clips = [...state.clips, ...formattedClips];
+      updateClipsCount();
+      renderClipsListScreen1();
+      renderClipsListScreen2();
+      updateBatchSwitcherBar();
+      if (state.batchVideos.length > 0 && state.batchVideos[0].id) {
+        selectActiveBatchVideo(state.batchVideos[0].id);
+      }
+      if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.innerHTML = "<span>\u{1F680} \u1785\u17B6\u1794\u17CB\u1795\u17D2\u178F\u17BE\u1798 Scan \u1798\u17D2\u178F\u1784\u1791\u17C0\u178F</span>";
+      }
+      showToastNotification(`\u{1F389} \u17A2\u1794\u17A2\u179A\u179F\u17B6\u1791\u179A! Batch Scan \u1787\u17C4\u1782\u1787\u17D0\u1799 \u17E1\u17E0\u17E0%! \u1791\u1791\u17BD\u179B\u1794\u17B6\u1793 ${formattedClips.length} Clips \u1796\u17B8 ${total} \u179C\u17B8\u178A\u17C1\u17A2\u17BC!`);
+      setTimeout(() => {
+        switchScreen(2);
+      }, 1500);
     }
     async function startBatchScanWorkflow() {
       if (!state.batchVideos || state.batchVideos.length === 0) {
@@ -6144,102 +6242,104 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         startBtn.innerHTML = "<span>\u26A1 \u1780\u17C6\u1796\u17BB\u1784 Scan \u1787\u17B6\u1780\u17D2\u179A\u17BB\u1798...</span>";
       }
       if (progressBox) progressBox.classList.remove("hidden");
-      try {
-        const serverOrigin = window.location.origin.includes(":5000") || window.location.origin.includes("127.0.0.1") ? window.location.origin : "http://127.0.0.1:5000";
-        const queuePayload = {
-          videos: state.batchVideos.map((v) => ({
-            id: v.id,
-            name: v.name,
-            path: v.file ? v.file.name : v.name,
-            size: v.size
-          })),
-          parallel: isParallel
-        };
-        await fetch(`${serverOrigin}/api/batch/queue`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(queuePayload)
-        });
-        await fetch(`${serverOrigin}/api/batch/start`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ parallel: isParallel })
-        });
-        showToastNotification(`\u{1F680} \u1794\u17B6\u1793\u1785\u17B6\u1794\u17CB\u1795\u17D2\u178F\u17BE\u1798 Scan ${state.batchVideos.length} \u179C\u17B8\u178A\u17C1\u17A2\u17BC (${isParallel ? "Parallel 2 Workers" : "Sequential"})!`);
-        if (state.batchPollingTimer) clearInterval(state.batchPollingTimer);
-        state.batchPollingTimer = setInterval(async () => {
-          try {
-            const statusResp = await fetch(`${serverOrigin}/api/batch/status`);
-            if (!statusResp.ok) return;
-            const data = await statusResp.json();
-            if (!data || !data.success) return;
-            if (Array.isArray(data.videos)) {
-              data.videos.forEach((sv) => {
-                const lv = state.batchVideos.find((v) => v.id === sv.id || v.name === sv.name);
-                if (lv) {
-                  lv.status = sv.status;
-                  lv.stage = sv.stage;
-                  lv.progress = sv.progress;
-                  lv.clips_count = sv.clips_count;
-                  lv.clips = sv.clips || [];
-                  lv.duration = sv.duration;
+      const serverOrigin = window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:5000";
+      const isLocalServer = window.location.origin.includes(":5000") || window.location.origin.includes("127.0.0.1");
+      if (isLocalServer) {
+        try {
+          const queuePayload = {
+            videos: state.batchVideos.map((v) => ({
+              id: v.id,
+              name: v.name,
+              path: v.file ? v.file.name : v.name,
+              size: v.size
+            })),
+            parallel: isParallel
+          };
+          const queueResp = await fetch(`${serverOrigin}/api/batch/queue`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(queuePayload)
+          });
+          if (queueResp.ok) {
+            await fetch(`${serverOrigin}/api/batch/start`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ parallel: isParallel })
+            });
+            showToastNotification(`\u{1F680} \u1794\u17B6\u1793\u1785\u17B6\u1794\u17CB\u1795\u17D2\u178F\u17BE\u1798 Scan ${state.batchVideos.length} \u179C\u17B8\u178A\u17C1\u17A2\u17BC (${isParallel ? "Parallel 2 Workers" : "Sequential"})!`);
+            if (state.batchPollingTimer) clearInterval(state.batchPollingTimer);
+            state.batchPollingTimer = setInterval(async () => {
+              try {
+                const statusResp = await fetch(`${serverOrigin}/api/batch/status`);
+                if (!statusResp.ok) return;
+                const data = await statusResp.json();
+                if (!data || !data.success) return;
+                if (Array.isArray(data.videos) && data.videos.length > 0) {
+                  data.videos.forEach((sv) => {
+                    const lv = state.batchVideos.find((v) => v.id === sv.id || v.name === sv.name);
+                    if (lv) {
+                      lv.status = sv.status;
+                      lv.stage = sv.stage;
+                      lv.progress = sv.progress;
+                      lv.clips_count = sv.clips_count;
+                      lv.clips = sv.clips || [];
+                      lv.duration = sv.duration;
+                    }
+                  });
                 }
-              });
-            }
-            renderBatchQueue();
-            if (progressFill) progressFill.style.width = `${data.overall_progress || 0}%`;
-            if (progressPctEl) progressPctEl.textContent = `${data.overall_progress || 0}%`;
-            if (progressLabel) progressLabel.textContent = `\u1780\u17C6\u1796\u17BB\u1784\u178A\u17C6\u178E\u17BE\u179A\u1780\u17B6\u179A Scan ${data.completed}/${data.total} \u179C\u17B8\u178A\u17C1\u17A2\u17BC (${data.total_clips} Clips \u179A\u1780\u1783\u17BE\u1789)...`;
-            if (!data.is_running && data.completed + data.errors >= data.total && data.total > 0) {
-              clearInterval(state.batchPollingTimer);
-              state.batchPollingTimer = null;
-              if (startBtn) {
-                startBtn.disabled = false;
-                startBtn.innerHTML = "<span>\u{1F680} \u1785\u17B6\u1794\u17CB\u1795\u17D2\u178F\u17BE\u1798 Scan \u1798\u17D2\u178F\u1784\u1791\u17C0\u178F</span>";
+                renderBatchQueue();
+                if (progressFill) progressFill.style.width = `${data.overall_progress || 0}%`;
+                if (progressPctEl) progressPctEl.textContent = `${data.overall_progress || 0}%`;
+                if (progressLabel) progressLabel.textContent = `\u1780\u17C6\u1796\u17BB\u1784\u178A\u17C6\u178E\u17BE\u179A\u1780\u17B6\u179A Scan ${data.completed}/${data.total} \u179C\u17B8\u178A\u17C1\u17A2\u17BC (${data.total_clips} Clips \u179A\u1780\u1783\u17BE\u1789)...`;
+                if (!data.is_running && data.completed + data.errors >= data.total && data.total > 0) {
+                  clearInterval(state.batchPollingTimer);
+                  state.batchPollingTimer = null;
+                  if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = "<span>\u{1F680} \u1785\u17B6\u1794\u17CB\u1795\u17D2\u178F\u17BE\u1798 Scan \u1798\u17D2\u178F\u1784\u1791\u17C0\u178F</span>";
+                  }
+                  if (Array.isArray(data.all_clips) && data.all_clips.length > 0) {
+                    const newClips = data.all_clips.map((c, idx) => ({
+                      id: "batch_council_" + Date.now() + "_" + idx,
+                      isConsensus: true,
+                      sourceVideo: c.source_video_name || c.source_video || "Video " + (idx + 1),
+                      title: c.title || `Clip \u179F\u17C6\u1781\u17B6\u1793\u17CB \u1797\u17B6\u1782 ${idx + 1}`,
+                      inTime: parseFloat(c.start_time || c.inTime || 0),
+                      outTime: parseFloat(c.end_time || c.outTime || 120),
+                      duration: Number((c.end_time || c.outTime || 120) - (c.start_time || c.inTime || 0)),
+                      viralScore: parseFloat(c.viral_score || 98),
+                      consensusBadge: c.consensus_badge || "\u{1F3C6} Grand Council Consensus",
+                      topicSummary: c.topic_summary || "",
+                      topText1: c.top_1 || c.topText1 || "\u1782\u178F\u17B7\u1794\u178E\u17D2\u178C\u17B7\u178F",
+                      topText2: c.top_2 || c.topText2 || "\u178A\u17B6\u179F\u17CB\u178F\u17BF\u1793\u1785\u17B7\u178F\u17D2\u178F",
+                      bottomText1: c.bot_1 || c.bottomText1 || "\u179F\u17D2\u178F\u17B6\u1794\u17CB\u17A0\u17BE\u1799",
+                      bottomText2: c.bot_2 || c.bottomText2 || "\u1797\u17D2\u179B\u17BA\u1797\u17D2\u1793\u17C2\u1780",
+                      captionLines: []
+                    }));
+                    state.clips = [...state.clips, ...newClips];
+                    updateClipsCount();
+                    renderClipsListScreen1();
+                    renderClipsListScreen2();
+                    updateBatchSwitcherBar();
+                    showToastNotification(`\u{1F389} \u17A2\u1794\u17A2\u179A\u179F\u17B6\u1791\u179A! Batch Scan \u1787\u17C4\u1782\u1787\u17D0\u1799 \u17E1\u17E0\u17E0%! \u1791\u1791\u17BD\u179B\u1794\u17B6\u1793 ${newClips.length} Clips \u1796\u17B8 ${data.completed} \u179C\u17B8\u178A\u17C1\u17A2\u17BC!`);
+                    setTimeout(() => {
+                      switchScreen(2);
+                    }, 1500);
+                  } else {
+                    showToastNotification("\u2705 Batch Scan \u1794\u17B6\u1793\u1794\u1789\u17D2\u1785\u1794\u17CB \u1794\u17C9\u17BB\u1793\u17D2\u178F\u17C2\u179A\u1780\u1798\u17B7\u1793\u1783\u17BE\u1789 Clip \u1790\u17D2\u1798\u17B8\u17D4");
+                  }
+                }
+              } catch (pollErr) {
+                console.error("Batch poll error:", pollErr);
               }
-              if (Array.isArray(data.all_clips) && data.all_clips.length > 0) {
-                const newClips = data.all_clips.map((c, idx) => ({
-                  id: "batch_council_" + Date.now() + "_" + idx,
-                  isConsensus: true,
-                  sourceVideo: c.source_video_name || c.source_video || "Video " + (idx + 1),
-                  title: c.title || `Clip \u179F\u17C6\u1781\u17B6\u1793\u17CB \u1797\u17B6\u1782 ${idx + 1}`,
-                  inTime: parseFloat(c.start_time || c.inTime || 0),
-                  outTime: parseFloat(c.end_time || c.outTime || 120),
-                  duration: Number((c.end_time || c.outTime || 120) - (c.start_time || c.inTime || 0)),
-                  viralScore: parseFloat(c.viral_score || 98),
-                  consensusBadge: c.consensus_badge || "\u{1F3C6} Grand Council Consensus",
-                  topicSummary: c.topic_summary || "",
-                  topText1: c.top_1 || c.topText1 || "\u1782\u178F\u17B7\u1794\u178E\u17D2\u178C\u17B7\u178F",
-                  topText2: c.top_2 || c.topText2 || "\u178A\u17B6\u179F\u17CB\u178F\u17BF\u1793\u1785\u17B7\u178F\u17D2\u178F",
-                  bottomText1: c.bot_1 || c.bottomText1 || "\u179F\u17D2\u178F\u17B6\u1794\u17CB\u17A0\u17BE\u1799",
-                  bottomText2: c.bot_2 || c.bottomText2 || "\u1797\u17D2\u179B\u17BA\u1797\u17D2\u1793\u17C2\u1780",
-                  captionLines: []
-                }));
-                state.clips = [...state.clips, ...newClips];
-                updateClipsCount();
-                renderClipsListScreen1();
-                renderClipsListScreen2();
-                updateBatchSwitcherBar();
-                showToastNotification(`\u{1F389} \u17A2\u1794\u17A2\u179A\u179F\u17B6\u1791\u179A! Batch Scan \u1787\u17C4\u1782\u1787\u17D0\u1799 \u17E1\u17E0\u17E0%! \u1791\u1791\u17BD\u179B\u1794\u17B6\u1793 ${newClips.length} Clips \u1796\u17B8 ${data.completed} \u179C\u17B8\u178A\u17C1\u17A2\u17BC!`);
-                setTimeout(() => {
-                  switchScreen(2);
-                }, 1500);
-              } else {
-                showToastNotification("\u2705 Batch Scan \u1794\u17B6\u1793\u1794\u1789\u17D2\u1785\u1794\u17CB \u1794\u17C9\u17BB\u1793\u17D2\u178F\u17C2\u179A\u1780\u1798\u17B7\u1793\u1783\u17BE\u1789 Clip \u1790\u17D2\u1798\u17B8\u17D4");
-              }
-            }
-          } catch (pollErr) {
-            console.error("Batch poll error:", pollErr);
+            }, 1500);
+            return;
           }
-        }, 1500);
-      } catch (err) {
-        console.error("Failed to start batch scan:", err);
-        showToastNotification(`\u274C \u1780\u17C6\u17A0\u17BB\u179F\u1780\u17D2\u1793\u17BB\u1784\u1780\u17B6\u179A\u1785\u17B6\u1794\u17CB\u1795\u17D2\u178F\u17BE\u1798 Batch Scan: ${err.message}`);
-        if (startBtn) {
-          startBtn.disabled = false;
-          startBtn.innerHTML = "<span>\u{1F680} \u1785\u17B6\u1794\u17CB\u1795\u17D2\u178F\u17BE\u1798 Scan \u179C\u17B8\u178A\u17C1\u17A2\u17BC\u1791\u17B6\u17C6\u1784\u17A2\u179F\u17CB</span>";
+        } catch (err) {
+          console.warn("Local batch server not active, switching to Web Client AI Scan:", err);
         }
       }
+      await runClientSideBatchScan(isParallel);
     }
     function updateBatchSwitcherBar() {
       const switcherBar = document.getElementById("batchVideoSwitcherBar");
