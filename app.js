@@ -61,7 +61,8 @@
       bottomTextPart1: "\u17A2\u1784\u17CB\u17A2\u17B6\u1785",
       bottomTextPart2: "\u1780\u17D2\u179B\u17B6\u17A0\u17B6\u1793",
       bottomFontSize: 65,
-      bottomPosY: 1750,
+      bottomPosY: 1520,
+      extraCaptions: [],
       fontFamily: "Moul",
       strokeColor: "#FFFFFF",
       strokeWidth: 12,
@@ -293,6 +294,9 @@
       document.querySelectorAll("#headerPlatformToggle .platform-btn, #platformModeSelector .platform-btn").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.platform === mode);
       });
+      document.body.classList.toggle("platform-mode-facebook", mode === "facebook");
+      document.body.classList.toggle("platform-mode-youtube", mode === "youtube");
+      document.body.dataset.platformMode = mode;
       const lockedBadge = document.getElementById("youtubeLockedBadge");
       const aspectControl = document.getElementById("aspectRatioSegmentedControl");
       const ytAccordion = document.getElementById("youtubeStudioAccordionItem");
@@ -4255,7 +4259,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         colorMode: "dual",
         topTextColor1: state.topTextColor1,
         topTextColor2: state.topTextColor2,
-        bottomTextColor1: state.bottomTextColor1,
+        bottomTextColor1: state.bottomTextColor1 || "#FFE600",
+        bottomTextColor2: state.bottomTextColor2 || "#FF5722",
         topText: clip.title || `${clip.top1} ${clip.top2}`,
         topTextPart1: clip.top1,
         topTextPart2: clip.top2,
@@ -4265,7 +4270,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         bottomTextPart1: clip.bot1,
         bottomTextPart2: clip.bot2,
         bottomFontSize: state.bottomFontSize,
-        bottomPosY: state.bottomPosY,
+        bottomPosY: state.bottomPosY || 1520,
+        extraCaptions: [],
         fontFamily: state.fontFamily,
         strokeColor: state.strokeColor,
         strokeWidth: state.strokeWidth,
@@ -4403,7 +4409,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       const filmoraSlot = document.getElementById("filmoraCanvasSlot");
       const defaultCanvasViewport = document.querySelector(".stage-center .canvas-viewport");
       if (screenNum === 1 || screenNum === 0) {
-        document.body.className = "dark-theme screen-1-mode";
+        document.body.className = `dark-theme screen-1-mode ${state.platformMode === "youtube" ? "platform-mode-youtube" : "platform-mode-facebook"}`;
+        document.body.dataset.platformMode = state.platformMode;
         screenUpload?.classList.remove("hidden");
         workspace3Col?.classList.add("hidden");
         filmoraWorkspace?.classList.add("hidden");
@@ -4416,7 +4423,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         state.isPlaying = false;
         updatePlayPauseBtn();
       } else if (screenNum === 2) {
-        document.body.className = "dark-theme screen-2-mode";
+        document.body.className = `dark-theme screen-2-mode ${state.platformMode === "youtube" ? "platform-mode-youtube" : "platform-mode-facebook"}`;
+        document.body.dataset.platformMode = state.platformMode;
         screenUpload?.classList.add("hidden");
         workspace3Col?.classList.remove("hidden");
         filmoraWorkspace?.classList.add("hidden");
@@ -4437,7 +4445,8 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         updateTrimUI();
         updatePlayPauseBtn();
       } else if (screenNum === 3) {
-        document.body.className = "dark-theme screen-3-mode";
+        document.body.className = `dark-theme screen-3-mode ${state.platformMode === "youtube" ? "platform-mode-youtube" : "platform-mode-facebook"}`;
+        document.body.dataset.platformMode = state.platformMode;
         screenUpload?.classList.add("hidden");
         if (state.platformMode === "youtube") {
           workspace3Col?.classList.add("hidden");
@@ -4488,17 +4497,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         updateFilmoraPlayhead();
         updateStudioTimelineUI();
       } else if (screenNum === 4) {
-        filmoraWorkspace?.classList.add("hidden");
-        if (state.clips.length === 0) {
-          showToast("\u26A0\uFE0F \u1798\u17B7\u1793\u1791\u17B6\u1793\u17CB\u1798\u17B6\u1793 Clip \u179F\u1798\u17D2\u179A\u17B6\u1794\u17CB Export \u1791\u17C1! \u179F\u17BC\u1798\u1794\u1784\u17D2\u1780\u17BE\u178F Clip \u1787\u17B6\u1798\u17BB\u1793\u179F\u17B7\u1793\u17D4");
-          switchScreen(2);
-          return;
-        }
-        if (state.activeClipId) {
-          exportSingleClip(state.activeClipId);
-        } else {
-          exportAllClips();
-        }
+        toggleExportChoicePopover(true);
       }
     }
     function updatePlayPauseBtn() {
@@ -4517,7 +4516,63 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       document.getElementById("stepBtn1")?.addEventListener("click", () => switchScreen(1));
       document.getElementById("stepBtn2")?.addEventListener("click", () => switchScreen(2));
       document.getElementById("stepBtn3")?.addEventListener("click", () => switchScreen(3));
-      document.getElementById("stepBtn4")?.addEventListener("click", () => switchScreen(4));
+      function toggleExportChoicePopover2(forceState) {
+        const popover = document.getElementById("exportChoicePopover");
+        if (!popover) return;
+        const willShow = typeof forceState === "boolean" ? forceState : popover.classList.contains("hidden");
+        if (willShow) {
+          if (state.clips.length === 0) {
+            showToast("\u26A0\uFE0F \u1798\u17B7\u1793\u1791\u17B6\u1793\u17CB\u1798\u17B6\u1793 Clip \u179F\u1798\u17D2\u179A\u17B6\u1794\u17CB Export \u1791\u17C1! \u179F\u17BC\u1798\u1794\u1784\u17D2\u1780\u17BE\u178F Clip \u1787\u17B6\u1798\u17BB\u1793\u179F\u17B7\u1793\u17D4");
+            return;
+          }
+          popover.classList.remove("hidden");
+          document.getElementById("stepBtn4")?.classList.add("active");
+        } else {
+          popover.classList.add("hidden");
+          if (state.currentScreen !== 4) {
+            document.getElementById("stepBtn4")?.classList.remove("active");
+          }
+        }
+      }
+      window.toggleExportChoicePopover = toggleExportChoicePopover2;
+      document.getElementById("stepBtn4")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleExportChoicePopover2();
+      });
+      document.getElementById("popoverExportClipBtn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleExportChoicePopover2(false);
+        if (state.activeClipId) {
+          exportSingleClip(state.activeClipId);
+        } else if (state.clips.length > 0) {
+          exportSingleClip(state.clips[0].id);
+        } else {
+          showToast("\u26A0\uFE0F \u1798\u17B7\u1793\u1791\u17B6\u1793\u17CB\u1798\u17B6\u1793 Clip \u179F\u1798\u17D2\u179A\u17B6\u1794\u17CB Export \u1791\u17C1! \u179F\u17BC\u1798\u1794\u1784\u17D2\u1780\u17BE\u178F Clip \u1787\u17B6\u1798\u17BB\u1793\u179F\u17B7\u1793\u17D4");
+        }
+      });
+      document.getElementById("popoverExportAllBtn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleExportChoicePopover2(false);
+        if (state.clips.length > 0) {
+          exportAllClips();
+        } else {
+          showToast("\u26A0\uFE0F \u1798\u17B7\u1793\u1791\u17B6\u1793\u17CB\u1798\u17B6\u1793 Clip \u179F\u1798\u17D2\u179A\u17B6\u1794\u17CB Export \u1791\u17C1! \u179F\u17BC\u1798\u1794\u1784\u17D2\u1780\u17BE\u178F Clip \u1787\u17B6\u1798\u17BB\u1793\u179F\u17B7\u1793\u17D4");
+        }
+      });
+      document.addEventListener("click", (e) => {
+        const popover = document.getElementById("exportChoicePopover");
+        const stepBtn4 = document.getElementById("stepBtn4");
+        if (popover && !popover.classList.contains("hidden")) {
+          if (!popover.contains(e.target) && !stepBtn4?.contains(e.target)) {
+            toggleExportChoicePopover2(false);
+          }
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          toggleExportChoicePopover2(false);
+        }
+      });
       elements.step1TabBtn?.addEventListener("click", () => switchScreen(1));
       elements.step2TabBtn?.addEventListener("click", () => switchScreen(2));
       elements.goToStep2Btn?.addEventListener("click", () => switchScreen(2));
@@ -4926,6 +4981,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
           }
           syncInspectorUI();
           renderWordColorChips();
+          renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
         });
       });
       document.querySelectorAll(".custom-color-input").forEach((input) => {
@@ -4943,6 +4999,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             syncActiveClipProperty("bottomTextColor1", color);
           }
           renderWordColorChips();
+          renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
         });
       });
       const helpModal = document.getElementById("helpShortcutsModal");
@@ -4974,23 +5031,105 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       deleteModal?.addEventListener("click", (e) => {
         if (e.target === deleteModal) closeDeleteModal();
       });
-      document.getElementById("btnAddCaptionField")?.addEventListener("click", () => {
+      function renderExtraCaptionInputs2() {
         const container = document.getElementById("extraCaptionLinesContainer");
         if (!container) return;
+        container.innerHTML = "";
+        const list = state.extraCaptions || [];
+        list.forEach((cap, idx) => {
+          const card = document.createElement("div");
+          card.className = "caption-field-card extra-caption-card";
+          card.dataset.fieldId = cap.id;
+          card.style.borderLeft = "3px solid #a855f7";
+          card.style.marginTop = "10px";
+          const activeColor = cap.color || "#FFE600";
+          const colors = ["#FFE600", "#FF5722", "#FFFFFF", "#38BDF8", "#22C55E", "#A855F7", "#F97316"];
+          const swatchesHtml = colors.map((c) => `
+                    <button type="button" class="color-swatch-btn ${c.toLowerCase() === activeColor.toLowerCase() ? "active" : ""}" 
+                        data-color="${c}" style="background:${c};" title="${c}"></button>
+                `).join("");
+          card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-size:0.8rem; color:#c084fc; font-weight:700; font-family:var(--font-khmer-kantumruy);">
+                            \u2728 \u1785\u17C6\u178E\u1784\u1787\u17BE\u1784\u1794\u1793\u17D2\u1790\u17C2\u1798 #${idx + 1}
+                        </span>
+                        <button type="button" class="btn btn-danger btn-xs btn-remove-extra" style="padding:2px 6px; font-size:0.75rem; border-radius:4px;" title="\u179B\u17BB\u1794\u17A2\u1780\u17D2\u179F\u179A\u1793\u17C1\u17C7">\u2715</button>
+                    </div>
+                    <div class="caption-input-wrapper">
+                        <input type="text" class="form-control caption-text-input extra-caption-input" 
+                            value="${cap.text || ""}" placeholder="\u1794\u1789\u17D2\u1785\u17BC\u179B\u17A2\u1780\u17D2\u179F\u179A\u1794\u1793\u17D2\u1790\u17C2\u1798 (\u1794\u17D2\u179A\u17BE \u17D6 \u17AC Enter \u1785\u17BB\u17C7\u1794\u1793\u17D2\u1791\u17B6\u178F\u17CB)...">
+                    </div>
+                    <div class="caption-highlight-bar" style="margin-top:6px;">
+                        <div class="swatch-row extra-swatch-row" data-id="${cap.id}">
+                            ${swatchesHtml}
+                            <label class="color-custom-btn" title="\u1787\u17D2\u179A\u17BE\u179F\u1796\u178E\u17CC\u178F\u17B6\u1798\u1785\u17B7\u178F\u17D2\u178F">
+                                <input type="color" class="custom-color-input extra-custom-color" value="${activeColor}">
+                                <span class="custom-color-dot" style="background:${activeColor};"></span>
+                                <span>Custom</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+          const input = card.querySelector(".extra-caption-input");
+          input?.addEventListener("input", (e) => {
+            cap.text = e.target.value;
+            syncActiveClipProperty("extraCaptions", state.extraCaptions);
+            renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
+          });
+          const delBtn = card.querySelector(".btn-remove-extra");
+          delBtn?.addEventListener("click", () => {
+            pushStateToHistory();
+            state.extraCaptions = state.extraCaptions.filter((item) => item.id !== cap.id);
+            syncActiveClipProperty("extraCaptions", state.extraCaptions);
+            renderExtraCaptionInputs2();
+            renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
+            showToast("\u{1F5D1}\uFE0F \u1794\u17B6\u1793\u179B\u17BB\u1794\u1794\u17D2\u179A\u17A2\u1794\u17CB\u17A2\u1780\u17D2\u179F\u179A\u1794\u1793\u17D2\u1790\u17C2\u1798!");
+          });
+          card.querySelectorAll(".extra-swatch-row .color-swatch-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const c = btn.dataset.color;
+              if (!c) return;
+              pushStateToHistory();
+              cap.color = c;
+              syncActiveClipProperty("extraCaptions", state.extraCaptions);
+              renderExtraCaptionInputs2();
+              renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
+            });
+          });
+          const customInput = card.querySelector(".extra-custom-color");
+          customInput?.addEventListener("input", (e) => {
+            cap.color = e.target.value;
+            const dot = card.querySelector(".custom-color-dot");
+            if (dot) dot.style.background = cap.color;
+            syncActiveClipProperty("extraCaptions", state.extraCaptions);
+            renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
+          });
+          container.appendChild(card);
+        });
+      }
+      document.getElementById("btnAddCaptionField")?.addEventListener("click", () => {
+        pushStateToHistory();
+        if (!state.extraCaptions) state.extraCaptions = [];
+        const count = state.extraCaptions.length;
         const fieldId = "extra_" + Date.now();
-        const card = document.createElement("div");
-        card.className = "caption-field-card extra-caption-card";
-        card.dataset.fieldId = fieldId;
-        card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">\u17A2\u1780\u17D2\u179F\u179A\u1794\u1793\u17D2\u1790\u17C2\u1798:</span>
-                    <button type="button" class="btn btn-danger btn-xs" onclick="this.closest('.extra-caption-card').remove()" style="padding:2px 6px;">\u2715</button>
-                </div>
-                <div class="caption-input-wrapper">
-                    <input type="text" class="form-control caption-text-input" placeholder="\u179C\u17B6\u1799\u17A2\u1780\u17D2\u179F\u179A\u1794\u1793\u17D2\u1790\u17C2\u1798\u1793\u17C5\u1791\u17B8\u1793\u17C1\u17C7...">
-                </div>
-            `;
-        container.appendChild(card);
+        let baseBottomY = state.bottomPosY;
+        if (isNaN(baseBottomY) || baseBottomY <= 0 || baseBottomY > state.canvasHeight - 60) {
+          baseBottomY = Math.round(state.canvasHeight * 0.82);
+        }
+        let defaultY = Math.min(state.canvasHeight - 40, Math.round(baseBottomY + 70 * (count + 1)));
+        if (defaultY > state.canvasHeight - 40) {
+          defaultY = Math.round(state.canvasHeight * 0.7 + count * 50);
+        }
+        state.extraCaptions.push({
+          id: fieldId,
+          text: "\u17A2\u1780\u17D2\u179F\u179A\u1794\u1793\u17D2\u1790\u17C2\u1798",
+          color: "#FFE600",
+          fontSize: 55,
+          posY: defaultY
+        });
+        syncActiveClipProperty("extraCaptions", state.extraCaptions);
+        renderExtraCaptionInputs2();
+        renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
         showToast("\u2795 \u1794\u17B6\u1793\u1794\u1793\u17D2\u1790\u17C2\u1798\u1794\u17D2\u179A\u17A2\u1794\u17CB\u17A2\u1780\u17D2\u179F\u179A\u1790\u17D2\u1798\u17B8!");
       });
       document.getElementById("fullscreenPreviewBtn")?.addEventListener("click", () => {
@@ -5202,6 +5341,16 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         return null;
       }
       function hitTestText(canvasX, canvasY) {
+        if (state.extraCaptions && state.extraCaptions.length > 0) {
+          for (let i = state.extraCaptions.length - 1; i >= 0; i--) {
+            const ec = state.extraCaptions[i];
+            const distY = Math.abs(canvasY - (ec.posY || 0));
+            const hitZoneY = Math.max(60, (ec.fontSize || 55) * 1.2);
+            if (distY <= hitZoneY) {
+              return ec.id;
+            }
+          }
+        }
         const topDistY = Math.abs(canvasY - state.topPosY);
         const bottomDistY = Math.abs(canvasY - state.bottomPosY);
         const topHitZoneY = Math.max(70, state.topFontSize * 1.2);
@@ -5243,6 +5392,13 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
           if (elements.bottomFontSizeInput) elements.bottomFontSizeInput.value = newSize;
           if (elements.bottomFontSizeVal) elements.bottomFontSizeVal.textContent = newSize + "px";
           syncActiveClipProperty("bottomFontSize", newSize);
+        } else if (typeof target === "string" && target.startsWith("extra_")) {
+          const ec = state.extraCaptions?.find((item) => item.id === target);
+          if (ec) {
+            ec.fontSize = Math.max(20, Math.min(150, (ec.fontSize || 55) + step));
+            syncActiveClipProperty("extraCaptions", state.extraCaptions);
+            renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
+          }
         }
       };
       elements.mainCanvas.addEventListener("wheel", handleWheelScale, { passive: false });
@@ -5299,15 +5455,22 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             state.dragTarget = target;
             state.hoveredTextTarget = target;
             dragStartCanvasY = y;
-            dragStartTextPosY = target === "top" ? parseFloat(state.topPosY) : parseFloat(state.bottomPosY);
-            elements.mainCanvas.style.cursor = "grabbing";
             if (target === "top") {
+              dragStartTextPosY = parseFloat(state.topPosY);
               const inputEl = state.colorMode === "dual" ? elements.topTextPart1Input : elements.topTextInput;
               inputEl?.focus();
             } else if (target === "bottom") {
+              dragStartTextPosY = parseFloat(state.bottomPosY);
               const inputEl = state.colorMode === "dual" ? elements.bottomTextPart1Input : elements.bottomTextInput;
               inputEl?.focus();
+            } else if (typeof target === "string" && target.startsWith("extra_")) {
+              const ec = state.extraCaptions?.find((item) => item.id === target);
+              dragStartTextPosY = ec ? parseFloat(ec.posY) : y;
+              const card = document.querySelector(`.extra-caption-card[data-field-id="${target}"]`);
+              const input = card?.querySelector(".extra-caption-input");
+              input?.focus();
             }
+            elements.mainCanvas.style.cursor = "grabbing";
           }
         }
       };
@@ -5374,11 +5537,19 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             if (elements.topPosYVal) elements.topPosYVal.textContent = targetY + "px";
             syncActiveClipProperty("topPosY", targetY);
           } else if (state.dragTarget === "bottom") {
-            targetY = Math.max(Math.round(state.canvasHeight * 0.52), Math.min(state.canvasHeight - 20, targetY));
+            targetY = Math.max(Math.round(state.canvasHeight * 0.5), Math.min(state.canvasHeight - 20, targetY));
             state.bottomPosY = targetY;
             if (elements.bottomPosYInput) elements.bottomPosYInput.value = targetY;
             if (elements.bottomPosYVal) elements.bottomPosYVal.textContent = targetY + "px";
             syncActiveClipProperty("bottomPosY", targetY);
+          } else if (typeof state.dragTarget === "string" && state.dragTarget.startsWith("extra_")) {
+            targetY = Math.max(20, Math.min(state.canvasHeight - 20, targetY));
+            const ec = state.extraCaptions?.find((item) => item.id === state.dragTarget);
+            if (ec) {
+              ec.posY = targetY;
+              syncActiveClipProperty("extraCaptions", state.extraCaptions);
+              renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
+            }
           }
           return;
         }
@@ -5605,6 +5776,16 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       setSwatch("bottomTextColor2", elements.bottomTextColor2Swatch, elements.bottomTextColor2Val);
       setSwatch("strokeColor", elements.strokeColorSwatch, elements.strokeColorVal);
       setSwatch("bgColor", elements.bgColorSwatch, elements.bgColorVal);
+      document.querySelectorAll('.swatch-row[data-target="top"] .color-swatch-btn').forEach((btn) => {
+        btn.classList.toggle("active", (btn.dataset.color || "").toLowerCase() === (state.topTextColor1 || "").toLowerCase());
+      });
+      document.querySelectorAll('.swatch-row[data-target="bottom"] .color-swatch-btn').forEach((btn) => {
+        btn.classList.toggle("active", (btn.dataset.color || "").toLowerCase() === (state.bottomTextColor1 || "").toLowerCase());
+      });
+      const btmCustomDot = document.getElementById("bottomCustomColorDot");
+      if (btmCustomDot) btmCustomDot.style.background = state.bottomTextColor1 || "#FFE600";
+      const topCustomDot = document.getElementById("topCustomColorDot");
+      if (topCustomDot) topCustomDot.style.background = state.topTextColor1 || "#FFE600";
     }
     function renderWordColorChips() {
       const topP1 = (state.topTextPart1 || "\u178A\u17BE\u1798").trim();
@@ -5640,6 +5821,30 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             `;
       }
     }
+    function updateClipTitleFromCaptions(clip) {
+      if (!clip) return;
+      const top = (clip.topText || "").trim();
+      const btm = (clip.bottomText || "").trim();
+      let combinedTitle = "";
+      if (top && btm && top !== btm) {
+        combinedTitle = `${top} \u17D6 ${btm}`;
+      } else if (top) {
+        combinedTitle = top;
+      } else if (btm) {
+        combinedTitle = btm;
+      }
+      if (combinedTitle) {
+        clip.name = combinedTitle;
+        if (state.activeClipId === clip.id) {
+          if (elements.activeClipNameBadge) {
+            elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
+          }
+          if (elements.activeClipTitleInput) {
+            elements.activeClipTitleInput.value = clip.name;
+          }
+        }
+      }
+    }
     function syncActiveClipProperty(key, val) {
       if (state.activeClipId) {
         const clip = state.clips.find((c) => c.id === state.activeClipId);
@@ -5648,58 +5853,77 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
           if (key === "topText") {
             clip.topText = val;
             state.topText = val;
-            const parts = (val || "").trim().split(/\s+/);
-            clip.topTextPart1 = parts[0] || "";
-            clip.topTextPart2 = parts.slice(1).join(" ") || "";
-            state.topTextPart1 = clip.topTextPart1;
-            state.topTextPart2 = clip.topTextPart2;
+            let p1 = "";
+            let p2 = "";
+            if (val.includes("\u17D6")) {
+              const parts = val.split("\u17D6");
+              p1 = parts[0].trim();
+              p2 = parts.slice(1).join("\u17D6").trim();
+            } else if (val.includes("\n")) {
+              const parts = val.split("\n");
+              p1 = parts[0].trim();
+              p2 = parts.slice(1).join(" ").trim();
+            } else if (val.includes(":")) {
+              const parts = val.split(":");
+              p1 = parts[0].trim();
+              p2 = parts.slice(1).join(":").trim();
+            } else {
+              const parts = (val || "").trim().split(/\s+/);
+              p1 = parts[0] || "";
+              p2 = parts.slice(1).join(" ") || "";
+            }
+            clip.topTextPart1 = p1;
+            clip.topTextPart2 = p2;
+            state.topTextPart1 = p1;
+            state.topTextPart2 = p2;
             if (elements.topTextPart1Input) elements.topTextPart1Input.value = clip.topTextPart1;
             if (elements.topTextPart2Input) elements.topTextPart2Input.value = clip.topTextPart2;
-            if (val && val.trim().length > 0) {
-              clip.name = val.trim();
-              if (elements.activeClipNameBadge) {
-                elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
-              }
-              if (elements.activeClipTitleInput) {
-                elements.activeClipTitleInput.value = clip.name;
-              }
-            }
+            updateClipTitleFromCaptions(clip);
           } else if (key === "topTextPart1" || key === "topTextPart2") {
             clip.topTextPart1 = state.topTextPart1;
             clip.topTextPart2 = state.topTextPart2;
-            clip.topText = `${state.topTextPart1 || ""} ${state.topTextPart2 || ""}`.trim();
+            clip.topText = state.topTextPart2 ? `${state.topTextPart1 || ""} \u17D6 ${state.topTextPart2 || ""}`.trim() : (state.topTextPart1 || "").trim();
             state.topText = clip.topText;
             if (elements.topTextInput) elements.topTextInput.value = clip.topText;
-            if (clip.topText && clip.topText.trim().length > 0) {
-              clip.name = clip.topText.trim();
-              if (elements.activeClipNameBadge) {
-                elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
-              }
-              if (elements.activeClipTitleInput) {
-                elements.activeClipTitleInput.value = clip.name;
-              }
-            }
+            updateClipTitleFromCaptions(clip);
           } else if (key === "bottomText") {
             clip.bottomText = val;
             state.bottomText = val;
-            const parts = (val || "").trim().split(/\s+/);
-            clip.bottomTextPart1 = parts[0] || "";
-            clip.bottomTextPart2 = parts.slice(1).join(" ") || "";
-            state.bottomTextPart1 = clip.bottomTextPart1;
-            state.bottomTextPart2 = clip.bottomTextPart2;
+            let p1 = "";
+            let p2 = "";
+            if (val.includes("\u17D6")) {
+              const parts = val.split("\u17D6");
+              p1 = parts[0].trim();
+              p2 = parts.slice(1).join("\u17D6").trim();
+            } else if (val.includes("\n")) {
+              const parts = val.split("\n");
+              p1 = parts[0].trim();
+              p2 = parts.slice(1).join(" ").trim();
+            } else if (val.includes(":")) {
+              const parts = val.split(":");
+              p1 = parts[0].trim();
+              p2 = parts.slice(1).join(":").trim();
+            } else {
+              const parts = (val || "").trim().split(/\s+/);
+              p1 = parts[0] || "";
+              p2 = parts.slice(1).join(" ") || "";
+            }
+            clip.bottomTextPart1 = p1;
+            clip.bottomTextPart2 = p2;
+            state.bottomTextPart1 = p1;
+            state.bottomTextPart2 = p2;
             if (elements.bottomTextPart1Input) elements.bottomTextPart1Input.value = clip.bottomTextPart1;
             if (elements.bottomTextPart2Input) elements.bottomTextPart2Input.value = clip.bottomTextPart2;
+            updateClipTitleFromCaptions(clip);
           } else if (key === "bottomTextPart1" || key === "bottomTextPart2") {
             clip.bottomTextPart1 = state.bottomTextPart1;
             clip.bottomTextPart2 = state.bottomTextPart2;
-            clip.bottomText = `${state.bottomTextPart1 || ""} ${state.bottomTextPart2 || ""}`.trim();
+            clip.bottomText = state.bottomTextPart2 ? `${state.bottomTextPart1 || ""} ${state.bottomTextPart2 || ""}`.trim() : (state.bottomTextPart1 || "").trim();
             state.bottomText = clip.bottomText;
             if (elements.bottomTextInput) elements.bottomTextInput.value = clip.bottomText;
+            updateClipTitleFromCaptions(clip);
           } else if (key === "name") {
             clip.name = val;
-            clip.topText = val;
-            state.topText = val;
-            if (elements.topTextInput) elements.topTextInput.value = val;
           }
           renderClipsList();
           renderCanvasFrame(elements.ctx, state.canvasWidth, state.canvasHeight);
@@ -6065,6 +6289,23 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       if (fileDurationEl && state.videoFile) {
         fileDurationEl.textContent = `${formatTime(state.duration, false)} \u2022 ${(state.videoFile.size / (1024 * 1024)).toFixed(1)} MB`;
       }
+      const vW = elements.mainVideoPlayer?.videoWidth || 0;
+      const vH = elements.mainVideoPlayer?.videoHeight || 0;
+      if (vW && vH) {
+        if (vW >= vH * 1.2) {
+          state.aspectRatio = "16:9";
+        } else if (vH >= vW * 1.2) {
+          state.aspectRatio = "9:16";
+        } else {
+          state.aspectRatio = "1:1";
+        }
+        if (elements.aspectBtns) {
+          elements.aspectBtns.forEach((b) => {
+            b.classList.toggle("active", b.dataset.ratio === state.aspectRatio);
+          });
+        }
+        updateAspectDimensions();
+      }
       if (state.batchVideos.length <= 1) {
         switchScreen(2);
       }
@@ -6120,11 +6361,30 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         const ratio = state.canvasHeight / prevHeight;
         state.topPosY = Math.round(state.topPosY * ratio);
         state.bottomPosY = Math.round(state.bottomPosY * ratio);
-        state.topPosY = Math.max(20, Math.min(Math.round(state.canvasHeight * 0.48), state.topPosY));
-        state.bottomPosY = Math.max(Math.round(state.canvasHeight * 0.52), Math.min(state.canvasHeight - 20, state.bottomPosY));
-        syncActiveClipProperty("topPosY", state.topPosY);
-        syncActiveClipProperty("bottomPosY", state.bottomPosY);
+        if (state.extraCaptions && Array.isArray(state.extraCaptions)) {
+          state.extraCaptions.forEach((ec) => {
+            if (ec.posY) ec.posY = Math.round(ec.posY * ratio);
+          });
+        }
       }
+      state.topPosY = Math.max(30, Math.min(Math.round(state.canvasHeight * 0.48), state.topPosY || Math.round(state.canvasHeight * 0.12)));
+      if (!state.bottomPosY || state.bottomPosY > state.canvasHeight - 30 || state.bottomPosY < state.canvasHeight * 0.48) {
+        state.bottomPosY = Math.round(state.canvasHeight * 0.85);
+      } else {
+        state.bottomPosY = Math.max(Math.round(state.canvasHeight * 0.5), Math.min(state.canvasHeight - 30, state.bottomPosY));
+      }
+      if (state.extraCaptions && Array.isArray(state.extraCaptions)) {
+        state.extraCaptions.forEach((ec) => {
+          if (!ec.posY || ec.posY > state.canvasHeight - 20 || ec.posY < 30) {
+            ec.posY = Math.round(state.canvasHeight * 0.92);
+          } else {
+            ec.posY = Math.max(30, Math.min(state.canvasHeight - 30, ec.posY));
+          }
+        });
+        syncActiveClipProperty("extraCaptions", state.extraCaptions);
+      }
+      syncActiveClipProperty("topPosY", state.topPosY);
+      syncActiveClipProperty("bottomPosY", state.bottomPosY);
       updatePosYSliderRanges();
       syncInspectorUI();
     }
@@ -6150,6 +6410,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       "bottomTextPart2",
       "bottomFontSize",
       "bottomPosY",
+      "extraCaptions",
       "fontFamily",
       "strokeColor",
       "strokeWidth",
@@ -6577,6 +6838,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         bottomTextPart2: state.bottomTextPart2,
         bottomFontSize: state.bottomFontSize,
         bottomPosY: state.bottomPosY,
+        extraCaptions: state.extraCaptions && Array.isArray(state.extraCaptions) ? JSON.parse(JSON.stringify(state.extraCaptions)) : [],
         fontFamily: state.fontFamily,
         strokeColor: state.strokeColor,
         strokeWidth: state.strokeWidth,
@@ -6620,26 +6882,33 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         }
         return state.clips.map((c, idx) => {
           const isEditing = c.id === state.activeClipId;
-          const topStr = c.colorMode === "dual" ? `${c.topTextPart1 || ""} ${c.topTextPart2 || ""}` : c.topText || "";
-          const btmStr = c.colorMode === "dual" ? `${c.bottomTextPart1 || ""} ${c.bottomTextPart2 || ""}` : c.bottomText || "";
-          const isFirst = idx === 0;
-          const isLast = idx === count - 1;
+          const clipTitle = (c.name || `Clip #${idx + 1}`).trim();
+          const clipNum = String(idx + 1).padStart(2, "0");
           return `
                 <div class="clip-card ${isEditing ? "active-editing" : ""}" data-id="${c.id}" onclick="handleClipCardClick(${c.id}, event)" style="cursor:pointer;">
                     <div class="clip-card-main">
-                        <div style="flex:1;">
-                            <div class="clip-header">
-                                <span class="clip-title" onclick="renameClip(${c.id}, event)" title="\u1785\u17BB\u1785\u178A\u17BE\u1798\u17D2\u1794\u17C2\u1780\u17C2\u179F\u1798\u17D2\u179A\u17BD\u179B\u1785\u17C6\u178E\u1784\u1787\u17BE\u1784" style="cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
-                                    ${c.name} <span style="font-size:0.8em; opacity:0.7;">\u270F\uFE0F</span>
-                                </span>
-                                <span class="clip-duration">\u23F1\uFE0F ${formatTime(c.duration, false)}</span>
+                        <!-- Top Metadata Bar -->
+                        <div class="clip-card-header-bar">
+                            <span class="clip-index-pill">#${clipNum}</span>
+                            <span class="clip-duration-pill">\u23F1\uFE0F ${formatTime(c.duration, false)}</span>
+                        </div>
+
+                        <!-- Beautiful Headline Block -->
+                        <div class="clip-headline-block" onclick="renameClip(${c.id}, event)" title="\u1785\u17BB\u1785\u178A\u17BE\u1798\u17D2\u1794\u17C2\u1780\u17C2\u179F\u1798\u17D2\u179A\u17BD\u179B\u1785\u17C6\u178E\u1784\u1787\u17BE\u1784">
+                            <div class="clip-main-headline">
+                                <span>${clipTitle}</span>
+                                <span class="clip-edit-icon" title="\u1780\u17C2\u1785\u17C6\u178E\u1784\u1787\u17BE\u1784">\u270F\uFE0F</span>
                             </div>
-                            <div class="clip-actions">
-                                <button class="btn ${isEditing ? "btn-primary" : "btn-secondary"} btn-sm" onclick="selectClipForEditing(${c.id}, true, event)">
-                                    ${isEditing ? "\u270F\uFE0F \u1780\u17C6\u1796\u17BB\u1784\u1780\u17C2" : "\u{1F3A8} \u1780\u17C2\u179F\u1798\u17D2\u179A\u17BD\u179B"}
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteClip(${c.id}, event)" title="\u179B\u17BB\u1794 Clip \u1793\u17C1\u17C7">\u{1F5D1}\uFE0F \u179B\u17BB\u1794</button>
-                            </div>
+                        </div>
+
+                        <!-- Action Buttons Footer Row -->
+                        <div class="clip-actions-row">
+                            <button class="btn ${isEditing ? "btn-primary" : "btn-secondary"} btn-sm btn-edit-clip" onclick="selectClipForEditing(${c.id}, true, event)">
+                                ${isEditing ? "\u270F\uFE0F \u1780\u17C6\u1796\u17BB\u1784\u1780\u17C2" : "\u{1F3A8} \u1780\u17C2\u179F\u1798\u17D2\u179A\u17BD\u179B"}
+                            </button>
+                            <button class="btn btn-danger btn-sm btn-delete-clip" onclick="deleteClip(${c.id}, event)" title="\u179B\u17BB\u1794 Clip \u1793\u17C1\u17C7">
+                                \u{1F5D1}\uFE0F \u179B\u17BB\u1794
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -6650,7 +6919,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       if (elements.clipsListScreen2) elements.clipsListScreen2.innerHTML = renderHTML(true);
     }
     window.handleClipCardClick = function(id, e) {
-      if (e && e.target && e.target.closest("button, input, .clip-title")) {
+      if (e && e.target && e.target.closest("button, input, .clip-title, .clip-headline-block")) {
         return;
       }
       if (state.currentScreen === 2) {
@@ -6679,18 +6948,41 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       state.colorMode = clip.colorMode || "dual";
       state.topTextColor1 = clip.topTextColor1 || clip.textColor1 || "#FFE600";
       state.topTextColor2 = clip.topTextColor2 || clip.textColor2 || "#FF5722";
-      state.bottomTextColor1 = clip.bottomTextColor1 || clip.textColor1 || "#FFE600";
-      state.bottomTextColor2 = clip.bottomTextColor2 || clip.textColor2 || "#FF5722";
-      state.topText = clip.topText || "";
+      state.bottomTextColor1 = clip.bottomTextColor1 || "#FFE600";
+      state.bottomTextColor2 = clip.bottomTextColor2 || "#FF5722";
+      state.extraCaptions = clip.extraCaptions && Array.isArray(clip.extraCaptions) ? JSON.parse(JSON.stringify(clip.extraCaptions)) : [];
+      state.topText = clip.topText || clip.name || "";
       state.topTextPart1 = clip.topTextPart1 || "";
       state.topTextPart2 = clip.topTextPart2 || "";
+      if (!state.topTextPart1 && !state.topTextPart2 && state.topText) {
+        if (state.topText.includes("\u17D6")) {
+          const parts = state.topText.split("\u17D6");
+          state.topTextPart1 = parts[0].trim();
+          state.topTextPart2 = parts.slice(1).join("\u17D6").trim();
+        } else if (state.topText.includes(":")) {
+          const parts = state.topText.split(":");
+          state.topTextPart1 = parts[0].trim();
+          state.topTextPart2 = parts.slice(1).join(":").trim();
+        }
+      }
       state.topFontSize = clip.topFontSize || 65;
       state.topPosY = clip.topPosY || 160;
       state.bottomText = clip.bottomText || "";
       state.bottomTextPart1 = clip.bottomTextPart1 || "";
       state.bottomTextPart2 = clip.bottomTextPart2 || "";
+      if (!state.bottomTextPart1 && !state.bottomTextPart2 && state.bottomText) {
+        if (state.bottomText.includes("\u17D6")) {
+          const parts = state.bottomText.split("\u17D6");
+          state.bottomTextPart1 = parts[0].trim();
+          state.bottomTextPart2 = parts.slice(1).join("\u17D6").trim();
+        } else if (state.bottomText.includes(":")) {
+          const parts = state.bottomText.split(":");
+          state.bottomTextPart1 = parts[0].trim();
+          state.bottomTextPart2 = parts.slice(1).join(":").trim();
+        }
+      }
       state.bottomFontSize = clip.bottomFontSize || 65;
-      state.bottomPosY = clip.bottomPosY || 1750;
+      state.bottomPosY = clip.bottomPosY || 1520;
       state.fontFamily = clip.fontFamily || "Moul";
       state.strokeColor = clip.strokeColor || "#FFFFFF";
       state.strokeWidth = clip.strokeWidth || 12;
@@ -6705,8 +6997,9 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         elements.aspectBtns.forEach((b) => {
           b.classList.toggle("active", b.dataset.ratio === state.aspectRatio);
         });
-        updateAspectDimensions();
       }
+      updateAspectDimensions();
+      renderExtraCaptionInputs();
       if (elements.activeClipNameBadge) {
         elements.activeClipNameBadge.textContent = `${clip.name} (${formatTime(clip.duration, false)})`;
       }
@@ -6793,6 +7086,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         elements.videoOffsetYInput.value = state.videoOffsetY;
         if (elements.videoOffsetYVal) elements.videoOffsetYVal.textContent = state.videoOffsetY + "px";
       }
+      renderExtraCaptionInputs();
     }
     function renderLoop() {
       if (state.currentScreen === 3 || state.currentScreen === 2 || state.isExporting) {
@@ -7100,15 +7394,33 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         renderSelectionOutline(ctx, "top", state.topPosY, state.topFontSize, width);
       } else if (activeTarget === "bottom") {
         renderSelectionOutline(ctx, "bottom", state.bottomPosY, state.bottomFontSize, width);
+      } else if (activeTarget && typeof activeTarget === "string" && activeTarget.startsWith("extra_")) {
+        const ec = state.extraCaptions?.find((item) => item.id === activeTarget);
+        if (ec) {
+          renderSelectionOutline(ctx, ec.id, ec.posY, ec.fontSize || 55, width, ec.measuredWidth, ec.text);
+        }
       }
     }
-    function renderSelectionOutline(ctx, target, posY, fontSize, canvasWidth) {
+    function renderSelectionOutline(ctx, target, posY, fontSize, canvasWidth, customMeasuredW = null, customText = null) {
       ctx.save();
       ctx.strokeStyle = "#FFE600";
       ctx.lineWidth = 2.5;
       ctx.setLineDash([6, 4]);
-      const measuredW = target === "top" ? state.topMeasuredWidth || canvasWidth * 0.75 : state.bottomMeasuredWidth || canvasWidth * 0.75;
-      const boxH = fontSize * 1.35;
+      let measuredW = canvasWidth * 0.75;
+      let isTwoLine = false;
+      if (target === "top") {
+        measuredW = state.topMeasuredWidth || canvasWidth * 0.75;
+        isTwoLine = Boolean(state.topTextPart1 && state.topTextPart2 || state.topText && (state.topText.includes("\u17D6") || state.topText.includes("\n")));
+      } else if (target === "bottom") {
+        measuredW = state.bottomMeasuredWidth || canvasWidth * 0.75;
+        isTwoLine = Boolean(state.bottomTextPart1 && state.bottomTextPart2 || state.bottomText && (state.bottomText.includes("\u17D6") || state.bottomText.includes("\n")));
+      } else if (customMeasuredW) {
+        measuredW = customMeasuredW;
+        if (customText) {
+          isTwoLine = customText.includes("\u17D6") || customText.includes("\n");
+        }
+      }
+      const boxH = isTwoLine ? fontSize * 2.8 : fontSize * 1.35;
       const boxW = Math.max(180, Math.min(canvasWidth - 20, measuredW + 50));
       const boxX = (canvasWidth - boxW) / 2;
       const boxY = posY - boxH / 2;
@@ -7152,137 +7464,249 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         width,
         "bottom"
       );
+      if (state.extraCaptions && Array.isArray(state.extraCaptions)) {
+        state.extraCaptions.forEach((ec) => {
+          renderSingleExtraCaption(ctx, ec, width, height);
+        });
+      }
     }
-    function renderSingleTextLine(ctx, part1, part2, fullText, fontSize, posY, canvasWidth, targetName) {
+    function renderSingleExtraCaption(ctx, ec, canvasWidth, canvasHeight) {
+      if (!ec) return;
+      const raw = (ec.text || "").trim();
+      if (!raw) return;
       ctx.save();
-      const fontName = state.fontFamily;
-      let drawFontSize = parseFloat(fontSize);
+      const fontName = state.fontFamily || "Moul";
+      let drawFontSize = parseFloat(ec.fontSize) || 55;
       ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
       ctx.textBaseline = "middle";
-      ctx.strokeStyle = state.strokeColor;
-      ctx.lineWidth = parseFloat(state.strokeWidth);
+      ctx.strokeStyle = state.strokeColor || "#000000";
+      ctx.lineWidth = parseFloat(state.strokeWidth) || 12;
       ctx.lineJoin = "round";
       ctx.miterLimit = 2;
       const maxAllowedW = canvasWidth - 60;
-      if (state.colorMode === "dual") {
-        const p1 = (part1 || "").trim();
-        const p2 = (part2 || "").trim();
-        if (!p1 && !p2) {
-          ctx.restore();
-          return;
-        }
-        const getSpaceW = () => Math.max(14, Math.round(drawFontSize * 0.22));
-        let w1 = p1 ? ctx.measureText(p1).width : 0;
-        let w2 = p2 ? ctx.measureText(p2).width : 0;
-        let spaceW = p1 && p2 ? getSpaceW() : 0;
-        let measuredW = w1 + spaceW + w2;
-        if (measuredW > maxAllowedW && measuredW > 0) {
-          const scale = maxAllowedW / measuredW;
-          drawFontSize = Math.max(14, Math.floor(drawFontSize * scale));
-          ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
-          w1 = p1 ? ctx.measureText(p1).width : 0;
-          w2 = p2 ? ctx.measureText(p2).width : 0;
-          spaceW = p1 && p2 ? getSpaceW() : 0;
-          measuredW = w1 + spaceW + w2;
-        }
-        if (targetName === "top") {
-          state.topMeasuredWidth = measuredW;
-        } else if (targetName === "bottom") {
-          state.bottomMeasuredWidth = measuredW;
-        }
-        if (state.shadowBlur > 0) {
-          ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-          ctx.shadowBlur = parseFloat(state.shadowBlur);
-          ctx.shadowOffsetX = 2;
-          ctx.shadowOffsetY = 4;
-        }
-        const y = parseFloat(posY);
-        ctx.textAlign = "left";
-        let startX = Math.max(30, (canvasWidth - measuredW) / 2);
-        if (state.strokeWidth > 0) {
-          let xPtr2 = startX;
-          if (p1) {
-            ctx.strokeText(p1, xPtr2, y);
-            xPtr2 += w1 + spaceW;
-          }
-          if (p2) {
-            ctx.strokeText(p2, xPtr2, y);
-          }
-        }
-        let xPtr = startX;
-        if (p1) {
-          ctx.fillStyle = targetName === "top" ? state.topTextColor1 : state.bottomTextColor1;
-          ctx.fillText(p1, xPtr, y);
-          xPtr += w1 + spaceW;
-        }
-        if (p2) {
-          ctx.fillStyle = targetName === "top" ? state.topTextColor2 : state.bottomTextColor2;
-          ctx.fillText(p2, xPtr, y);
-        }
-      } else if (state.colorMode === "gradient") {
-        const txt = (fullText || "").trim();
-        if (!txt) {
-          ctx.restore();
-          return;
-        }
-        let textW = ctx.measureText(txt).width;
-        if (textW > maxAllowedW && textW > 0) {
-          const scale = maxAllowedW / textW;
-          drawFontSize = Math.max(14, Math.floor(drawFontSize * scale));
-          ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
-          textW = ctx.measureText(txt).width;
-        }
-        if (targetName === "top") {
-          state.topMeasuredWidth = textW;
-        } else if (targetName === "bottom") {
-          state.bottomMeasuredWidth = textW;
-        }
-        if (state.shadowBlur > 0) {
-          ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-          ctx.shadowBlur = parseFloat(state.shadowBlur);
-          ctx.shadowOffsetX = 2;
-          ctx.shadowOffsetY = 4;
-        }
-        const y = parseFloat(posY);
-        ctx.textAlign = "center";
-        const startX = Math.max(30, (canvasWidth - textW) / 2);
-        const c1 = targetName === "top" ? state.topTextColor1 : state.bottomTextColor1;
-        const c2 = targetName === "top" ? state.topTextColor2 : state.bottomTextColor2;
-        const grad = ctx.createLinearGradient(startX, 0, startX + textW, 0);
-        grad.addColorStop(0, c1);
-        grad.addColorStop(1, c2);
-        if (state.strokeWidth > 0) ctx.strokeText(txt, canvasWidth / 2, y);
-        ctx.fillStyle = grad;
-        ctx.fillText(txt, canvasWidth / 2, y);
+      const color = ec.color || "#FFE600";
+      if (state.shadowBlur > 0) {
+        ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+        ctx.shadowBlur = parseFloat(state.shadowBlur);
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 4;
+      }
+      let line1 = "";
+      let line2 = "";
+      if (raw.includes("\u17D6")) {
+        const parts = raw.split("\u17D6");
+        line1 = parts[0].trim();
+        line2 = parts.slice(1).join("\u17D6").trim();
+      } else if (raw.includes("\n")) {
+        const parts = raw.split("\n");
+        line1 = parts[0].trim();
+        line2 = parts.slice(1).join(" ").trim();
+      } else if (raw.includes(":")) {
+        const parts = raw.split(":");
+        line1 = parts[0].trim();
+        line2 = parts.slice(1).join(":").trim();
       } else {
-        const txt = (fullText || "").trim();
-        if (!txt) {
-          ctx.restore();
-          return;
+        line1 = raw;
+      }
+      if (line1 && !line2) {
+        const singleW = ctx.measureText(line1).width;
+        if (singleW > maxAllowedW && line1.length > 20) {
+          const words = line1.split(/\s+/);
+          if (words.length >= 2) {
+            const mid = Math.ceil(words.length / 2);
+            line1 = words.slice(0, mid).join(" ");
+            line2 = words.slice(mid).join(" ");
+          }
         }
-        let textW = ctx.measureText(txt).width;
+      }
+      let yCenter = parseFloat(ec.posY);
+      if (isNaN(yCenter) || yCenter <= 0) {
+        yCenter = Math.round(canvasHeight * 0.92);
+      }
+      if (yCenter > canvasHeight - 20 || yCenter < 30) {
+        yCenter = Math.min(canvasHeight - 40, Math.max(40, yCenter));
+      }
+      ec.posY = yCenter;
+      const centerX = canvasWidth / 2;
+      ctx.textAlign = "center";
+      if (line1 && line2) {
+        ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+        let w1 = ctx.measureText(line1).width;
+        let w2 = ctx.measureText(line2).width;
+        let maxW = Math.max(w1, w2);
+        if (maxW > maxAllowedW && maxW > 0) {
+          const scale = maxAllowedW / maxW;
+          drawFontSize = Math.max(16, Math.floor(drawFontSize * scale));
+          ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+          w1 = ctx.measureText(line1).width;
+          w2 = ctx.measureText(line2).width;
+          maxW = Math.max(w1, w2);
+        }
+        ec.measuredWidth = maxW;
+        const lineSpacing = drawFontSize * 1.34;
+        const line1Y = yCenter - lineSpacing / 2;
+        const line2Y = yCenter + lineSpacing / 2;
+        if (state.strokeWidth > 0) {
+          ctx.strokeText(line1, centerX, line1Y);
+          ctx.strokeText(line2, centerX, line2Y);
+        }
+        ctx.fillStyle = color;
+        ctx.fillText(line1, centerX, line1Y);
+        ctx.fillText(line2, centerX, line2Y);
+      } else if (line1) {
+        ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+        let textW = ctx.measureText(line1).width;
         if (textW > maxAllowedW && textW > 0) {
           const scale = maxAllowedW / textW;
-          drawFontSize = Math.max(14, Math.floor(drawFontSize * scale));
+          drawFontSize = Math.max(16, Math.floor(drawFontSize * scale));
           ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
-          textW = ctx.measureText(txt).width;
+          textW = ctx.measureText(line1).width;
+        }
+        ec.measuredWidth = textW;
+        if (state.strokeWidth > 0) {
+          ctx.strokeText(line1, centerX, yCenter);
+        }
+        ctx.fillStyle = color;
+        ctx.fillText(line1, centerX, yCenter);
+      }
+      ctx.restore();
+    }
+    function renderSingleTextLine(ctx, part1, part2, fullText, fontSize, posY, canvasWidth, targetName) {
+      ctx.save();
+      const fontName = state.fontFamily || "Moul";
+      let drawFontSize = parseFloat(fontSize) || 65;
+      ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+      ctx.textBaseline = "middle";
+      ctx.strokeStyle = state.strokeColor || "#000000";
+      ctx.lineWidth = parseFloat(state.strokeWidth) || 12;
+      ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
+      const maxAllowedW = canvasWidth - 60;
+      const color1 = targetName === "top" ? state.topTextColor1 : state.bottomTextColor1;
+      const color2 = state.colorMode === "dual" ? targetName === "top" ? state.topTextColor2 : state.bottomTextColor2 : color1;
+      if (state.shadowBlur > 0) {
+        ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+        ctx.shadowBlur = parseFloat(state.shadowBlur);
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 4;
+      }
+      const p1 = (part1 || "").trim();
+      const p2 = (part2 || "").trim();
+      const raw = (fullText || "").trim();
+      let line1 = "";
+      let line2 = "";
+      if (p1 && p2 && p1 !== p2) {
+        line1 = p1;
+        line2 = p2;
+      } else if (raw.includes("\u17D6")) {
+        const parts = raw.split("\u17D6");
+        line1 = parts[0].trim();
+        line2 = parts.slice(1).join("\u17D6").trim();
+      } else if (raw.includes("\n")) {
+        const parts = raw.split("\n");
+        line1 = parts[0].trim();
+        line2 = parts.slice(1).join(" ").trim();
+      } else if (raw.includes(":")) {
+        const parts = raw.split(":");
+        line1 = parts[0].trim();
+        line2 = parts.slice(1).join(":").trim();
+      } else if (raw) {
+        line1 = raw;
+      } else if (p1) {
+        line1 = p1;
+      }
+      if (!line1 && !line2) {
+        ctx.restore();
+        return;
+      }
+      let yCenter = parseFloat(posY);
+      if (isNaN(yCenter) || yCenter <= 0) {
+        yCenter = targetName === "top" ? Math.round(state.canvasHeight * 0.12) : Math.round(state.canvasHeight * 0.85);
+      }
+      if (targetName === "bottom") {
+        if (yCenter > state.canvasHeight - 20 || yCenter < state.canvasHeight * 0.48) {
+          yCenter = Math.round(state.canvasHeight * 0.85);
+          state.bottomPosY = yCenter;
+          if (elements.bottomPosYInput) elements.bottomPosYInput.value = yCenter;
+        }
+      } else if (targetName === "top") {
+        if (yCenter > state.canvasHeight * 0.48 || yCenter < 20) {
+          yCenter = Math.round(state.canvasHeight * 0.12);
+          state.topPosY = yCenter;
+          if (elements.topPosYInput) elements.topPosYInput.value = yCenter;
+        }
+      }
+      if (line1 && !line2) {
+        const singleW = ctx.measureText(line1).width;
+        if (singleW > maxAllowedW && line1.length > 20) {
+          const words = line1.split(/\s+/);
+          if (words.length >= 2) {
+            const mid = Math.ceil(words.length / 2);
+            line1 = words.slice(0, mid).join(" ");
+            line2 = words.slice(mid).join(" ");
+          }
+        }
+      }
+      if (line1 && line2) {
+        ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+        let w1 = ctx.measureText(line1).width;
+        let w2 = ctx.measureText(line2).width;
+        let maxW = Math.max(w1, w2);
+        if (maxW > maxAllowedW && maxW > 0) {
+          const scale = maxAllowedW / maxW;
+          drawFontSize = Math.max(18, Math.floor(drawFontSize * scale));
+          ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+          w1 = ctx.measureText(line1).width;
+          w2 = ctx.measureText(line2).width;
+          maxW = Math.max(w1, w2);
+        }
+        if (targetName === "top") {
+          state.topMeasuredWidth = maxW;
+        } else if (targetName === "bottom") {
+          state.bottomMeasuredWidth = maxW;
+        }
+        const lineSpacing = drawFontSize * 1.34;
+        const line1Y = yCenter - lineSpacing / 2;
+        const line2Y = yCenter + lineSpacing / 2;
+        const centerX = canvasWidth / 2;
+        ctx.textAlign = "center";
+        if (state.strokeWidth > 0) {
+          ctx.strokeText(line1, centerX, line1Y);
+          ctx.strokeText(line2, centerX, line2Y);
+        }
+        ctx.fillStyle = color1;
+        ctx.fillText(line1, centerX, line1Y);
+        ctx.fillStyle = color2;
+        ctx.fillText(line2, centerX, line2Y);
+      } else {
+        ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+        let textW = ctx.measureText(line1).width;
+        if (textW > maxAllowedW && textW > 0) {
+          const scale = maxAllowedW / textW;
+          drawFontSize = Math.max(16, Math.floor(drawFontSize * scale));
+          ctx.font = `700 ${drawFontSize}px "${fontName}", sans-serif`;
+          textW = ctx.measureText(line1).width;
         }
         if (targetName === "top") {
           state.topMeasuredWidth = textW;
         } else if (targetName === "bottom") {
           state.bottomMeasuredWidth = textW;
         }
-        if (state.shadowBlur > 0) {
-          ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-          ctx.shadowBlur = parseFloat(state.shadowBlur);
-          ctx.shadowOffsetX = 2;
-          ctx.shadowOffsetY = 4;
-        }
-        const y = parseFloat(posY);
+        const centerX = canvasWidth / 2;
         ctx.textAlign = "center";
-        if (state.strokeWidth > 0) ctx.strokeText(txt, canvasWidth / 2, y);
-        ctx.fillStyle = targetName === "top" ? state.topTextColor1 : state.bottomTextColor1;
-        ctx.fillText(txt, canvasWidth / 2, y);
+        if (state.strokeWidth > 0) {
+          ctx.strokeText(line1, centerX, yCenter);
+        }
+        if (state.colorMode === "gradient") {
+          const startX = Math.max(30, (canvasWidth - textW) / 2);
+          const grad = ctx.createLinearGradient(startX, 0, startX + textW, 0);
+          grad.addColorStop(0, color1);
+          grad.addColorStop(1, color2);
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = color1;
+        }
+        ctx.fillText(line1, centerX, yCenter);
       }
       ctx.restore();
     }

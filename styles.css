@@ -595,46 +595,94 @@ html, body {
     transform: translateY(-1px);
 }
 
+/* ==========================================================================
+   លុបរូបទី២ និង រូបទី៣ ចេញតាមការស្នើសុំ:
+   - Header បញ្ជី Clips (#leftPanelHeader / .left-panel-header / #quickAddClipBtn)
+   - Tabs វីដេអូដើម / ម៉ូដ Clip (#viewModeTabs / .view-mode-tabs)
+   - ប៊ូតុង Zoom & Fullscreen (#stageZoomControls / .stage-zoom-controls)
+   ========================================================================== */
+#leftPanelHeader,
+.left-panel-header,
+#viewModeTabs,
+.view-mode-tabs,
+#stageZoomControls,
+.stage-zoom-controls,
+#fileInfoBox,
+.video-source-card,
+#exportActiveClipBtn,
+#exportAllClipsStudioBtn,
+.transport-group-right {
+    display: none !important;
+}
+
+.stage-top-toolbar {
+    justify-content: center !important;
+}
+
+/* សម្រាប់ផ្ទាំងទី២ (Screen 2 Trimmer Mode):
+   លុបរូបទី២ (Toolbar ជ្រើសរើសទម្រង់ Aspect Ratio) ដោយរក្សាទម្រង់ដើមនៃ Video */
+body.screen-2-mode #stageTopToolbar,
+.screen-2-mode #stageTopToolbar,
+body.screen-2-mode .stage-top-toolbar,
+.screen-2-mode .stage-top-toolbar,
+body.screen-2-mode .aspect-ratio-selector,
+.screen-2-mode .aspect-ratio-selector {
+    display: none !important;
+}
+
+.raw-video-container video,
+#mainVideoPlayer {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain !important;
+}
+
+/* សម្រាប់ពេល user រើសយកសម្រាប់ FB:
+   - រូបទី១: លុបប៊ូតុង YouTube (16:9) ក្នុង Header
+   - រូបទី២: លុបប៊ូតុង Undo/Redo, Autosaved badge, Google Login ក្នុង Header */
+body.platform-mode-facebook #headerPlatformToggle .platform-btn[data-platform="youtube"],
+body[data-platform-mode="facebook"] #headerPlatformToggle .platform-btn[data-platform="youtube"],
+.platform-mode-facebook #headerPlatformToggle .platform-btn[data-platform="youtube"],
+body.platform-mode-facebook .header-actions .history-btns,
+body[data-platform-mode="facebook"] .header-actions .history-btns,
+.platform-mode-facebook .header-actions .history-btns,
+body.platform-mode-facebook .header-actions .autosave-badge,
+body[data-platform-mode="facebook"] .header-actions .autosave-badge,
+.platform-mode-facebook .header-actions .autosave-badge,
+body.platform-mode-facebook .header-actions #firebaseAuthContainer,
+body[data-platform-mode="facebook"] .header-actions #firebaseAuthContainer,
+.platform-mode-facebook .header-actions #firebaseAuthContainer,
+body.platform-mode-facebook .header-actions .firebase-auth-container,
+body[data-platform-mode="facebook"] .header-actions .firebase-auth-container,
+.platform-mode-facebook .header-actions .firebase-auth-container {
+    display: none !important;
+}
+
 /* សម្រាប់ផ្ទាំងទី៣ (Screen 3 Studio / Edit Mode):
-   - រូបទី២: លុប Header បញ្ជី Clips (#leftPanelHeader / .left-panel-header)
-   - រូបទី៣: លុប Tabs វីដេអូដើម / ម៉ូដ Clip (#viewModeTabs / .view-mode-tabs)
-   - រូបទី៤: លុប ប៊ូតុង 16:9 (#aspectRatio169Btn / [data-ratio="16:9"])
-   - រូបទី៥: លុប ប៊ូតុង Zoom & Fullscreen (#stageZoomControls / .stage-zoom-controls)
-   - ព្រមទាំង File Info Box, Quick Actions, និង AI Quick Bar */
-.workspace-3col.screen-3-mode .sidebar-left #leftPanelHeader,
-.workspace-3col.screen-3-mode .sidebar-left .left-panel-header,
+   លុប File Info Box, Quick Actions, AI Quick Bar, និងប៊ូតុង 16:9 */
+body.screen-3-mode .sidebar-left #fileInfoBox,
+body.screen-3-mode .sidebar-left .video-source-card,
+body.screen-3-mode .sidebar-left .ai-quick-bar,
+body.screen-3-mode #aspectRatio169Btn,
+body.screen-3-mode .aspect-btn[data-ratio="16:9"],
+.screen-3-mode .sidebar-left #fileInfoBox,
+.screen-3-mode .sidebar-left .video-source-card,
+.screen-3-mode .sidebar-left .ai-quick-bar,
+.screen-3-mode #aspectRatio169Btn,
+.screen-3-mode .aspect-btn[data-ratio="16:9"],
 .workspace-3col.screen-3-mode .sidebar-left #fileInfoBox,
 .workspace-3col.screen-3-mode .sidebar-left .video-source-card,
 .workspace-3col.screen-3-mode .sidebar-left .ai-quick-bar,
-.workspace-3col.screen-3-mode .sidebar-left #leftPanelActions,
-.workspace-3col.screen-3-mode .sidebar-left .left-panel-actions,
-.workspace-3col.screen-3-mode .sidebar-left #btnBackToTrimmer,
-.workspace-3col.screen-3-mode .sidebar-left #quickAddClipBtn,
-.workspace-3col.screen-3-mode .stage-top-toolbar #viewModeTabs,
-.workspace-3col.screen-3-mode .stage-top-toolbar .view-mode-tabs,
-.workspace-3col.screen-3-mode .stage-top-toolbar #stageZoomControls,
-.workspace-3col.screen-3-mode .stage-top-toolbar .stage-zoom-controls,
 .workspace-3col.screen-3-mode #aspectRatio169Btn,
 .workspace-3col.screen-3-mode .aspect-btn[data-ratio="16:9"] {
     display: none !important;
 }
 
-.workspace-3col.screen-3-mode .stage-top-toolbar {
-    justify-content: center;
-}
-
+body.screen-3-mode .aspect-btn[data-ratio="1:1"],
+.screen-3-mode .aspect-btn[data-ratio="1:1"],
 .workspace-3col.screen-3-mode .aspect-btn[data-ratio="1:1"] {
     border-top-right-radius: var(--radius-xs);
     border-bottom-right-radius: var(--radius-xs);
-}
-
-/* សម្រាប់ផ្ទាំងទី២ (Screen 2 Trimmer Mode):
-   លុបរូបទី២ចេញ (Header បញ្ជី Clips និង Stage Top Toolbar ទាំងមូល) */
-.workspace-3col.screen-2-mode .sidebar-left #leftPanelHeader,
-.workspace-3col.screen-2-mode .sidebar-left .left-panel-header,
-.workspace-3col.screen-2-mode #stageTopToolbar,
-.workspace-3col.screen-2-mode .stage-top-toolbar {
-    display: none !important;
 }
 
 /* សម្រាប់ផ្ទាំងទី១ (Screen 1 Upload Mode):
@@ -766,9 +814,117 @@ body.screen-1-mode .screen-upload {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
+/* Header bar with Index Pill & Duration Badge */
+.clip-card-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    width: 100%;
+}
+
+.clip-index-pill {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    padding: 1px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+.clip-duration-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    padding: 1px 7px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Beautiful Headline Block */
+.clip-headline-block {
+    margin-bottom: 7px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.clip-main-headline {
+    font-family: var(--font-khmer-kantumruy), sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.45;
+    margin-bottom: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.15s ease;
+}
+
+.clip-headline-block:hover .clip-main-headline {
+    color: #fde047;
+}
+
+.clip-edit-icon {
+    font-size: 0.72rem;
+    opacity: 0.5;
+    margin-left: 5px;
+    transition: opacity 0.15s;
+    vertical-align: middle;
+}
+
+.clip-headline-block:hover .clip-edit-icon {
+    opacity: 1;
+}
+
+.clip-sub-headline {
+    display: none !important;
+}
+
+/* Action Buttons Footer Row */
+.clip-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    width: 100%;
+}
+
+.clip-actions-row .btn-edit-clip {
+    flex: 1;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.clip-actions-row .btn-delete-clip {
+    font-size: 0.76rem;
+    padding: 5px 9px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+/* Legacy Header Row Compatibility */
 .clip-header-row {
     display: flex;
     align-items: flex-start;
@@ -5763,3 +5919,98 @@ button.upload-step-pill.active,
 
 
 
+
+/* ==========================================================================
+   Export Choice Popover (សម្រាប់រូបទី៣ បង្ហាញជម្រើសរូបទី២)
+   ========================================================================== */
+.step4-popover-anchor {
+    position: relative;
+    display: inline-flex;
+}
+
+.export-choice-popover {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.export-choice-popover.hidden {
+    display: none !important;
+}
+
+.export-choice-popover::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    background: #0f172a;
+    border-top: 1px solid rgba(168, 85, 247, 0.5);
+    border-left: 1px solid rgba(168, 85, 247, 0.5);
+    transform: translateX(-50%) rotate(45deg);
+    z-index: 1001;
+}
+
+.export-choice-card {
+    background: #0f172a;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(168, 85, 247, 0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 270px;
+    backdrop-filter: blur(14px);
+}
+
+.export-choice-header {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    font-family: var(--font-khmer-kantumruy);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 6px;
+    text-align: center;
+}
+
+.export-choice-btns {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.export-choice-btns .btn {
+    font-weight: 700;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-khmer-kantumruy);
+}
+
+.export-choice-btns .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+}

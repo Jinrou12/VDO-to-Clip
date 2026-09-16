@@ -19,3 +19,6 @@ gemini_multimodal_clips.json
 audio_cache/
 consensus_council_clips.json
 super_transcript.json
+test_*.py
+list_models.py
+print_clips.py
