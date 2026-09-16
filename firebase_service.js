@@ -1,13 +1,13 @@
 (() => {
   // src/firebase_service.ts
   var firebaseConfig = {
-    apiKey: "AIzaSyCinSquSTEfVvc7UQBogkHL_GLX2IgQHJQ",
+    apiKey: "AIzaSyCInSqUSTeFVvc7UQBogkHL_GlX2IgQHjQ",
     authDomain: "vdo-to-clip-any.firebaseapp.com",
     projectId: "vdo-to-clip-any",
     storageBucket: "vdo-to-clip-any.firebasestorage.app",
     messagingSenderId: "43348008176",
     appId: "1:43348008176:web:fd9c43d57b2a415950f635",
-    measurementId: "G-PXQCK7SNQ6"
+    measurementId: "G-PXQCK75NQ6"
   };
   var firebaseApp = null;
   var auth = null;
