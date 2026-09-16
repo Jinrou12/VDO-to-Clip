@@ -1996,6 +1996,18 @@ class BatchCouncilScanner:
                     v["stage"] = "បានផ្អាក"
             return {"success": True, "message": "Batch stopped"}
 
+    def clear(self) -> Dict[str, Any]:
+        with self.lock:
+            self._stop_requested = True
+            self.is_running = False
+            self.queue = []
+            try:
+                if os.path.exists(self.results_file):
+                    os.remove(self.results_file)
+            except Exception:
+                pass
+            return {"success": True, "message": "Batch queue cleared", "videos": [], "total": 0}
+
     def _resolve_video_file(self, target_path: str, name: str) -> Optional[str]:
         candidates = [
             target_path,
@@ -2697,6 +2709,17 @@ class AutoClipServerHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._set_headers(500)
                 self.wfile.write(json.dumps({"error": f"Batch cancel error: {str(e)}"}).encode('utf-8'))
+                return
+
+        if self.path == '/api/batch/clear':
+            try:
+                res = BATCH_SCANNER.clear()
+                self._set_headers(200)
+                self.wfile.write(json.dumps(res, ensure_ascii=False).encode('utf-8'))
+                return
+            except Exception as e:
+                self._set_headers(500)
+                self.wfile.write(json.dumps({"error": f"Batch clear error: {str(e)}"}).encode('utf-8'))
                 return
 
         # 4. Multimodal Audio Analysis & Clipping

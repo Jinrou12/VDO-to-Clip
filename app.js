@@ -1565,26 +1565,35 @@
       requestAnimationFrame(renderLoop);
     }
     async function checkServerBatchState() {
+      if (localStorage.getItem("khmer_clipper_batch_cleared") === "true") {
+        return;
+      }
       try {
         const serverOrigin = window.location.origin.includes(":5000") || window.location.origin.includes("127.0.0.1") ? window.location.origin : "http://127.0.0.1:5000";
         const resp = await fetch(`${serverOrigin}/api/batch/status`);
         if (!resp.ok) return;
         const data = await resp.json();
-        if (data && data.success && Array.isArray(data.videos) && data.videos.length > 0) {
-          if (state.batchVideos.length === 0) {
-            state.batchVideos = data.videos.map((v) => ({
-              id: v.id,
-              name: v.name,
-              size: v.size,
-              path: v.path || v.name,
-              duration: v.duration || 0,
-              status: v.status || "queued",
-              stage: v.stage || "\u179A\u1784\u17CB\u1785\u17B6\u17C6...",
-              progress: v.progress || 0,
-              clips: v.clips || [],
-              clips_count: v.clips_count || (v.clips ? v.clips.length : 0),
-              objectURL: null
-            }));
+        if (data && data.success && Array.isArray(data.videos)) {
+          if (data.videos.length > 0) {
+            if (state.batchVideos.length === 0) {
+              state.batchVideos = data.videos.map((v) => ({
+                id: v.id,
+                name: v.name,
+                size: v.size,
+                path: v.path || v.name,
+                duration: v.duration || 0,
+                status: v.status || "queued",
+                stage: v.stage || "\u179A\u1784\u17CB\u1785\u17B6\u17C6...",
+                progress: v.progress || 0,
+                clips: v.clips || [],
+                clips_count: v.clips_count || (v.clips ? v.clips.length : 0),
+                objectURL: null
+              }));
+              renderBatchQueue();
+              updateBatchSwitcherBar();
+            }
+          } else {
+            state.batchVideos = [];
             renderBatchQueue();
             updateBatchSwitcherBar();
           }
@@ -5527,6 +5536,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
     }
     function addFilesToBatchQueue(files) {
       if (!files || files.length === 0) return;
+      localStorage.removeItem("khmer_clipper_batch_cleared");
       files.forEach((file) => {
         const exists = state.batchVideos.some((v) => v.name === file.name && v.size === file.size);
         if (!exists) {
@@ -5616,7 +5626,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             `;
       }).join("");
     }
-    function removeBatchVideo(vidId) {
+    async function removeBatchVideo(vidId) {
       const idx = state.batchVideos.findIndex((v) => v.id === vidId);
       if (idx !== -1) {
         const item = state.batchVideos[idx];
@@ -5629,9 +5639,29 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         state.batchVideos.splice(idx, 1);
         renderBatchQueue();
         updateBatchSwitcherBar();
+        try {
+          const serverOrigin = window.location.origin.includes(":5000") || window.location.origin.includes("127.0.0.1") ? window.location.origin : "http://127.0.0.1:5000";
+          if (state.batchVideos.length === 0) {
+            localStorage.setItem("khmer_clipper_batch_cleared", "true");
+            await fetch(`${serverOrigin}/api/batch/clear`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({})
+            });
+          } else {
+            await fetch(`${serverOrigin}/api/batch/queue`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                videos: state.batchVideos.map((v) => ({ id: v.id, name: v.name, path: v.path || v.name, size: v.size }))
+              })
+            });
+          }
+        } catch (e) {
+        }
       }
     }
-    function clearBatchQueue() {
+    async function clearBatchQueue() {
       state.batchVideos.forEach((v) => {
         if (v.objectURL && v.objectURL !== state.videoObjectURL) {
           try {
@@ -5641,8 +5671,21 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         }
       });
       state.batchVideos = [];
+      localStorage.setItem("khmer_clipper_batch_cleared", "true");
       renderBatchQueue();
       updateBatchSwitcherBar();
+      const progressBox = document.getElementById("batchOverallProgressBox");
+      if (progressBox) progressBox.classList.add("hidden");
+      try {
+        const serverOrigin = window.location.origin.includes(":5000") || window.location.origin.includes("127.0.0.1") ? window.location.origin : "http://127.0.0.1:5000";
+        await fetch(`${serverOrigin}/api/batch/clear`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({})
+        });
+      } catch (e) {
+      }
+      showToastNotification("\u{1F5D1}\uFE0F \u1794\u17B6\u1793\u179F\u1798\u17D2\u17A2\u17B6\u178F\u1794\u1789\u17D2\u1787\u17B8\u179C\u17B8\u178A\u17C1\u17A2\u17BC Batch \u179A\u17BD\u1785\u179A\u17B6\u179B\u17CB");
     }
     async function startBatchScanWorkflow() {
       if (!state.batchVideos || state.batchVideos.length === 0) {
