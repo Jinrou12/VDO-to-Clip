@@ -1,4 +1,13 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12",
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" }
+  ]
 }

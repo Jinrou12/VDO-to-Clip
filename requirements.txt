@@ -1,0 +1,4 @@
+# Vercel Python serverless function dependencies
+# The api/index.py handler uses only Python stdlib (json, os, re, hmac, secrets, http.server)
+# No external packages required for the serverless layer.
+# Heavy processing (FastAPI, uvicorn, ffmpeg) runs only in the local backend (api.py).

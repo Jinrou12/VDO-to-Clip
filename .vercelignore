@@ -6,7 +6,6 @@ node_modules
 *.log
 *.spec
 *.bat
-*.py
 __pycache__
 output_clips
 dist
@@ -19,3 +18,19 @@ gemini_config.json
 puter_token.json
 transcript.json
 gemini_multimodal_clips.json
+# Ignore root-level Python scripts (local-only) but NOT api/index.py (Vercel serverless)
+auto_clip_engine.py
+ai_pipeline.py
+job_manager.py
+security.py
+cost_controller.py
+clip_scoring.py
+khmer_nlp.py
+media_pipeline.py
+desktop_app.py
+run_whisper_transcribe.py
+transcribe_to_numbered_blocks.py
+list_models.py
+print_clips.py
+build_installer.py
+test_*.py
