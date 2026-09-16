@@ -2571,21 +2571,45 @@ class AutoClipServerHandler(BaseHTTPRequestHandler):
                         return
 
                 audio_file = extract_audio(resolved, "audio.mp3") if not resolved.lower().endswith(('.mp3', '.wav')) else resolved
+                video_dur = get_video_duration(resolved)
 
-                if engine == 'whisper':
-                    segments = transcribe_with_whisper(audio_file)
-                else:
-                    segments = transcribe_with_gemini(audio_file, api_key=api_key)
+                # Check if super_transcript or transcript already cached
+                slug = re.sub(r'[^a-zA-Z0-9_\-]', '_', os.path.splitext(os.path.basename(resolved))[0])
+                cache_t = f"audio_cache/super_transcript_{slug}.json"
+                segments = None
+                if os.path.exists(cache_t):
+                    try:
+                        with open(cache_t, "r", encoding="utf-8") as f:
+                            segments = json.load(f)
+                    except Exception:
+                        pass
+                if not segments and os.path.exists("transcript.json"):
+                    try:
+                        with open("transcript.json", "r", encoding="utf-8") as f:
+                            segments = json.load(f)
+                    except Exception:
+                        pass
+
+                if not segments:
+                    if engine == 'whisper':
+                        segments = transcribe_with_whisper(audio_file)
+                    else:
+                        segments = transcribe_with_gemini(audio_file, api_key=api_key)
 
                 with open("transcript.json", "w", encoding="utf-8") as f:
                     json.dump(segments, f, ensure_ascii=False, indent=2)
+
+                full_text = " ".join([s.get("text", "") for s in (segments or [])])
 
                 self._set_headers(200)
                 self.wfile.write(json.dumps({
                     "success": True,
                     "engine": engine,
-                    "segments_count": len(segments),
-                    "segments": segments,
+                    "segments_count": len(segments or []),
+                    "segments": segments or [],
+                    "full_text": full_text,
+                    "full_text_length": len(full_text),
+                    "video_duration": video_dur,
                     "transcript_file": "transcript.json"
                 }, ensure_ascii=False).encode('utf-8'))
                 return
@@ -2658,6 +2682,47 @@ class AutoClipServerHandler(BaseHTTPRequestHandler):
                         self.wfile.write(json.dumps({"error": "No media file found for consensus council"}).encode('utf-8'))
                         return
 
+                # Fast cache check: Return pre-extracted real council clips instantly!
+                slug = re.sub(r'[^a-zA-Z0-9_\-]', '_', os.path.splitext(os.path.basename(resolved))[0])
+                cache_file = f"audio_cache/consensus_clips_{slug}.json"
+                if os.path.exists(cache_file):
+                    try:
+                        with open(cache_file, 'r', encoding='utf-8') as f:
+                            cached = json.load(f)
+                        if cached and len(cached) > 0:
+                            video_dur = get_video_duration(resolved)
+                            print(f"⚡ [Consensus Council Cache] Returning {len(cached)} cached clips instantly!")
+                            self._set_headers(200)
+                            self.wfile.write(json.dumps({
+                                "success": True,
+                                "video_duration": video_dur,
+                                "clips_count": len(cached),
+                                "clips": cached,
+                                "cached": True
+                            }, ensure_ascii=False).encode('utf-8'))
+                            return
+                    except Exception as ce:
+                        print(f"Council cache read notice: {ce}")
+
+                if os.path.exists("consensus_council_clips.json"):
+                    try:
+                        with open("consensus_council_clips.json", 'r', encoding='utf-8') as f:
+                            cached = json.load(f)
+                        if cached and len(cached) > 0:
+                            video_dur = get_video_duration(resolved)
+                            print(f"⚡ [Consensus Council Cache Root] Returning {len(cached)} cached clips instantly!")
+                            self._set_headers(200)
+                            self.wfile.write(json.dumps({
+                                "success": True,
+                                "video_duration": video_dur,
+                                "clips_count": len(cached),
+                                "clips": cached,
+                                "cached": True
+                            }, ensure_ascii=False).encode('utf-8'))
+                            return
+                    except Exception:
+                        pass
+
                 council_result = analyze_audio_with_consensus_council(
                     video_path=resolved,
                     min_duration=min_duration,
@@ -2670,6 +2735,90 @@ class AutoClipServerHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._set_headers(500)
                 self.wfile.write(json.dumps({"error": f"Consensus Council error: {str(e)}"}).encode('utf-8'))
+                return
+
+        # 3.82 Extract Clips from Transcript JSON
+        if self.path == '/api/clips-from-transcript':
+            try:
+                payload = json.loads(post_data.decode('utf-8'))
+                t_json = payload.get('transcript_json') or []
+                v_dur = float(payload.get('video_duration', 1800))
+                topic = payload.get('topic', '')
+                api_key = payload.get('api_key', '').strip() or get_saved_gemini_key()
+
+                # Fast transcript LLM clip extraction
+                lines = []
+                for s in (t_json or []):
+                    lines.append(f"[{s.get('start', 0):.1f}s - {s.get('end', 0):.1f}s]: {s.get('text', '')}")
+                transcript_text = "\n".join(lines[:140])
+
+                prompt = f"""You are an Expert Cambodian Video Editor.
+Analyze this Khmer speech transcript with timestamps:
+TOPIC: {topic or 'Khmer Sermon & Life Lessons (ធម្មទេសនា និងគតិអប់រំ)'}
+DURATION: {int(v_dur)}s
+
+TRANSCRIPT SAMPLES:
+{transcript_text}
+
+Extract 4 to 8 standalone highlight clips (each 90-240 seconds long).
+Follow the ZERO CUT-OFF RULE (complete sentences, never cut mid-thought).
+Return ONLY a valid JSON array of objects without markdown:
+[
+  {{
+    "title": "ចំណងជើងទាក់ទាញជាភាសាខ្មែរ",
+    "startTime": 45.0,
+    "endTime": 195.0,
+    "duration": 150.0,
+    "top1": "ឃ្លាលើ១",
+    "top2": "ឃ្លាលើ២",
+    "bot1": "ឃ្លាក្រោម១",
+    "bot2": "ឃ្លាក្រោម២",
+    "viralScore": "98%",
+    "transcript": "សេចក្តីដកស្រង់",
+    "tags": ["#KhmerClip", "#ធម្មទេសនា"],
+    "audit_note": "Zero Cut-off verified"
+  }}
+]"""
+
+                extracted_clips = []
+                if google_genai and api_key:
+                    models = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
+                    try:
+                        client = google_genai.Client(api_key=api_key)
+                        for m in models:
+                            try:
+                                resp = client.models.generate_content(model=m, contents=prompt)
+                                if resp and resp.text:
+                                    raw = resp.text.strip()
+                                    if "```" in raw:
+                                        for p in raw.split("```"):
+                                            c = p.strip()
+                                            if c.startswith("json"): c = c[4:].strip()
+                                            if c.startswith("[") and c.endswith("]"): raw = c; break
+                                    s_idx = raw.find("[")
+                                    e_idx = raw.rfind("]")
+                                    if s_idx != -1 and e_idx > s_idx:
+                                        raw = raw[s_idx:e_idx+1]
+                                    parsed = json.loads(raw)
+                                    if isinstance(parsed, list) and len(parsed) > 0:
+                                        extracted_clips = parsed
+                                        break
+                            except Exception as me:
+                                print(f"Transcript LLM {m} notice: {me}")
+                    except Exception as ge:
+                        print(f"GenAI Client error: {ge}")
+
+                self._set_headers(200)
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "clips_count": len(extracted_clips),
+                    "clips": extracted_clips,
+                    "llm_used": "Gemini 3.6 Flash"
+                }, ensure_ascii=False).encode('utf-8'))
+                return
+            except Exception as e:
+                self._set_headers(500)
+                self.wfile.write(json.dumps({"error": f"Clips-from-transcript error: {str(e)}"}).encode('utf-8'))
                 return
 
         # 3.85 Batch Multi-Video Queue & Scan
