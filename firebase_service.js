@@ -28,49 +28,128 @@
   } catch (e) {
     console.error("\u274C Firebase init error:", e);
   }
+  var _authCallback = null;
+  function getLocalUser() {
+    try {
+      const stored = localStorage.getItem("khmer_clipper_user");
+      if (stored) return JSON.parse(stored);
+    } catch (_) {
+    }
+    return null;
+  }
+  function setLocalUser(name, email = "") {
+    const cleanName = (name || "Editor").trim();
+    const user = {
+      uid: "local_" + Date.now(),
+      displayName: cleanName,
+      email: email ? email.trim() : `${cleanName.toLowerCase().replace(/\s+/g, "_")}@local.pc`,
+      photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(cleanName)}`,
+      isLocal: true
+    };
+    try {
+      localStorage.setItem("khmer_clipper_user", JSON.stringify(user));
+    } catch (_) {
+    }
+    currentUser = user;
+    if (_authCallback) _authCallback(user);
+    return user;
+  }
   async function signInWithGoogle() {
     if (!auth || !googleProvider) {
-      throw new Error("Firebase Auth \u1798\u17B7\u1793\u1791\u17B6\u1793\u17CB\u178A\u17C6\u178E\u17BE\u179A\u1780\u17B6\u179A\u1791\u17C1\u17D4 \u179F\u17BC\u1798\u1796\u17B7\u1793\u17B7\u178F\u17D2\u1799\u1798\u17BE\u179B Internet!");
+      const name = prompt("\u179F\u17BC\u1798\u1794\u1789\u17D2\u1785\u17BC\u179B\u1788\u17D2\u1798\u17C4\u17C7 \u17AC Email \u179A\u1794\u179F\u17CB\u17A2\u17D2\u1793\u1780\u179F\u1798\u17D2\u179A\u17B6\u1794\u17CB\u1794\u17D2\u179A\u17BE\u1794\u17D2\u179A\u17B6\u179F\u17CB\u179B\u17BE PC \u1793\u17C1\u17C7 (\u17A7. Visal):", "Visal");
+      if (name && name.trim()) {
+        return setLocalUser(name.trim());
+      }
+      throw new Error("\u1798\u17B7\u1793\u1794\u17B6\u1793\u1780\u17C6\u178E\u178F\u17CB\u1782\u178E\u1793\u17B8\u17D4");
     }
     try {
       const result = await auth.signInWithPopup(googleProvider);
       currentUser = result.user;
       console.log("\u2705 Logged in successfully:", currentUser.displayName);
+      if (_authCallback) _authCallback(currentUser);
       return currentUser;
     } catch (error) {
-      console.error("\u274C Google Sign-In failed:", error);
+      console.warn("\u274C Google Sign-In notice:", error);
+      if (error.code === "auth/popup-blocked" || String(error.message || "").includes("popup") || String(error.message || "").includes("invalid")) {
+        const fallback = confirm(
+          "\u26A0\uFE0F \u1793\u17C5\u179B\u17BE\u1780\u1798\u17D2\u1798\u179C\u17B7\u1792\u17B8 Desktop (PC) Windows \u1785\u17B6\u1780\u17CB\u179F\u17C4\u179A\u1798\u17B7\u1793\u17B1\u17D2\u1799\u1794\u17BE\u1780 Google Pop-up \u178A\u17C4\u1799\u179F\u17D2\u179C\u17D0\u1799\u1794\u17D2\u179A\u179C\u178F\u17D2\u178F\u17B7\u17D4\n\n\u{1F449} \u178F\u17BE\u17A2\u17D2\u1793\u1780\u1785\u1784\u17CB\u1794\u1784\u17D2\u1780\u17BE\u178F\u1788\u17D2\u1798\u17C4\u17C7 Profile \u1795\u17D2\u1791\u17B6\u179B\u17CB\u1781\u17D2\u179B\u17BD\u1793\u179B\u17BE PC \u1793\u17C1\u17C7\u1797\u17D2\u179B\u17B6\u1798\u17D7\u178A\u17C2\u179A\u17AC\u1791\u17C1? (\u1798\u17B7\u1793\u1794\u17B6\u1785\u17CB Login Google)"
+        );
+        if (fallback) {
+          const name = prompt("\u179F\u17BC\u1798\u1794\u1789\u17D2\u1785\u17BC\u179B\u1788\u17D2\u1798\u17C4\u17C7\u179A\u1794\u179F\u17CB\u17A2\u17D2\u1793\u1780 (\u17A7. Visal):", "Visal");
+          if (name && name.trim()) {
+            return setLocalUser(name.trim());
+          }
+        }
+      }
       throw error;
     }
   }
   async function signOutUser() {
-    if (!auth) return false;
     try {
-      await auth.signOut();
+      localStorage.removeItem("khmer_clipper_user");
+      if (auth) await auth.signOut();
       currentUser = null;
       console.log("\u{1F44B} Logged out successfully");
+      if (_authCallback) _authCallback(null);
       return true;
     } catch (error) {
       console.error("\u274C Sign out failed:", error);
-      throw error;
+      return false;
     }
   }
   function onAuthChange(callback) {
-    if (!auth) return;
-    auth.onAuthStateChanged((user) => {
-      currentUser = user;
-      if (callback) callback(user);
-    });
+    _authCallback = callback;
+    const local = getLocalUser();
+    if (local) {
+      currentUser = local;
+      callback(local);
+    }
+    if (auth) {
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          currentUser = user;
+          callback(user);
+        } else if (!getLocalUser()) {
+          currentUser = null;
+          callback(null);
+        }
+      });
+    }
   }
   async function saveProjectToFirestore(projectData) {
     if (!currentUser) {
-      throw new Error("\u179F\u17BC\u1798 Login \u1785\u17BC\u179B\u1782\u178E\u1793\u17B8\u179A\u1794\u179F\u17CB\u17A2\u17D2\u1793\u1780\u1787\u17B6\u1798\u17BB\u1793\u179F\u17B7\u1793 \u178A\u17BE\u1798\u17D2\u1794\u17B8 Save \u1791\u17C5\u179B\u17BE Cloud!");
+      throw new Error("\u179F\u17BC\u1798 Login \u1785\u17BC\u179B\u1782\u178E\u1793\u17B8\u179A\u1794\u179F\u17CB\u17A2\u17D2\u1793\u1780\u1787\u17B6\u1798\u17BB\u1793\u179F\u17B7\u1793 \u178A\u17BE\u1798\u17D2\u1794\u17B8 Save!");
+    }
+    const projectId = projectData.id ? String(projectData.id) : `proj_${Date.now()}`;
+    if (currentUser.isLocal) {
+      try {
+        const localProjects = JSON.parse(localStorage.getItem("khmer_local_projects") || "[]");
+        const idx = localProjects.findIndex((p) => p.id === projectId);
+        const payload = {
+          id: projectId,
+          name: projectData.name || "\u1782\u1798\u17D2\u179A\u17C4\u1784\u1780\u17B6\u178F\u17CB\u178F\u1782\u17D2\u1798\u17B6\u1793\u1785\u17C6\u178E\u1784\u1787\u17BE\u1784",
+          updatedAt: /* @__PURE__ */ new Date(),
+          createdAt: projectData.createdAt || /* @__PURE__ */ new Date(),
+          clipsCount: (projectData.clips || []).length,
+          aspectRatio: projectData.aspectRatio || "9:16",
+          platformMode: projectData.platformMode || "facebook",
+          clips: projectData.clips || [],
+          settings: projectData.settings || {}
+        };
+        if (idx !== -1) localProjects[idx] = payload;
+        else localProjects.unshift(payload);
+        localStorage.setItem("khmer_local_projects", JSON.stringify(localProjects.slice(0, 30)));
+        console.log("\u{1F4BE} Project saved to Local Workspace successfully:", projectId);
+        return { success: true, projectId };
+      } catch (err) {
+        throw new Error("Local save error: " + err.message);
+      }
     }
     if (!db) {
       throw new Error("Firestore Database \u1798\u17B7\u1793\u1791\u17B6\u1793\u17CB\u178A\u17C6\u178E\u17BE\u179A\u1780\u17B6\u179A\u1791\u17C1\u17D4");
     }
     const fb = window.firebase;
     try {
-      const projectId = projectData.id ? String(projectData.id) : `proj_${Date.now()}`;
       const docRef = db.collection("users").doc(currentUser.uid).collection("projects").doc(projectId);
       const payload = {
         id: projectId,
@@ -103,7 +182,15 @@
     }
   }
   async function getUserProjects() {
-    if (!currentUser || !db) return [];
+    if (!currentUser) return [];
+    if (currentUser.isLocal) {
+      try {
+        return JSON.parse(localStorage.getItem("khmer_local_projects") || "[]");
+      } catch (_) {
+        return [];
+      }
+    }
+    if (!db) return [];
     try {
       const snapshot = await db.collection("users").doc(currentUser.uid).collection("projects").orderBy("updatedAt", "desc").limit(20).get();
       const projects = [];
@@ -117,7 +204,18 @@
     }
   }
   async function deleteUserProject(projectId) {
-    if (!currentUser || !db || !projectId) return false;
+    if (!currentUser || !projectId) return false;
+    if (currentUser.isLocal) {
+      try {
+        const localProjects = JSON.parse(localStorage.getItem("khmer_local_projects") || "[]");
+        const filtered = localProjects.filter((p) => p.id !== String(projectId));
+        localStorage.setItem("khmer_local_projects", JSON.stringify(filtered));
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+    if (!db) return false;
     try {
       await db.collection("users").doc(currentUser.uid).collection("projects").doc(String(projectId)).delete();
       console.log("\u{1F5D1}\uFE0F Deleted project from Firestore:", projectId);

@@ -42,20 +42,65 @@ try {
 // Authentication Methods
 // ==========================================
 
+let _authCallback: ((user: any) => void) | null = null;
+
+export function getLocalUser(): any {
+    try {
+        const stored = localStorage.getItem('khmer_clipper_user');
+        if (stored) return JSON.parse(stored);
+    } catch (_) {}
+    return null;
+}
+
+export function setLocalUser(name: string, email: string = ''): any {
+    const cleanName = (name || 'Editor').trim();
+    const user = {
+        uid: 'local_' + Date.now(),
+        displayName: cleanName,
+        email: email ? email.trim() : `${cleanName.toLowerCase().replace(/\s+/g, '_')}@local.pc`,
+        photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(cleanName)}`,
+        isLocal: true
+    };
+    try {
+        localStorage.setItem('khmer_clipper_user', JSON.stringify(user));
+    } catch (_) {}
+    currentUser = user;
+    if (_authCallback) _authCallback(user);
+    return user;
+}
+
 /**
- * Sign In with Google Popup
+ * Sign In with Google Popup (with local editor profile fallback for desktop)
  */
 export async function signInWithGoogle(): Promise<any> {
     if (!auth || !googleProvider) {
-        throw new Error("Firebase Auth មិនទាន់ដំណើរការទេ។ សូមពិនិត្យមើល Internet!");
+        const name = prompt("សូមបញ្ចូលឈ្មោះ ឬ Email របស់អ្នកសម្រាប់ប្រើប្រាស់លើ PC នេះ (ឧ. Visal):", "Visal");
+        if (name && name.trim()) {
+            return setLocalUser(name.trim());
+        }
+        throw new Error("មិនបានកំណត់គណនី។");
     }
     try {
         const result = await auth.signInWithPopup(googleProvider);
         currentUser = result.user;
         console.log("✅ Logged in successfully:", currentUser.displayName);
+        if (_authCallback) _authCallback(currentUser);
         return currentUser;
-    } catch (error) {
-        console.error("❌ Google Sign-In failed:", error);
+    } catch (error: any) {
+        console.warn("❌ Google Sign-In notice:", error);
+        // PyWebView desktop apps block popups by default
+        if (error.code === 'auth/popup-blocked' || String(error.message || '').includes('popup') || String(error.message || '').includes('invalid')) {
+            const fallback = confirm(
+                "⚠️ នៅលើកម្មវិធី Desktop (PC) Windows ចាក់សោរមិនឱ្យបើក Google Pop-up ដោយស្វ័យប្រវត្តិ។\n\n" +
+                "👉 តើអ្នកចង់បង្កើតឈ្មោះ Profile ផ្ទាល់ខ្លួនលើ PC នេះភ្លាមៗដែរឬទេ? (មិនបាច់ Login Google)"
+            );
+            if (fallback) {
+                const name = prompt("សូមបញ្ចូលឈ្មោះរបស់អ្នក (ឧ. Visal):", "Visal");
+                if (name && name.trim()) {
+                    return setLocalUser(name.trim());
+                }
+            }
+        }
         throw error;
     }
 }
@@ -64,15 +109,16 @@ export async function signInWithGoogle(): Promise<any> {
  * Sign Out
  */
 export async function signOutUser(): Promise<boolean> {
-    if (!auth) return false;
     try {
-        await auth.signOut();
+        localStorage.removeItem('khmer_clipper_user');
+        if (auth) await auth.signOut();
         currentUser = null;
         console.log("👋 Logged out successfully");
+        if (_authCallback) _authCallback(null);
         return true;
     } catch (error) {
         console.error("❌ Sign out failed:", error);
-        throw error;
+        return false;
     }
 }
 
@@ -80,11 +126,23 @@ export async function signOutUser(): Promise<boolean> {
  * Listen to Auth State Changes
  */
 export function onAuthChange(callback: (user: any) => void): void {
-    if (!auth) return;
-    auth.onAuthStateChanged((user: any) => {
-        currentUser = user;
-        if (callback) callback(user);
-    });
+    _authCallback = callback;
+    const local = getLocalUser();
+    if (local) {
+        currentUser = local;
+        callback(local);
+    }
+    if (auth) {
+        auth.onAuthStateChanged((user: any) => {
+            if (user) {
+                currentUser = user;
+                callback(user);
+            } else if (!getLocalUser()) {
+                currentUser = null;
+                callback(null);
+            }
+        });
+    }
 }
 
 // ==========================================
@@ -96,15 +154,43 @@ export function onAuthChange(callback: (user: any) => void): void {
  */
 export async function saveProjectToFirestore(projectData: any): Promise<{ success: boolean; projectId: string }> {
     if (!currentUser) {
-        throw new Error("សូម Login ចូលគណនីរបស់អ្នកជាមុនសិន ដើម្បី Save ទៅលើ Cloud!");
+        throw new Error("សូម Login ចូលគណនីរបស់អ្នកជាមុនសិន ដើម្បី Save!");
     }
+
+    const projectId = projectData.id ? String(projectData.id) : `proj_${Date.now()}`;
+
+    // Handle Local Editor Profile saving
+    if (currentUser.isLocal) {
+        try {
+            const localProjects = JSON.parse(localStorage.getItem('khmer_local_projects') || '[]');
+            const idx = localProjects.findIndex((p: any) => p.id === projectId);
+            const payload = {
+                id: projectId,
+                name: projectData.name || 'គម្រោងកាត់តគ្មានចំណងជើង',
+                updatedAt: new Date(),
+                createdAt: projectData.createdAt || new Date(),
+                clipsCount: (projectData.clips || []).length,
+                aspectRatio: projectData.aspectRatio || '9:16',
+                platformMode: projectData.platformMode || 'facebook',
+                clips: projectData.clips || [],
+                settings: projectData.settings || {}
+            };
+            if (idx !== -1) localProjects[idx] = payload;
+            else localProjects.unshift(payload);
+            localStorage.setItem('khmer_local_projects', JSON.stringify(localProjects.slice(0, 30)));
+            console.log("💾 Project saved to Local Workspace successfully:", projectId);
+            return { success: true, projectId };
+        } catch (err: any) {
+            throw new Error("Local save error: " + err.message);
+        }
+    }
+
     if (!db) {
         throw new Error("Firestore Database មិនទាន់ដំណើរការទេ។");
     }
 
     const fb = (window as any).firebase;
     try {
-        const projectId = projectData.id ? String(projectData.id) : `proj_${Date.now()}`;
         const docRef = db.collection('users').doc(currentUser.uid).collection('projects').doc(projectId);
 
         const payload = {
@@ -143,7 +229,17 @@ export async function saveProjectToFirestore(projectData: any): Promise<{ succes
  * Get All Projects for Current User
  */
 export async function getUserProjects(): Promise<UserProject[]> {
-    if (!currentUser || !db) return [];
+    if (!currentUser) return [];
+
+    if (currentUser.isLocal) {
+        try {
+            return JSON.parse(localStorage.getItem('khmer_local_projects') || '[]');
+        } catch (_) {
+            return [];
+        }
+    }
+
+    if (!db) return [];
 
     try {
         const snapshot = await db.collection('users')
@@ -168,7 +264,20 @@ export async function getUserProjects(): Promise<UserProject[]> {
  * Delete a Project from Firestore
  */
 export async function deleteUserProject(projectId: string): Promise<boolean> {
-    if (!currentUser || !db || !projectId) return false;
+    if (!currentUser || !projectId) return false;
+
+    if (currentUser.isLocal) {
+        try {
+            const localProjects = JSON.parse(localStorage.getItem('khmer_local_projects') || '[]');
+            const filtered = localProjects.filter((p: any) => p.id !== String(projectId));
+            localStorage.setItem('khmer_local_projects', JSON.stringify(filtered));
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    if (!db) return false;
 
     try {
         await db.collection('users')
