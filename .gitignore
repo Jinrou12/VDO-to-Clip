@@ -13,3 +13,6 @@ gemini_config.json
 puter_token.json
 transcript.json
 gemini_multimodal_clips.json
+
+.vercel
+.env*
