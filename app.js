@@ -6131,7 +6131,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
     function deleteClip(id, e) {
       if (e) e.stopPropagation();
       _clipIdToDelete = id;
-      const clip = state.clips.find((c) => c.id === id);
+      const clip = state.clips.find((c) => String(c.id) === String(id));
       const modal = document.getElementById("deleteConfirmModal");
       const nameEl = document.getElementById("deleteTargetClipName");
       if (nameEl && clip) {
@@ -6146,20 +6146,33 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
     window.deleteClip = deleteClip;
     function executeDeleteClip(id) {
       pushStateToHistory();
-      state.clips = state.clips.filter((c) => c.id !== id);
-      if (state.activeClipId === id) {
+      state.clips = state.clips.filter((c) => String(c.id) !== String(id));
+      if (state.activeClipId !== null && String(state.activeClipId) === String(id)) {
         state.activeClipId = state.clips.length > 0 ? state.clips[0].id : null;
       }
       renderClipsList();
       if (state.activeClipId) {
         selectClipForEditing(state.activeClipId, state.currentScreen === 3);
       }
+      if (state.currentScreen === 2) {
+        if (state.clips.length > 0) {
+          const nextClip = state.clips.find((c) => String(c.id) === String(state.activeClipId)) || state.clips[0];
+          if (nextClip) {
+            state.trimIn = nextClip.startTime;
+            state.trimOut = nextClip.endTime;
+            if (elements.mainVideoPlayer) {
+              elements.mainVideoPlayer.currentTime = nextClip.startTime;
+            }
+          }
+        }
+        updateTrimUI();
+      }
       const badge2 = document.getElementById("step2Badge");
-      if (badge2) badge2.textContent = state.clips.length;
+      if (badge2) badge2.textContent = String(state.clips.length);
       const clipCountEl = document.getElementById("clipCount");
-      if (clipCountEl) clipCountEl.textContent = state.clips.length;
+      if (clipCountEl) clipCountEl.textContent = String(state.clips.length);
       const s2ClipsCount = document.getElementById("screen2ClipsCount");
-      if (s2ClipsCount) s2ClipsCount.textContent = state.clips.length;
+      if (s2ClipsCount) s2ClipsCount.textContent = String(state.clips.length);
       showToast("\u{1F5D1}\uFE0F \u1794\u17B6\u1793\u179B\u17BB\u1794 Clip (\u1785\u17BB\u1785 Ctrl+Z \u178A\u17BE\u1798\u17D2\u1794\u17B8\u178F\u17D2\u179A\u17A1\u1794\u17CB\u1798\u1780\u179C\u17B7\u1789)");
     }
     window.executeDeleteClip = executeDeleteClip;
@@ -7043,6 +7056,19 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
       if (state.isExporting) return;
       state.isExporting = true;
       state.cancelExportRequested = false;
+      if (elements.mainVideoPlayer) {
+        elements.mainVideoPlayer.pause();
+      }
+      if (elements.hiddenVideo) {
+        elements.hiddenVideo.pause();
+      }
+      state.isPlaying = false;
+      if (elements.playPauseBtn) {
+        elements.playPauseBtn.innerHTML = "\u25B6 Play";
+      }
+      if (elements.studioPlayBtn) {
+        elements.studioPlayBtn.innerHTML = "\u25B6 Play";
+      }
       elements.exportModal.classList.remove("hidden");
       elements.exportProgressBar.style.width = "0%";
       elements.exportPercentText.textContent = "0%";
@@ -7083,6 +7109,13 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
           });
         }
       }
+      if (elements.mainVideoPlayer) {
+        elements.mainVideoPlayer.pause();
+      }
+      if (elements.hiddenVideo) {
+        elements.hiddenVideo.pause();
+      }
+      state.isPlaying = false;
       state.isExporting = false;
       elements.exportModal.classList.add("hidden");
     }
@@ -7118,7 +7151,11 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             window.audioSrc = window.audioCtx.createMediaElementSource(video);
             window.audioDest = window.audioCtx.createMediaStreamDestination();
             window.audioSrc.connect(window.audioDest);
-            window.audioSrc.connect(window.audioCtx.destination);
+          } else {
+            try {
+              window.audioSrc.disconnect(window.audioCtx.destination);
+            } catch (_) {
+            }
           }
           if (window.audioCtx.state === "suspended") {
             await window.audioCtx.resume();

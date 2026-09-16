@@ -6820,7 +6820,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
     function deleteClip(id, e) {
         if (e) e.stopPropagation();
         _clipIdToDelete = id;
-        const clip = state.clips.find(c => c.id === id);
+        const clip = state.clips.find(c => String(c.id) === String(id));
         const modal = document.getElementById('deleteConfirmModal');
         const nameEl = document.getElementById('deleteTargetClipName');
         if (nameEl && clip) {
@@ -6836,21 +6836,34 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
 
     function executeDeleteClip(id) {
         pushStateToHistory();
-        state.clips = state.clips.filter(c => c.id !== id);
-        if (state.activeClipId === id) {
+        state.clips = state.clips.filter(c => String(c.id) !== String(id));
+        if (state.activeClipId !== null && String(state.activeClipId) === String(id)) {
             state.activeClipId = state.clips.length > 0 ? state.clips[0].id : null;
         }
         renderClipsList();
         if (state.activeClipId) {
             selectClipForEditing(state.activeClipId, state.currentScreen === 3);
         }
+        if (state.currentScreen === 2) {
+            if (state.clips.length > 0) {
+                const nextClip = state.clips.find(c => String(c.id) === String(state.activeClipId)) || state.clips[0];
+                if (nextClip) {
+                    state.trimIn = nextClip.startTime;
+                    state.trimOut = nextClip.endTime;
+                    if (elements.mainVideoPlayer) {
+                        elements.mainVideoPlayer.currentTime = nextClip.startTime;
+                    }
+                }
+            }
+            updateTrimUI();
+        }
         // Update badge counts
         const badge2 = document.getElementById('step2Badge');
-        if (badge2) badge2.textContent = state.clips.length;
+        if (badge2) badge2.textContent = String(state.clips.length);
         const clipCountEl = document.getElementById('clipCount');
-        if (clipCountEl) clipCountEl.textContent = state.clips.length;
+        if (clipCountEl) clipCountEl.textContent = String(state.clips.length);
         const s2ClipsCount = document.getElementById('screen2ClipsCount');
-        if (s2ClipsCount) s2ClipsCount.textContent = state.clips.length;
+        if (s2ClipsCount) s2ClipsCount.textContent = String(state.clips.length);
 
         showToast('🗑️ បានលុប Clip (ចុច Ctrl+Z ដើម្បីត្រឡប់មកវិញ)');
     }
@@ -7906,6 +7919,21 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         state.isExporting = true;
         state.cancelExportRequested = false;
 
+        // Stop and pause any active video player before beginning export
+        if (elements.mainVideoPlayer) {
+            elements.mainVideoPlayer.pause();
+        }
+        if (elements.hiddenVideo) {
+            elements.hiddenVideo.pause();
+        }
+        state.isPlaying = false;
+        if (elements.playPauseBtn) {
+            elements.playPauseBtn.innerHTML = '▶ Play';
+        }
+        if (elements.studioPlayBtn) {
+            elements.studioPlayBtn.innerHTML = '▶ Play';
+        }
+
         elements.exportModal.classList.remove('hidden');
         elements.exportProgressBar.style.width = '0%';
         elements.exportPercentText.textContent = '0%';
@@ -7955,6 +7983,14 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             }
         }
 
+        // Ensure video playback is paused when export finishes or cancels
+        if (elements.mainVideoPlayer) {
+            elements.mainVideoPlayer.pause();
+        }
+        if (elements.hiddenVideo) {
+            elements.hiddenVideo.pause();
+        }
+        state.isPlaying = false;
         state.isExporting = false;
         elements.exportModal.classList.add('hidden');
     }
@@ -7999,7 +8035,10 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                     window.audioSrc = window.audioCtx.createMediaElementSource(video);
                     window.audioDest = window.audioCtx.createMediaStreamDestination();
                     window.audioSrc.connect(window.audioDest);
-                    window.audioSrc.connect(window.audioCtx.destination);
+                } else {
+                    try {
+                        window.audioSrc.disconnect(window.audioCtx.destination);
+                    } catch (_) {}
                 }
                 if (window.audioCtx.state === 'suspended') {
                     await window.audioCtx.resume();

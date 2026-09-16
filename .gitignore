@@ -16,3 +16,6 @@ gemini_multimodal_clips.json
 
 .vercel
 .env*
+audio_cache/
+consensus_council_clips.json
+super_transcript.json
