@@ -9337,6 +9337,89 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
             showToastNotification(`✨ បានបើកគម្រោង "${proj.name}" មកកែប្រែបន្តដោយជោគជ័យ!`);
             if (state.clips.length > 0) switchScreen(2);
         }
+
+        // AI Knowledge Pack Modal & Handlers
+        const kpBtn = document.getElementById('aiKnowledgePackBtn');
+        const kpModal = document.getElementById('knowledgePackModal');
+        const closeKpBtn = document.getElementById('closeKnowledgePackModalBtn');
+        const closeKpFooterBtn = document.getElementById('closeKnowledgePackModalFooterBtn');
+        const exportKpBtn = document.getElementById('exportKnowledgePackBtn');
+        const importKpBtn = document.getElementById('importKnowledgePackBtn');
+        const importKpInput = document.getElementById('importKnowledgePackInput') as HTMLInputElement | null;
+        const kpApprovedCount = document.getElementById('kpApprovedCount');
+        const kpRejectedCount = document.getElementById('kpRejectedCount');
+
+        async function updateKnowledgePackStats() {
+            try {
+                const origin = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:5000';
+                const res = await fetch(`${origin}/api/clips/feedback/summary`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const counts = data.counts || {};
+                    if (kpApprovedCount) kpApprovedCount.textContent = String(counts['ACCEPTED'] || 0);
+                    if (kpRejectedCount) kpRejectedCount.textContent = String(counts['REJECTED'] || 0);
+                }
+            } catch (_) {}
+        }
+
+        kpBtn?.addEventListener('click', () => {
+            kpModal?.classList.remove('hidden');
+            updateKnowledgePackStats();
+        });
+
+        closeKpBtn?.addEventListener('click', () => kpModal?.classList.add('hidden'));
+        closeKpFooterBtn?.addEventListener('click', () => kpModal?.classList.add('hidden'));
+        kpModal?.addEventListener('click', (e) => {
+            if (e.target === kpModal) kpModal.classList.add('hidden');
+        });
+
+        exportKpBtn?.addEventListener('click', async () => {
+            try {
+                const origin = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:5000';
+                const res = await fetch(`${origin}/api/clips/feedback/export`);
+                if (!res.ok) throw new Error('Failed to export feedback');
+                const data = await res.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `khmer_clipper_knowledge_pack_${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToastNotification('✅ បានទាញយក AI Knowledge Pack រួចរាល់!');
+            } catch (err: any) {
+                alert('មិនអាចទាញយក Knowledge Pack បានទេ៖ ' + (err.message || err));
+            }
+        });
+
+        importKpBtn?.addEventListener('click', () => {
+            importKpInput?.click();
+        });
+
+        importKpInput?.addEventListener('change', async () => {
+            const file = importKpInput.files?.[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const json = JSON.parse(text);
+                const origin = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:5000';
+                const res = await fetch(`${origin}/api/clips/feedback/import`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(json)
+                });
+                if (!res.ok) throw new Error('Failed to import feedback');
+                const result = await res.json();
+                showToastNotification(`🎉 បានបញ្ចូលទិន្នន័យ AI Memory ចំនួន ${result.imported_count || 0} Clips ដោយជោគជ័យ!`);
+                updateKnowledgePackStats();
+            } catch (err: any) {
+                alert('Import មិនបានសម្រេច៖ ' + (err.message || 'សូមពិនិត្យមើលហ្វាល JSON!'));
+            } finally {
+                importKpInput.value = '';
+            }
+        });
     }
 
     // Start App Engine

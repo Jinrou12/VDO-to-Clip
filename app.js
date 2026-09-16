@@ -8290,6 +8290,82 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
         showToastNotification(`\u2728 \u1794\u17B6\u1793\u1794\u17BE\u1780\u1782\u1798\u17D2\u179A\u17C4\u1784 "${proj.name}" \u1798\u1780\u1780\u17C2\u1794\u17D2\u179A\u17C2\u1794\u1793\u17D2\u178F\u178A\u17C4\u1799\u1787\u17C4\u1782\u1787\u17D0\u1799!`);
         if (state.clips.length > 0) switchScreen(2);
       }
+      const kpBtn = document.getElementById("aiKnowledgePackBtn");
+      const kpModal = document.getElementById("knowledgePackModal");
+      const closeKpBtn = document.getElementById("closeKnowledgePackModalBtn");
+      const closeKpFooterBtn = document.getElementById("closeKnowledgePackModalFooterBtn");
+      const exportKpBtn = document.getElementById("exportKnowledgePackBtn");
+      const importKpBtn = document.getElementById("importKnowledgePackBtn");
+      const importKpInput = document.getElementById("importKnowledgePackInput");
+      const kpApprovedCount = document.getElementById("kpApprovedCount");
+      const kpRejectedCount = document.getElementById("kpRejectedCount");
+      async function updateKnowledgePackStats() {
+        try {
+          const origin = window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:5000";
+          const res = await fetch(`${origin}/api/clips/feedback/summary`);
+          if (res.ok) {
+            const data = await res.json();
+            const counts = data.counts || {};
+            if (kpApprovedCount) kpApprovedCount.textContent = String(counts["ACCEPTED"] || 0);
+            if (kpRejectedCount) kpRejectedCount.textContent = String(counts["REJECTED"] || 0);
+          }
+        } catch (_) {
+        }
+      }
+      kpBtn?.addEventListener("click", () => {
+        kpModal?.classList.remove("hidden");
+        updateKnowledgePackStats();
+      });
+      closeKpBtn?.addEventListener("click", () => kpModal?.classList.add("hidden"));
+      closeKpFooterBtn?.addEventListener("click", () => kpModal?.classList.add("hidden"));
+      kpModal?.addEventListener("click", (e) => {
+        if (e.target === kpModal) kpModal.classList.add("hidden");
+      });
+      exportKpBtn?.addEventListener("click", async () => {
+        try {
+          const origin = window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:5000";
+          const res = await fetch(`${origin}/api/clips/feedback/export`);
+          if (!res.ok) throw new Error("Failed to export feedback");
+          const data = await res.json();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `khmer_clipper_knowledge_pack_${Date.now()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToastNotification("\u2705 \u1794\u17B6\u1793\u1791\u17B6\u1789\u1799\u1780 AI Knowledge Pack \u179A\u17BD\u1785\u179A\u17B6\u179B\u17CB!");
+        } catch (err) {
+          alert("\u1798\u17B7\u1793\u17A2\u17B6\u1785\u1791\u17B6\u1789\u1799\u1780 Knowledge Pack \u1794\u17B6\u1793\u1791\u17C1\u17D6 " + (err.message || err));
+        }
+      });
+      importKpBtn?.addEventListener("click", () => {
+        importKpInput?.click();
+      });
+      importKpInput?.addEventListener("change", async () => {
+        const file = importKpInput.files?.[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const json = JSON.parse(text);
+          const origin = window.location.protocol.startsWith("http") ? window.location.origin : "http://127.0.0.1:5000";
+          const res = await fetch(`${origin}/api/clips/feedback/import`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(json)
+          });
+          if (!res.ok) throw new Error("Failed to import feedback");
+          const result = await res.json();
+          showToastNotification(`\u{1F389} \u1794\u17B6\u1793\u1794\u1789\u17D2\u1785\u17BC\u179B\u1791\u17B7\u1793\u17D2\u1793\u1793\u17D0\u1799 AI Memory \u1785\u17C6\u1793\u17BD\u1793 ${result.imported_count || 0} Clips \u178A\u17C4\u1799\u1787\u17C4\u1782\u1787\u17D0\u1799!`);
+          updateKnowledgePackStats();
+        } catch (err) {
+          alert("Import \u1798\u17B7\u1793\u1794\u17B6\u1793\u179F\u1798\u17D2\u179A\u17C1\u1785\u17D6 " + (err.message || "\u179F\u17BC\u1798\u1796\u17B7\u1793\u17B7\u178F\u17D2\u1799\u1798\u17BE\u179B\u17A0\u17D2\u179C\u17B6\u179B JSON!"));
+        } finally {
+          importKpInput.value = "";
+        }
+      });
     }
     init();
     initFirebaseIntegration();

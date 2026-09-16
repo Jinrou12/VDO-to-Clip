@@ -638,23 +638,10 @@ body.screen-2-mode .aspect-ratio-selector,
 }
 
 /* សម្រាប់ពេល user រើសយកសម្រាប់ FB:
-   - រូបទី១: លុបប៊ូតុង YouTube (16:9) ក្នុង Header
-   - រូបទី២: លុបប៊ូតុង Undo/Redo, Autosaved badge, Google Login ក្នុង Header */
+   - លុបប៊ូតុង YouTube (16:9) ក្នុង Header platform switcher */
 body.platform-mode-facebook #headerPlatformToggle .platform-btn[data-platform="youtube"],
 body[data-platform-mode="facebook"] #headerPlatformToggle .platform-btn[data-platform="youtube"],
-.platform-mode-facebook #headerPlatformToggle .platform-btn[data-platform="youtube"],
-body.platform-mode-facebook .header-actions .history-btns,
-body[data-platform-mode="facebook"] .header-actions .history-btns,
-.platform-mode-facebook .header-actions .history-btns,
-body.platform-mode-facebook .header-actions .autosave-badge,
-body[data-platform-mode="facebook"] .header-actions .autosave-badge,
-.platform-mode-facebook .header-actions .autosave-badge,
-body.platform-mode-facebook .header-actions #firebaseAuthContainer,
-body[data-platform-mode="facebook"] .header-actions #firebaseAuthContainer,
-.platform-mode-facebook .header-actions #firebaseAuthContainer,
-body.platform-mode-facebook .header-actions .firebase-auth-container,
-body[data-platform-mode="facebook"] .header-actions .firebase-auth-container,
-.platform-mode-facebook .header-actions .firebase-auth-container {
+.platform-mode-facebook #headerPlatformToggle .platform-btn[data-platform="youtube"] {
     display: none !important;
 }
 
@@ -5755,6 +5742,30 @@ button.upload-step-pill.active,
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.btn-knowledge-pack {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.2));
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    color: #c084fc;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-knowledge-pack:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(99, 102, 241, 0.35));
+    border-color: #c084fc;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(168, 85, 247, 0.3);
 }
 
 .btn-google-login {
