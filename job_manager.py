@@ -83,6 +83,24 @@ class JobManager:
                         retry_count INTEGER DEFAULT 0
                     )
                 ''')
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS clip_feedback (
+                        id TEXT PRIMARY KEY,
+                        job_id TEXT,
+                        video_path TEXT,
+                        start_sec REAL,
+                        end_sec REAL,
+                        duration REAL,
+                        title TEXT,
+                        hook_text TEXT,
+                        score REAL,
+                        action TEXT,
+                        reason TEXT,
+                        adjusted_start REAL,
+                        adjusted_end REAL,
+                        created_at TEXT
+                    )
+                ''')
                 # Check and perform non-destructive schema migrations
                 cursor.execute("PRAGMA table_info(jobs)")
                 cols = [row[1] for row in cursor.fetchall()]
@@ -327,6 +345,146 @@ class JobManager:
         finally:
             conn.close()
         return None
+
+    def record_clip_feedback(
+        self,
+        clip_id: str,
+        job_id: str = "",
+        video_path: str = "",
+        start_sec: float = 0.0,
+        end_sec: float = 0.0,
+        duration: float = 0.0,
+        title: str = "",
+        hook_text: str = "",
+        score: float = 0.0,
+        action: str = "ACCEPTED",
+        reason: str = "",
+        adjusted_start: Optional[float] = None,
+        adjusted_end: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Saves user feedback (ACCEPTED, REJECTED, EDITED) into SQLite
+        to train few-shot memory and refine scoring preferences.
+        """
+        conn = self._get_connection()
+        try:
+            with conn:
+                cursor = conn.cursor()
+                now_iso = _utc_now_iso()
+                cursor.execute('''
+                    INSERT OR REPLACE INTO clip_feedback (
+                        id, job_id, video_path, start_sec, end_sec, duration,
+                        title, hook_text, score, action, reason,
+                        adjusted_start, adjusted_end, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    clip_id, job_id, video_path, start_sec, end_sec, duration,
+                    title, hook_text, score, action.upper(), reason,
+                    adjusted_start, adjusted_end, now_iso
+                ))
+        finally:
+            conn.close()
+        return {"success": True, "id": clip_id, "action": action.upper()}
+
+    def get_feedback_summary(self) -> Dict[str, Any]:
+        """Returns statistics of accepted, rejected, and edited clips."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT action, COUNT(*) FROM clip_feedback GROUP BY action')
+            counts = dict(cursor.fetchall())
+            cursor.execute('SELECT COUNT(*) FROM clip_feedback')
+            total = cursor.fetchone()[0]
+            return {"total": total, "counts": counts}
+        finally:
+            conn.close()
+
+    def get_feedback_few_shots(self, limit: int = 5) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Retrieves recent accepted and rejected clips to inject into
+        LLM prompts for few-shot dynamic personalization.
+        """
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT title, hook_text, duration, score FROM clip_feedback
+                WHERE action = 'ACCEPTED' ORDER BY created_at DESC LIMIT ?
+            ''', (limit,))
+            accepted = [
+                {"title": r[0], "hook_text": r[1], "duration": r[2], "score": r[3]}
+                for r in cursor.fetchall()
+            ]
+
+            cursor.execute('''
+                SELECT title, hook_text, reason, score FROM clip_feedback
+                WHERE action = 'REJECTED' ORDER BY created_at DESC LIMIT ?
+            ''', (limit,))
+            rejected = [
+                {"title": r[0], "hook_text": r[1], "reason": r[2], "score": r[3]}
+                for r in cursor.fetchall()
+            ]
+
+            return {"accepted": accepted, "rejected": rejected}
+        finally:
+            conn.close()
+
+    def export_feedback_data(self) -> Dict[str, Any]:
+        """Exports all accepted and rejected clips as a portable AI Knowledge Pack."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM clip_feedback ORDER BY created_at DESC')
+            rows = cursor.fetchall()
+            cols = [col[0] for col in cursor.description]
+            items = [dict(zip(cols, row)) for row in rows]
+            return {
+                "version": "1.0",
+                "exported_at": _utc_now_iso(),
+                "total_records": len(items),
+                "knowledge_pack": items
+            }
+        finally:
+            conn.close()
+
+    def import_feedback_data(self, data: Dict[str, Any]) -> int:
+        """Imports an AI Knowledge Pack into the local SQLite database."""
+        items = data.get("knowledge_pack", [])
+        if not items and isinstance(data, list):
+            items = data
+        conn = self._get_connection()
+        count = 0
+        try:
+            with conn:
+                cursor = conn.cursor()
+                for it in items:
+                    cid = it.get("id") or str(uuid.uuid4())
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO clip_feedback (
+                            id, job_id, video_path, start_sec, end_sec, duration,
+                            title, hook_text, score, action, reason,
+                            adjusted_start, adjusted_end, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        cid,
+                        it.get("job_id", ""),
+                        it.get("video_path", ""),
+                        float(it.get("start_sec", 0.0)),
+                        float(it.get("end_sec", 0.0)),
+                        float(it.get("duration", 0.0)),
+                        it.get("title", ""),
+                        it.get("hook_text", ""),
+                        float(it.get("score", 0.0)),
+                        str(it.get("action", "ACCEPTED")).upper(),
+                        it.get("reason", ""),
+                        it.get("adjusted_start"),
+                        it.get("adjusted_end"),
+                        it.get("created_at") or _utc_now_iso()
+                    ))
+                    count += 1
+        finally:
+            conn.close()
+        return count
 
 
 # Global instance

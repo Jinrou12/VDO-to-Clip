@@ -117,6 +117,21 @@ class ClipsFromTranscriptRequest(BaseModel):
     video_duration: float
     topic: Optional[str] = ""
 
+class ClipFeedbackRequest(BaseModel):
+    clip_id: str
+    job_id: Optional[str] = ""
+    video_path: Optional[str] = ""
+    start_sec: float = 0.0
+    end_sec: float = 0.0
+    duration: float = 0.0
+    title: str = ""
+    hook_text: str = ""
+    score: float = 0.0
+    action: str = "ACCEPTED"
+    reason: Optional[str] = ""
+    adjusted_start: Optional[float] = None
+    adjusted_end: Optional[float] = None
+
 # --- Authentication & Origin Middleware / Dependency ---
 def verify_session_or_local(
     request: Request,
@@ -327,6 +342,47 @@ def get_transcript():
             segments = json.load(f)
         return {"success": True, "segments": segments}
     raise HTTPException(status_code=404, detail="No transcript available yet")
+
+@app.post("/api/clips/feedback")
+def record_feedback(req: ClipFeedbackRequest, _auth=Depends(verify_session_or_local)):
+    """Records editor feedback (accept/reject/edit) into SQLite to train few-shot prompts."""
+    res = job_manager.record_clip_feedback(
+        clip_id=req.clip_id,
+        job_id=req.job_id or "",
+        video_path=req.video_path or "",
+        start_sec=req.start_sec,
+        end_sec=req.end_sec,
+        duration=req.duration,
+        title=req.title,
+        hook_text=req.hook_text,
+        score=req.score,
+        action=req.action,
+        reason=req.reason or "",
+        adjusted_start=req.adjusted_start,
+        adjusted_end=req.adjusted_end
+    )
+    return res
+
+@app.get("/api/clips/feedback/summary")
+def get_feedback_summary():
+    """Returns count of accepted, rejected, and edited clips."""
+    return job_manager.get_feedback_summary()
+
+@app.get("/api/clips/feedback/few-shots")
+def get_feedback_few_shots(limit: int = Query(5, ge=1, le=20)):
+    """Returns top approved and rejected examples for in-context few-shot prompting."""
+    return job_manager.get_feedback_few_shots(limit=limit)
+
+@app.get("/api/clips/feedback/export")
+def export_feedback():
+    """Exports all learned feedback and rules as a portable JSON knowledge pack."""
+    return job_manager.export_feedback_data()
+
+@app.post("/api/clips/feedback/import")
+def import_feedback(payload: Dict[str, Any], _auth=Depends(verify_session_or_local)):
+    """Imports an AI Knowledge Pack from another PC or cloud backup."""
+    imported_count = job_manager.import_feedback_data(payload)
+    return {"success": True, "imported_count": imported_count}
 
 @app.post("/api/proxy-omniroute")
 def proxy_omniroute(req: OmniRouteRequest, _auth=Depends(verify_session_or_local)):

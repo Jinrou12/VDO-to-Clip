@@ -224,10 +224,22 @@ def specialist_review(
     api_key = get_saved_gemini_key()
     client = genai.Client(api_key=api_key) if api_key else None
 
+    # Fetch historical user feedback from SQLite to personalize decision making
+    few_shots = manager.get_feedback_few_shots(limit=3) if hasattr(manager, "get_feedback_few_shots") else {"accepted": [], "rejected": []}
+    memory_guidance = ""
+    if few_shots.get("accepted"):
+        memory_guidance += "\nEDITOR'S HIGH-RATED APPROVED EXAMPLES (MATCH THIS STYLE):\n"
+        for ex in few_shots["accepted"]:
+            memory_guidance += f"- Approved: {ex.get('title')} | Hook: {ex.get('hook_text')} (Score: {ex.get('score')})\n"
+    if few_shots.get("rejected"):
+        memory_guidance += "\nDISCARDED PATTERNS TO AVOID (DO NOT REPEAT):\n"
+        for ex in few_shots["rejected"]:
+            memory_guidance += f"- Discarded: {ex.get('title')} | Reason: {ex.get('reason')}\n"
+
     prompt = f"""You are a senior Khmer Dhamma Specialist & Video Editor.
 Refine these rough candidate timestamps into standalone, impactful clips.
 Zero Cut-off Rule: Ensure clips start and end on natural, complete sentences. Never cut mid-thought.
-
+{memory_guidance}
 CANDIDATES:
 {json.dumps(clustered_candidates[:8], ensure_ascii=False)}
 

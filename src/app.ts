@@ -7541,6 +7541,30 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
     }
     window.moveClipDown = moveClipDown;
 
+    function recordClipFeedbackLocally(clip: any, action: 'ACCEPTED' | 'REJECTED' | 'EDITED', reason = '') {
+        if (!clip) return;
+        try {
+            const origin = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:5000';
+            const payload = {
+                clip_id: String(clip.id || Date.now()),
+                title: clip.name || clip.title || '',
+                hook_text: clip.firstSentence || clip.headline || clip.name || '',
+                start_sec: Number(clip.startTime ?? clip.start ?? 0),
+                end_sec: Number(clip.endTime ?? clip.end ?? 0),
+                duration: Number(clip.duration || Math.max(0, (clip.endTime || 0) - (clip.startTime || 0))),
+                score: Number(clip.score || 85),
+                action: action,
+                reason: reason
+            };
+            fetch(`${origin}/api/clips/feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        } catch (_) {}
+    }
+    (window as any).recordClipFeedbackLocally = recordClipFeedbackLocally;
+
     function deleteClip(id, e) {
         if (e) e.stopPropagation();
         _clipIdToDelete = id;
@@ -7560,6 +7584,10 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
 
     function executeDeleteClip(id) {
         pushStateToHistory();
+        const targetClip = state.clips.find(c => String(c.id) === String(id));
+        if (targetClip) {
+            recordClipFeedbackLocally(targetClip, 'REJECTED', 'User deleted clip in editor');
+        }
         state.clips = state.clips.filter(c => String(c.id) !== String(id));
         if (state.activeClipId !== null && String(state.activeClipId) === String(id)) {
             state.activeClipId = state.clips.length > 0 ? state.clips[0].id : null;
@@ -9019,6 +9047,7 @@ Return ONLY valid raw JSON array inside [ ... ] without any markdown formatting.
                     if (!safeName || safeName === '_') safeName = 'Clip';
 
                     result = { blob, safeName, ext };
+                    recordClipFeedbackLocally(clip, 'ACCEPTED', 'User exported clip');
 
                     if (autoDownload) {
                         triggerDownload(blob, `${safeName}.${ext}`);
